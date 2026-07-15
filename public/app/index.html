@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Панель управления — Bookly</title>
+  <meta name="description" content="Панель управления Bookly">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="app is-loading">
+  <div class="auth-loader" id="auth-loader" aria-live="polite" aria-busy="true">
+    <div class="auth-loader__spinner" aria-hidden="true"></div>
+    <p class="auth-loader__text">Проверка авторизации…</p>
+  </div>
+
+  <div class="app__overlay" id="sidebar-overlay" hidden></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <a href="/" class="logo">
+        <span class="logo__mark">B</span>
+        Bookly
+      </a>
+    </div>
+
+    <div class="sidebar__workspace">
+      <span class="sidebar__workspace-label">Компания</span>
+      <span class="sidebar__workspace-name" id="workspace-name">—</span>
+      <span class="sidebar__workspace-type" id="workspace-type"></span>
+    </div>
+
+    <nav class="sidebar__nav" aria-label="Разделы панели">
+      <div class="sidebar__section">
+        <p class="sidebar__section-title">Основное</p>
+        <button class="sidebar__link is-active" type="button" data-section="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          Обзор
+        </button>
+        <button class="sidebar__link" type="button" data-section="services">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          Услуги
+        </button>
+        <button class="sidebar__link" type="button" data-section="staff">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Сотрудники
+        </button>
+        <button class="sidebar__link" type="button" data-section="bookings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Записи
+        </button>
+        <button class="sidebar__link" type="button" data-section="public-booking">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Онлайн-запись
+        </button>
+        <button class="sidebar__link" type="button" data-section="calendar" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Календарь
+          <span class="sidebar__badge">скоро</span>
+        </button>
+      </div>
+
+      <div class="sidebar__section">
+        <p class="sidebar__section-title">Управление</p>
+        <button class="sidebar__link" type="button" data-section="clients" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Клиенты
+          <span class="sidebar__badge">скоро</span>
+        </button>
+        <button class="sidebar__link" type="button" data-section="analytics" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          Аналитика
+          <span class="sidebar__badge">скоро</span>
+        </button>
+        <button class="sidebar__link" type="button" data-section="notifications" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Уведомления
+          <span class="sidebar__badge">скоро</span>
+        </button>
+      </div>
+
+      <div class="sidebar__section">
+        <p class="sidebar__section-title">Аккаунт</p>
+        <button class="sidebar__link" type="button" data-section="subscription" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Подписка
+          <span class="sidebar__badge">скоро</span>
+        </button>
+        <button class="sidebar__link" type="button" data-section="settings" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          Настройки
+          <span class="sidebar__badge">скоро</span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="sidebar__avatar" id="user-avatar">?</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name" id="user-name">—</span>
+          <span class="sidebar__user-email" id="user-email">—</span>
+        </div>
+      </div>
+      <button class="sidebar__logout" type="button" id="logout-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Выйти
+      </button>
+    </div>
+  </aside>
+
+  <div class="app__main">
+    <header class="topbar">
+      <button class="topbar__burger" id="sidebar-toggle" type="button" aria-label="Открыть меню">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <div class="topbar__info">
+        <span class="topbar__org" id="topbar-org-name">—</span>
+        <h1 class="topbar__title" id="page-title">Обзор</h1>
+      </div>
+      <div class="topbar__actions">
+        <span class="badge badge--muted" id="plan-badge">Starter</span>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Обзор -->
+      <section class="panel dashboard-panel" id="dashboard-section" data-section="dashboard">
+        <div class="dashboard-stats">
+          <article class="stat-card">
+            <p class="stat-card__label">Активных услуг</p>
+            <p class="stat-card__value" id="dashboard-active-services">0</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-card__label">Активных сотрудников</p>
+            <p class="stat-card__value" id="dashboard-active-staff">0</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-card__label">Записей сегодня</p>
+            <p class="stat-card__value" id="dashboard-today-bookings">0</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-card__label">Предстоящих записей</p>
+            <p class="stat-card__value" id="dashboard-upcoming-bookings">0</p>
+          </article>
+        </div>
+
+        <div class="dashboard-welcome">
+          <div class="dashboard-empty__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </div>
+          <h2 class="dashboard-empty__title">Добро пожаловать в Bookly</h2>
+          <p class="dashboard-empty__text">
+            Начните с добавления услуг и сотрудников — они понадобятся для онлайн-записи и расписания.
+          </p>
+          <div class="dashboard-welcome__actions">
+            <button class="btn btn--primary" type="button" id="dashboard-go-services">Перейти к услугам</button>
+            <button class="btn btn--outline" type="button" id="dashboard-go-staff">Перейти к сотрудникам</button>
+            <button class="btn btn--outline" type="button" id="dashboard-go-bookings">Перейти к записям</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Услуги -->
+      <section class="panel services-panel" id="services-section" data-section="services" hidden>
+        <div class="services-toolbar">
+          <div class="services-toolbar__search">
+            <input class="field__input" type="search" id="services-search" placeholder="Поиск по названию или категории" autocomplete="off">
+          </div>
+          <select class="field__select services-toolbar__filter" id="services-filter" aria-label="Фильтр по активности">
+            <option value="all">Все услуги</option>
+            <option value="active">Только активные</option>
+            <option value="inactive">Только неактивные</option>
+          </select>
+          <button class="btn btn--primary" type="button" id="services-add-btn">Добавить услугу</button>
+        </div>
+
+        <div class="services-empty" id="services-empty" hidden>
+          <p>Услуг пока нет. Добавьте первую услугу для вашей компании.</p>
+        </div>
+
+        <div class="services-list" id="services-list"></div>
+      </section>
+
+      <!-- Сотрудники -->
+      <section class="panel staff-panel" id="staff-section" data-section="staff" hidden>
+        <div class="staff-toolbar">
+          <div class="staff-toolbar__search">
+            <input class="field__input" type="search" id="staff-search" placeholder="Поиск по имени или должности" autocomplete="off">
+          </div>
+          <select class="field__select staff-toolbar__filter" id="staff-filter" aria-label="Фильтр по активности">
+            <option value="all">Все сотрудники</option>
+            <option value="active">Только активные</option>
+            <option value="inactive">Только неактивные</option>
+          </select>
+          <button class="btn btn--primary" type="button" id="staff-add-btn">Добавить сотрудника</button>
+        </div>
+
+        <div class="staff-empty" id="staff-empty" hidden>
+          <p>Сотрудников пока нет. Добавьте первого сотрудника для вашей компании.</p>
+        </div>
+
+        <div class="staff-list" id="staff-list"></div>
+      </section>
+
+      <!-- Записи -->
+      <section class="panel bookings-panel" id="bookings-section" data-section="bookings" hidden>
+        <div class="bookings-toolbar">
+          <div class="bookings-toolbar__search">
+            <input class="field__input" type="search" id="bookings-search" placeholder="Поиск по имени или телефону" autocomplete="off">
+          </div>
+          <input class="field__input bookings-toolbar__date" type="date" id="bookings-filter-date" aria-label="Фильтр по дате">
+          <select class="field__select bookings-toolbar__filter" id="bookings-filter-staff" aria-label="Фильтр по сотруднику">
+            <option value="all">Все сотрудники</option>
+          </select>
+          <select class="field__select bookings-toolbar__filter" id="bookings-filter-status" aria-label="Фильтр по статусу">
+            <option value="all">Все статусы</option>
+            <option value="pending">Ожидает</option>
+            <option value="confirmed">Подтверждена</option>
+            <option value="completed">Завершена</option>
+            <option value="canceled">Отменена</option>
+            <option value="no_show">Не пришёл</option>
+          </select>
+          <button class="btn btn--primary" type="button" id="bookings-add-btn">Добавить запись</button>
+        </div>
+
+        <div class="bookings-empty" id="bookings-empty" hidden>
+          <p>Записей пока нет. Добавьте первую запись вручную.</p>
+        </div>
+
+        <div class="bookings-list" id="bookings-list"></div>
+      </section>
+
+      <!-- Онлайн-запись -->
+      <section class="panel public-booking-panel" id="public-booking-section" data-section="public-booking" hidden>
+        <div class="public-booking-layout">
+          <div class="public-booking-layout__main">
+            <header class="panel__header">
+              <div>
+                <h2 class="panel__title">Онлайн-запись</h2>
+                <p class="panel__subtitle">Настройте публичную страницу, по которой клиенты смогут записаться без авторизации.</p>
+              </div>
+            </header>
+
+            <form class="public-booking-form" id="public-booking-form" novalidate>
+              <label class="field">
+                <span class="field__label">Публичное название</span>
+                <input class="field__input" type="text" name="public_name" required minlength="2" placeholder="Например, Mora Coffee">
+              </label>
+
+              <label class="field">
+                <span class="field__label">Slug (адрес страницы)</span>
+                <input class="field__input" type="text" name="slug" required minlength="3" maxlength="60" placeholder="mora-coffee">
+                <span class="field__hint">Только латиница, цифры и дефисы.</span>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Описание</span>
+                <textarea class="field__textarea" name="description" rows="4" placeholder="Кратко расскажите о компании"></textarea>
+              </label>
+
+              <div class="modal__row">
+                <label class="field">
+                  <span class="field__label">Телефон</span>
+                  <input class="field__input" type="text" name="phone" placeholder="+7 ...">
+                </label>
+                <label class="field">
+                  <span class="field__label">Адрес</span>
+                  <input class="field__input" type="text" name="address" placeholder="Город, улица, дом">
+                </label>
+              </div>
+
+              <label class="field field--checkbox">
+                <input type="checkbox" name="public_booking_enabled" checked>
+                <span>Включить онлайн-запись</span>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Режим подтверждения</span>
+                <select class="field__select" name="booking_confirmation_mode">
+                  <option value="auto">Автоматически подтверждать</option>
+                  <option value="manual">Ожидать подтверждения</option>
+                </select>
+              </label>
+
+              <p class="alert alert--error" id="public-booking-form-error" role="alert" hidden></p>
+              <p class="alert alert--success" id="public-booking-form-success" role="status" hidden></p>
+
+              <div class="public-booking-form__actions">
+                <button class="btn btn--primary" type="submit" id="public-booking-form-submit">Сохранить</button>
+              </div>
+            </form>
+          </div>
+
+          <aside class="public-booking-layout__aside">
+            <div class="public-booking-link-card">
+              <h3 class="public-booking-link-card__title">Публичная ссылка</h3>
+              <p class="public-booking-link-card__url" id="public-booking-link">—</p>
+              <div class="public-booking-link-card__actions">
+                <button class="btn btn--outline btn--sm" type="button" id="public-booking-open-btn">Открыть страницу</button>
+                <button class="btn btn--ghost btn--sm" type="button" id="public-booking-copy-btn">Копировать ссылку</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Модалка: форма услуги -->
+  <div class="modal" id="service-modal" aria-hidden="true" role="dialog" aria-labelledby="service-modal-title">
+    <div class="modal__dialog">
+      <header class="modal__header">
+        <h2 class="modal__title" id="service-modal-title">Добавить услугу</h2>
+        <button class="modal__close" type="button" data-close-modal aria-label="Закрыть">×</button>
+      </header>
+
+      <form class="modal__form" id="service-form" novalidate>
+        <label class="field">
+          <span class="field__label">Название</span>
+          <input class="field__input" type="text" name="name" required minlength="2" placeholder="Например, Стрижка">
+        </label>
+
+        <label class="field">
+          <span class="field__label">Описание</span>
+          <textarea class="field__textarea" name="description" rows="3" placeholder="Краткое описание услуги"></textarea>
+        </label>
+
+        <div class="modal__row">
+          <label class="field">
+            <span class="field__label">Цена, ₸</span>
+            <input class="field__input" type="number" name="price" min="0" step="1" value="0" required>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Длительность, мин</span>
+            <input class="field__input" type="number" name="duration_minutes" min="5" max="1440" value="60" required>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">Категория</span>
+          <input class="field__input" type="text" name="category" placeholder="Например, Стрижки">
+        </label>
+
+        <label class="field field--checkbox">
+          <input type="checkbox" name="is_active" checked>
+          <span>Услуга активна</span>
+        </label>
+
+        <p class="alert alert--error" id="service-form-error" role="alert" hidden></p>
+
+        <div class="modal__footer">
+          <button class="btn btn--ghost" type="button" data-close-modal>Отмена</button>
+          <button class="btn btn--primary" type="submit" id="service-form-submit">Добавить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модалка: подтверждение удаления услуги -->
+  <div class="modal" id="delete-service-modal" aria-hidden="true" role="dialog">
+    <div class="modal__dialog modal__dialog--sm">
+      <header class="modal__header">
+        <h2 class="modal__title">Удалить услугу?</h2>
+        <button class="modal__close" type="button" data-close-modal aria-label="Закрыть">×</button>
+      </header>
+      <p class="modal__text">Услуга «<strong id="delete-service-name"></strong>» будет удалена безвозвратно.</p>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" type="button" data-close-modal>Отмена</button>
+        <button class="btn btn--primary modal__btn-danger" type="button" id="delete-service-confirm">Удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка: форма сотрудника -->
+  <div class="modal" id="staff-modal" aria-hidden="true" role="dialog" aria-labelledby="staff-modal-title">
+    <div class="modal__dialog modal__dialog--wide">
+      <header class="modal__header">
+        <h2 class="modal__title" id="staff-modal-title">Добавить сотрудника</h2>
+        <button class="modal__close" type="button" data-close-staff-modal aria-label="Закрыть">×</button>
+      </header>
+
+      <form class="modal__form" id="staff-form" novalidate>
+        <label class="field">
+          <span class="field__label">Имя</span>
+          <input class="field__input" type="text" name="name" required minlength="2" placeholder="Например, Айгуль">
+        </label>
+
+        <label class="field">
+          <span class="field__label">Должность</span>
+          <input class="field__input" type="text" name="position" placeholder="Например, Мастер маникюра">
+        </label>
+
+        <div class="modal__row">
+          <label class="field">
+            <span class="field__label">Телефон</span>
+            <input class="field__input" type="tel" name="phone" placeholder="+7 700 000 00 00">
+          </label>
+
+          <label class="field">
+            <span class="field__label">Email</span>
+            <input class="field__input" type="email" name="email" placeholder="email@example.com">
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">Описание</span>
+          <textarea class="field__textarea" name="description" rows="3" placeholder="Краткая информация о сотруднике"></textarea>
+        </label>
+
+        <div class="field">
+          <span class="field__label">Услуги</span>
+          <div class="staff-services-picker" id="staff-services-picker"></div>
+        </div>
+
+        <label class="field field--checkbox">
+          <input type="checkbox" name="is_active" checked>
+          <span>Сотрудник активен</span>
+        </label>
+
+        <p class="alert alert--error" id="staff-form-error" role="alert" hidden></p>
+
+        <div class="modal__footer">
+          <button class="btn btn--ghost" type="button" data-close-staff-modal>Отмена</button>
+          <button class="btn btn--primary" type="submit" id="staff-form-submit">Добавить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модалка: подтверждение удаления сотрудника -->
+  <div class="modal" id="delete-staff-modal" aria-hidden="true" role="dialog">
+    <div class="modal__dialog modal__dialog--sm">
+      <header class="modal__header">
+        <h2 class="modal__title">Удалить сотрудника?</h2>
+        <button class="modal__close" type="button" data-close-staff-modal aria-label="Закрыть">×</button>
+      </header>
+      <p class="modal__text">Сотрудник «<strong id="delete-staff-name"></strong>» будет удалён безвозвратно.</p>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" type="button" data-close-staff-modal>Отмена</button>
+        <button class="btn btn--primary modal__btn-danger" type="button" id="delete-staff-confirm">Удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка: рабочий график -->
+  <div class="modal" id="schedule-modal" aria-hidden="true" role="dialog" aria-labelledby="schedule-modal-title">
+    <div class="modal__dialog modal__dialog--wide">
+      <header class="modal__header">
+        <div>
+          <h2 class="modal__title" id="schedule-modal-title">Рабочий график</h2>
+          <p class="modal__subtitle" id="schedule-modal-subtitle"></p>
+        </div>
+        <button class="modal__close" type="button" data-close-schedule-modal aria-label="Закрыть">×</button>
+      </header>
+
+      <form class="modal__form" id="schedule-form" novalidate>
+        <div class="schedule-days" id="schedule-days"></div>
+
+        <p class="alert alert--error" id="schedule-form-error" role="alert" hidden></p>
+
+        <div class="modal__footer">
+          <button class="btn btn--ghost" type="button" data-close-schedule-modal>Отмена</button>
+          <button class="btn btn--primary" type="submit" id="schedule-form-submit">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модалка: форма записи -->
+  <div class="modal" id="booking-modal" aria-hidden="true" role="dialog" aria-labelledby="booking-modal-title">
+    <div class="modal__dialog modal__dialog--wide">
+      <header class="modal__header">
+        <h2 class="modal__title" id="booking-modal-title">Добавить запись</h2>
+        <button class="modal__close" type="button" data-close-booking-modal aria-label="Закрыть">×</button>
+      </header>
+
+      <form class="modal__form" id="booking-form" novalidate>
+        <label class="field">
+          <span class="field__label">Услуга</span>
+          <select class="field__select" name="service_id" required></select>
+        </label>
+
+        <div class="modal__row">
+          <label class="field">
+            <span class="field__label">Сотрудник</span>
+            <select class="field__select" name="staff_id" required disabled></select>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Дата</span>
+            <input class="field__input" type="date" name="booking_date" required>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">Время</span>
+          <select class="field__select" name="start_time" id="booking-start-time" required disabled>
+            <option value="">Выберите время</option>
+          </select>
+          <span class="field__hint" id="booking-slots-hint"></span>
+        </label>
+
+        <div class="modal__row">
+          <label class="field">
+            <span class="field__label">Имя клиента</span>
+            <input class="field__input" type="text" name="client_name" required minlength="2" placeholder="Иван Иванов">
+          </label>
+
+          <label class="field">
+            <span class="field__label">Телефон</span>
+            <input class="field__input" type="tel" name="client_phone" required minlength="5" placeholder="+7 700 000 00 00">
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">Email</span>
+          <input class="field__input" type="email" name="client_email" placeholder="email@example.com">
+        </label>
+
+        <label class="field">
+          <span class="field__label">Комментарий</span>
+          <textarea class="field__textarea" name="client_comment" rows="2" placeholder="Пожелания клиента"></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Статус</span>
+          <select class="field__select" name="status"></select>
+        </label>
+
+        <p class="alert alert--error" id="booking-form-error" role="alert" hidden></p>
+
+        <div class="modal__footer">
+          <button class="btn btn--ghost" type="button" data-close-booking-modal>Отмена</button>
+          <button class="btn btn--primary" type="submit" id="booking-form-submit">Добавить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модалка: отмена записи -->
+  <div class="modal" id="cancel-booking-modal" aria-hidden="true" role="dialog">
+    <div class="modal__dialog modal__dialog--sm">
+      <header class="modal__header">
+        <h2 class="modal__title">Отменить запись?</h2>
+        <button class="modal__close" type="button" data-close-booking-modal aria-label="Закрыть">×</button>
+      </header>
+      <p class="modal__text">Запись <strong id="cancel-booking-label"></strong> будет отменена.</p>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" type="button" data-close-booking-modal>Назад</button>
+        <button class="btn btn--primary" type="button" id="cancel-booking-confirm">Отменить запись</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка: удаление записи -->
+  <div class="modal" id="delete-booking-modal" aria-hidden="true" role="dialog">
+    <div class="modal__dialog modal__dialog--sm">
+      <header class="modal__header">
+        <h2 class="modal__title">Удалить запись?</h2>
+        <button class="modal__close" type="button" data-close-booking-modal aria-label="Закрыть">×</button>
+      </header>
+      <p class="modal__text">Запись <strong id="delete-booking-label"></strong> будет удалена безвозвратно.</p>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" type="button" data-close-booking-modal>Отмена</button>
+        <button class="btn btn--primary modal__btn-danger" type="button" id="delete-booking-confirm">Удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth/errors.js"></script>
+  <script src="/js/auth/ui.js"></script>
+  <script src="/js/auth/client.js"></script>
+  <script src="/js/org/constants.js"></script>
+  <script src="/js/org/client.js"></script>
+  <script src="/js/services/validation.js"></script>
+  <script src="/js/services/client.js"></script>
+  <script src="/js/services/ui.js"></script>
+  <script src="/js/staff/validation.js"></script>
+  <script src="/js/staff/client.js"></script>
+  <script src="/js/staff/ui.js"></script>
+  <script src="/js/schedules/constants.js"></script>
+  <script src="/js/schedules/validation.js"></script>
+  <script src="/js/schedules/client.js"></script>
+  <script src="/js/schedules/ui.js"></script>
+  <script src="/js/bookings/constants.js"></script>
+  <script src="/js/bookings/errors.js"></script>
+  <script src="/js/bookings/slots.js"></script>
+  <script src="/js/bookings/validation.js"></script>
+  <script src="/js/bookings/client.js"></script>
+  <script src="/js/bookings/ui.js"></script>
+  <script src="/js/public-settings/validation.js"></script>
+  <script src="/js/public-settings/ui.js"></script>
+  <script src="/js/app/shell.js"></script>
+  <script src="/js/pages/app.js"></script>
+</body>
+</html>

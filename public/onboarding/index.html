@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Создание компании — Bookly</title>
+  <meta name="description" content="Создайте компанию в Bookly и начните работу">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/onboarding.css">
+</head>
+<body>
+  <div class="onboarding-page onboarding-page--checking">
+    <header class="onboarding-header">
+      <a href="/" class="logo">
+        <span class="logo__mark">B</span>
+        Bookly
+      </a>
+    </header>
+
+    <main class="onboarding-page__main">
+      <div class="onboarding-card">
+        <header class="onboarding-card__header">
+          <div class="onboarding-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M3 21h18M5 21V7l7-4 7 4v14"/>
+              <path d="M9 21v-6h6v6"/>
+            </svg>
+          </div>
+          <h1 class="onboarding-card__title">Создайте компанию</h1>
+          <p class="onboarding-card__subtitle">
+            Укажите данные вашего бизнеса. Это рабочее пространство для бронирований и управления.
+          </p>
+        </header>
+
+        <form class="onboarding-form" id="onboarding-form" novalidate>
+          <label class="field">
+            <span class="field__label">Название компании</span>
+            <input
+              class="field__input"
+              type="text"
+              name="name"
+              required
+              autocomplete="organization"
+              placeholder="Например, Coffee Lab"
+              minlength="2"
+            >
+          </label>
+
+          <label class="field">
+            <span class="field__label">Тип бизнеса</span>
+            <select class="field__select" name="businessType" id="business-type" required></select>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Часовой пояс</span>
+            <select class="field__select" name="timezone" id="timezone" required></select>
+            <span class="field__hint">Используется для расписания и записей</span>
+          </label>
+
+          <p class="alert alert--error" id="onboarding-error" role="alert" hidden></p>
+
+          <button class="btn btn--primary btn--full btn--lg" type="submit" id="onboarding-submit">
+            Создать компанию
+          </button>
+        </form>
+
+        <footer class="onboarding-card__footer">
+          <p class="onboarding-card__hint">Один аккаунт — одна компания. Приглашение сотрудников появится позже.</p>
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth/errors.js"></script>
+  <script src="/js/auth/ui.js"></script>
+  <script src="/js/auth/client.js"></script>
+  <script src="/js/org/constants.js"></script>
+  <script src="/js/org/client.js"></script>
+  <script src="/js/pages/onboarding.js"></script>
+</body>
+</html>

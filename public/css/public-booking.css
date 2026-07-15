@@ -1,0 +1,355 @@
+@import url("./variables.css");
+
+.public-booking-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(94, 106, 210, 0.08), transparent 28%),
+    linear-gradient(180deg, #f8f9fc 0%, #f3f4f8 100%);
+  color: var(--color-text);
+}
+
+.pb-header {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 20px 0;
+}
+
+.pb-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
+}
+
+.pb-brand__mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 14px;
+}
+
+.pb-main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+.pb-loader,
+.pb-error-screen,
+.pb-success {
+  text-align: center;
+  padding: 48px 20px;
+}
+
+.pb-loader__spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 16px;
+  border: 3px solid rgba(94, 106, 210, 0.15);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: pb-spin 0.8s linear infinite;
+}
+
+@keyframes pb-spin {
+  to { transform: rotate(360deg); }
+}
+
+.pb-error-screen__title {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.pb-error-screen__text {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.pb-hero {
+  margin-bottom: 24px;
+}
+
+.pb-hero__eyebrow {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.pb-hero__title {
+  margin: 0 0 8px;
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+.pb-hero__description {
+  margin: 0 0 12px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.pb-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.pb-steps {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.pb-step {
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.pb-step.is-active {
+  border-color: rgba(94, 106, 210, 0.35);
+  color: var(--color-accent);
+  background: #fff;
+  font-weight: 600;
+}
+
+.pb-step.is-done {
+  color: var(--color-text);
+}
+
+.pb-panel {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  padding: 24px;
+}
+
+.pb-panel__title {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+
+.pb-panel__hint {
+  margin: 0 0 20px;
+  color: var(--color-text-muted);
+}
+
+.pb-cards {
+  display: grid;
+  gap: 12px;
+}
+
+.pb-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: #fff;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.pb-card:hover,
+.pb-card.is-selected {
+  border-color: rgba(94, 106, 210, 0.45);
+  box-shadow: 0 10px 24px rgba(94, 106, 210, 0.08);
+  transform: translateY(-1px);
+}
+
+.pb-card__title {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.pb-card__text {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.pb-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.pb-staff-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pb-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(94, 106, 210, 0.12);
+  color: var(--color-accent);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pb-date-input {
+  width: 100%;
+  max-width: 280px;
+}
+
+.pb-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.pb-slot {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.pb-slot:hover,
+.pb-slot.is-selected {
+  border-color: rgba(94, 106, 210, 0.45);
+  color: var(--color-accent);
+  background: rgba(94, 106, 210, 0.06);
+}
+
+.pb-empty {
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.03);
+  color: var(--color-text-muted);
+}
+
+.pb-form-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.pb-honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.pb-summary {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.pb-summary__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.pb-summary__label {
+  color: var(--color-text-muted);
+}
+
+.pb-panel__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.pb-alert {
+  margin-top: 16px;
+}
+
+.pb-success__icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.pb-success__title {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.pb-success__status {
+  margin: 0 0 20px;
+  color: var(--color-text-muted);
+}
+
+.pb-success__details {
+  margin: 0 auto 24px;
+  max-width: 420px;
+  text-align: left;
+  display: grid;
+  gap: 10px;
+}
+
+.pb-success__details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.pb-success__details dt {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.pb-success__details dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .pb-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pb-hero__title {
+    font-size: 26px;
+  }
+
+  .pb-panel__actions {
+    flex-direction: column-reverse;
+  }
+}

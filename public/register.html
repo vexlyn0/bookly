@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Регистрация — Bookly</title>
+  <meta name="description" content="Создайте аккаунт Bookly и начните принимать записи онлайн">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+  <div class="auth-page auth-page--checking">
+    <aside class="auth-page__panel" aria-hidden="true">
+      <div class="auth-page__panel-inner">
+        <a href="/" class="logo">
+          <span class="logo__mark">B</span>
+          Bookly
+        </a>
+
+        <blockquote class="auth-page__quote">
+          «Запустили онлайн-запись за один вечер. Никакого кода, никаких интеграций — просто работает.»
+          <cite class="auth-page__quote-author">— Администратор клиники</cite>
+        </blockquote>
+      </div>
+    </aside>
+
+    <main class="auth-page__main">
+      <div class="auth-card">
+        <header class="auth-card__header">
+          <a href="/" class="logo auth-card__logo">
+            <span class="logo__mark">B</span>
+            Bookly
+          </a>
+          <h1 class="auth-card__title">Создать аккаунт</h1>
+          <p class="auth-card__subtitle">Начните принимать записи онлайн — регистрация бесплатна</p>
+        </header>
+
+        <form class="auth-form" id="register-form" novalidate>
+          <div class="auth-form__row">
+            <label class="field">
+              <span class="field__label">Имя</span>
+              <input
+                class="field__input"
+                type="text"
+                name="firstName"
+                required
+                autocomplete="given-name"
+                placeholder="Иван"
+              >
+            </label>
+
+            <label class="field">
+              <span class="field__label">Фамилия</span>
+              <input
+                class="field__input"
+                type="text"
+                name="lastName"
+                autocomplete="family-name"
+                placeholder="Иванов"
+              >
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field__label">Email</span>
+            <input
+              class="field__input"
+              type="email"
+              name="email"
+              required
+              autocomplete="email"
+              placeholder="you@company.com"
+            >
+          </label>
+
+          <label class="field">
+            <span class="field__label">Пароль</span>
+            <input
+              class="field__input"
+              type="password"
+              name="password"
+              required
+              autocomplete="new-password"
+              placeholder="Минимум 8 символов"
+              minlength="8"
+            >
+            <span class="field__hint">Не менее 8 символов</span>
+          </label>
+
+          <p class="alert alert--error" id="register-error" role="alert" hidden></p>
+          <p class="alert alert--info" id="register-success" role="status" hidden></p>
+
+          <div class="auth-form__footer">
+            <button class="btn btn--primary btn--full" type="submit" id="register-submit">
+              Создать аккаунт
+            </button>
+          </div>
+        </form>
+
+        <p class="auth-card__switch">
+          Уже есть аккаунт? <a href="/login">Войти</a>
+        </p>
+
+        <a class="auth-card__back" href="/">← На главную</a>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth/errors.js"></script>
+  <script src="/js/auth/ui.js"></script>
+  <script src="/js/auth/client.js"></script>
+  <script src="/js/org/constants.js"></script>
+  <script src="/js/org/client.js"></script>
+  <script src="/js/pages/register.js"></script>
+</body>
+</html>

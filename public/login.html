@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход — Bookly</title>
+  <meta name="description" content="Войдите в панель управления Bookly">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+  <div class="auth-page auth-page--checking">
+    <aside class="auth-page__panel" aria-hidden="true">
+      <div class="auth-page__panel-inner">
+        <a href="/" class="logo">
+          <span class="logo__mark">B</span>
+          Bookly
+        </a>
+
+        <blockquote class="auth-page__quote">
+          «Bookly сократил время на обработку записей в три раза. Клиенты записываются сами — мы занимаемся работой.»
+          <cite class="auth-page__quote-author">— Владелец салона красоты</cite>
+        </blockquote>
+      </div>
+    </aside>
+
+    <main class="auth-page__main">
+      <div class="auth-card">
+        <header class="auth-card__header">
+          <a href="/" class="logo auth-card__logo">
+            <span class="logo__mark">B</span>
+            Bookly
+          </a>
+          <h1 class="auth-card__title">Вход в аккаунт</h1>
+          <p class="auth-card__subtitle">Введите email и пароль для доступа к панели управления</p>
+        </header>
+
+        <form class="auth-form" id="login-form" novalidate>
+          <label class="field">
+            <span class="field__label">Email</span>
+            <input
+              class="field__input"
+              type="email"
+              name="email"
+              required
+              autocomplete="email"
+              placeholder="you@company.com"
+            >
+          </label>
+
+          <label class="field">
+            <span class="field__label">Пароль</span>
+            <input
+              class="field__input"
+              type="password"
+              name="password"
+              required
+              autocomplete="current-password"
+              placeholder="••••••••"
+            >
+          </label>
+
+          <p class="alert alert--error" id="login-error" role="alert" hidden></p>
+
+          <div class="auth-form__footer">
+            <button class="btn btn--primary btn--full" type="submit" id="login-submit">
+              Войти
+            </button>
+          </div>
+        </form>
+
+        <p class="auth-card__switch">
+          Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+        </p>
+
+        <a class="auth-card__back" href="/">← На главную</a>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth/errors.js"></script>
+  <script src="/js/auth/ui.js"></script>
+  <script src="/js/auth/client.js"></script>
+  <script src="/js/org/constants.js"></script>
+  <script src="/js/org/client.js"></script>
+  <script src="/js/pages/login.js"></script>
+</body>
+</html>

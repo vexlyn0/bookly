@@ -1,0 +1,22 @@
+-- =============================================================================
+-- Bookly — схема базы данных
+-- Выполните миграции по порядку в Supabase Dashboard → SQL Editor:
+--   1. supabase/migrations/001_organizations.sql
+--   2. supabase/migrations/002_services.sql
+--   3. supabase/migrations/003_staff.sql
+--   4. supabase/migrations/004_work_schedules.sql
+--   5. supabase/migrations/005_bookings.sql
+--   6. supabase/migrations/006_booking_hardening.sql
+--   7. supabase/migrations/007_booking_status_fix.sql
+--   8. supabase/migrations/008_booking_reschedule_fix.sql
+--   9. supabase/migrations/009_public_booking.sql
+-- =============================================================================
+--
+-- Таблицы:
+--   organizations         — компании (workspaces)
+--   organization_members  — связь пользователей с компаниями
+--   services              — услуги компании
+--   staff                 — сотрудники компании
+--   staff_services        — привязка сотрудников к услугам
+--   staff_schedules       — недельный рабочий график сотрудника
+--   bookings              — записи клиентов

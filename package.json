@@ -1,0 +1,48 @@
+{
+  "name": "bookly",
+  "version": "0.1.0",
+  "description": "Bookly — SaaS-платформа онлайн-бронирования для бизнеса",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "db:services": "node scripts/setup-services.js",
+    "db:staff": "node scripts/setup-staff.js",
+    "db:schedules": "node scripts/setup-schedules.js",
+    "db:bookings": "node scripts/setup-bookings.js",
+    "db:booking-hardening": "node scripts/setup-booking-hardening.js",
+    "db:booking-status-fix": "node scripts/setup-booking-status-fix.js",
+    "db:booking-reschedule-fix": "node scripts/setup-booking-reschedule-fix.js",
+    "db:public-booking": "node scripts/setup-public-booking.js",
+    "test:services": "node scripts/test-services-api.js",
+    "test:staff": "node scripts/test-staff-api.js",
+    "test:schedules": "node scripts/test-schedules-api.js",
+    "test:bookings": "node scripts/test-bookings-api.js",
+    "test:booking-hardening": "node scripts/test-booking-hardening.js",
+    "test:booking-status-fix": "node scripts/test-booking-status-fix.js",
+    "test:booking-reschedule-fix": "node scripts/test-booking-reschedule-fix.js",
+    "test:public-booking": "node scripts/test-public-booking.js",
+    "test:public-booking-unit": "node scripts/test-public-booking-service-unit.js",
+    "validate:migration-009": "node scripts/validate-migration-009.js"
+  },
+  "keywords": [
+    "saas",
+    "booking",
+    "express",
+    "supabase"
+  ],
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.1",
+    "pg": "^8.22.0",
+    "supertest": "^7.2.2"
+  }
+}

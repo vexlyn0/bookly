@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Онлайн-запись — Bookly</title>
+  <meta name="description" content="Онлайн-запись в Bookly">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/public-booking.css">
+</head>
+<body class="public-booking-page">
+  <header class="pb-header">
+    <a href="/" class="pb-brand">
+      <span class="pb-brand__mark">B</span>
+      <span class="pb-brand__text">Bookly</span>
+    </a>
+  </header>
+
+  <main class="pb-main" id="pb-app">
+    <div class="pb-loader" id="pb-loader" aria-live="polite">
+      <div class="pb-loader__spinner" aria-hidden="true"></div>
+      <p>Загрузка…</p>
+    </div>
+
+    <div class="pb-error-screen" id="pb-error-screen" hidden>
+      <h1 class="pb-error-screen__title" id="pb-error-title">Страница недоступна</h1>
+      <p class="pb-error-screen__text" id="pb-error-text"></p>
+    </div>
+
+    <div class="pb-flow" id="pb-flow" hidden>
+      <section class="pb-hero" id="pb-hero">
+        <p class="pb-hero__eyebrow">Онлайн-запись</p>
+        <h1 class="pb-hero__title" id="pb-org-name">—</h1>
+        <p class="pb-hero__description" id="pb-org-description"></p>
+        <div class="pb-hero__meta" id="pb-org-meta"></div>
+      </section>
+
+      <nav class="pb-steps" id="pb-steps" aria-label="Шаги записи"></nav>
+
+      <section class="pb-panel" id="pb-panel" aria-live="polite"></section>
+    </div>
+
+    <section class="pb-success" id="pb-success" hidden>
+      <div class="pb-success__icon" aria-hidden="true">✓</div>
+      <h2 class="pb-success__title">Запись создана</h2>
+      <p class="pb-success__status" id="pb-success-status"></p>
+      <dl class="pb-success__details" id="pb-success-details"></dl>
+      <button class="btn btn--primary" type="button" id="pb-success-restart">Создать ещё одну запись</button>
+    </section>
+  </main>
+
+  <script src="/js/public-booking/errors.js"></script>
+  <script src="/js/public-booking/api.js"></script>
+  <script src="/js/public-booking/state.js"></script>
+  <script src="/js/public-booking/ui.js"></script>
+  <script src="/js/public-booking/app.js"></script>
+</body>
+</html>
