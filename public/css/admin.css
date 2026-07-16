@@ -1428,3 +1428,101 @@
   border-radius: var(--radius-md);
   cursor: pointer;
 }
+
+/* ========== Kaspi manual billing ========== */
+
+.kaspi-payment {
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.kaspi-payment__title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-lg);
+}
+
+.kaspi-payment__subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.kaspi-payment__details {
+  margin: var(--space-4) 0;
+}
+
+.kaspi-payment__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.kaspi-payment__row dt {
+  color: var(--color-text-secondary);
+}
+
+.kaspi-payment__row dd {
+  margin: 0;
+  text-align: right;
+}
+
+.kaspi-payment__instructions {
+  margin: var(--space-3) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.kaspi-payment__message {
+  margin: var(--space-2) 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.kaspi-payment__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.kaspi-form-wrap {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.kaspi-form__actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.kaspi-request-status {
+  margin: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.kaspi-request-status--pending {
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.kaspi-request-status--approved {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.kaspi-request-status--rejected {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}

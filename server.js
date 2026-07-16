@@ -12,6 +12,7 @@ const server = app.listen(config.port, "0.0.0.0", () => {
   console.log(`Register:   http://localhost:${config.port}/register`);
   console.log(`Onboarding: http://localhost:${config.port}/onboarding`);
   console.log(`Dashboard:  http://localhost:${config.port}/app`);
+  console.log(`Admin:      http://localhost:${config.port}/admin`);
   console.log(`Booking:    http://localhost:${config.port}/book/:slug`);
   console.log(`Supabase:   ${config.supabase.isConfigured ? "configured" : "not configured"}`);
   if (config.supabase.isConfigured) {

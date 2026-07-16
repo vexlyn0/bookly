@@ -351,10 +351,78 @@
           <p class="subscription-card__cancel-note" id="subscription-cancel-note" hidden>
             Автопродление отключено. Доступ сохранится до конца оплаченного периода.
           </p>
+        </div>
 
-          <div class="subscription-card__actions">
-            <button class="btn btn--primary" type="button" id="subscription-upgrade-btn">Оформить подписку</button>
-            <p class="subscription-card__upgrade-message" id="subscription-upgrade-message" hidden></p>
+        <div class="kaspi-payment" id="kaspi-payment-block">
+          <header class="kaspi-payment__head">
+            <h3 class="kaspi-payment__title">Оплата через Kaspi</h3>
+            <p class="kaspi-payment__subtitle">Переведите точную сумму и отправьте заявку на проверку.</p>
+          </header>
+
+          <dl class="kaspi-payment__details">
+            <div class="kaspi-payment__row">
+              <dt>Получатель</dt>
+              <dd id="kaspi-recipient">—</dd>
+            </div>
+            <div class="kaspi-payment__row">
+              <dt>Номер телефона</dt>
+              <dd>
+                <span id="kaspi-phone">—</span>
+                <button class="btn btn--ghost btn--sm" type="button" id="kaspi-copy-phone">Копировать</button>
+              </dd>
+            </div>
+            <div class="kaspi-payment__row">
+              <dt>Сумма к переводу</dt>
+              <dd id="kaspi-amount">—</dd>
+            </div>
+          </dl>
+
+          <p class="kaspi-payment__instructions" id="kaspi-instructions"></p>
+          <p class="kaspi-payment__message" id="kaspi-message" hidden></p>
+          <div class="kaspi-request-status" id="kaspi-request-status" hidden></div>
+
+          <div class="kaspi-payment__actions">
+            <button class="btn btn--primary" type="button" id="kaspi-paid-btn">Я оплатил</button>
+            <button class="btn btn--outline" type="button" id="kaspi-cancel-request" hidden>Отменить заявку</button>
+          </div>
+
+          <div class="kaspi-form-wrap" id="kaspi-form-wrap" hidden>
+            <form class="kaspi-form" id="kaspi-payment-form" novalidate>
+              <label class="field">
+                <span class="field__label">Имя отправителя</span>
+                <input class="field__input" type="text" name="payer_name" required minlength="2" maxlength="100">
+              </label>
+              <label class="field">
+                <span class="field__label">Телефон отправителя</span>
+                <input class="field__input" type="tel" name="payer_phone" maxlength="30">
+              </label>
+              <label class="field">
+                <span class="field__label">Дата и время перевода</span>
+                <input class="field__input" type="datetime-local" name="payment_date">
+              </label>
+              <label class="field">
+                <span class="field__label">Номер или комментарий платежа</span>
+                <input class="field__input" type="text" name="payment_reference" maxlength="150">
+              </label>
+              <label class="field">
+                <span class="field__label">Комментарий</span>
+                <textarea class="field__input" name="customer_note" rows="3" maxlength="500"></textarea>
+              </label>
+              <label class="field">
+                <span class="field__label">Количество месяцев</span>
+                <select class="field__select" name="billing_months" id="billing-months">
+                  <option value="1" selected>1 месяц</option>
+                  <option value="2">2 месяца</option>
+                  <option value="3">3 месяца</option>
+                  <option value="6">6 месяцев</option>
+                  <option value="12">12 месяцев</option>
+                </select>
+              </label>
+              <div class="kaspi-form__actions">
+                <button class="btn btn--primary" type="submit" id="kaspi-submit-form">Отправить на проверку</button>
+                <button class="btn btn--ghost" type="button" id="kaspi-cancel-form">Отмена</button>
+              </div>
+            </form>
           </div>
         </div>
       </section>
@@ -650,6 +718,7 @@
   <script src="/js/public-settings/validation.js"></script>
   <script src="/js/public-settings/ui.js"></script>
   <script src="/js/subscription/client.js"></script>
+  <script src="/js/billing/client.js"></script>
   <script src="/js/subscription/ui.js"></script>
   <script src="/js/app/shell.js"></script>
   <script src="/js/pages/app.js"></script>

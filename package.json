@@ -25,6 +25,11 @@
     "test:public-booking": "node scripts/test-public-booking.js",
     "test:public-booking-unit": "node scripts/test-public-booking-service-unit.js",
     "test:subscriptions": "node scripts/test-subscriptions.js",
+    "db:manual-billing": "node scripts/setup-manual-billing.js",
+    "validate:migration-011": "node scripts/validate-migration-011.js",
+    "test:manual-billing": "node scripts/test-manual-billing.js",
+    "test:platform-admin": "node scripts/test-platform-admin.js",
+    "admin:grant": "node scripts/grant-platform-admin.js",
     "validate:migration-009": "node scripts/validate-migration-009.js",
     "validate:migration-010": "node scripts/validate-migration-010.js"
   },

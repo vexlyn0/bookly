@@ -33,6 +33,10 @@ app.get(["/app", "/app/"], (req, res) => {
   res.sendFile(path.join(config.publicDir, "app", "index.html"));
 });
 
+app.get(["/admin", "/admin/"], (req, res) => {
+  res.sendFile(path.join(config.publicDir, "admin", "index.html"));
+});
+
 app.get("/book/:slug", (req, res) => {
   res.sendFile(path.join(config.publicDir, "book", "index.html"));
 });

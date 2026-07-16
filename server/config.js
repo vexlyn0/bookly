@@ -59,6 +59,14 @@ const config = {
     anonKey: supabaseAnonKey,
     serviceRoleKey: supabaseServiceRoleKey,
   },
+  kaspi: {
+    recipient: String(process.env.KASPI_PAYMENT_RECIPIENT || "").trim(),
+    phone: String(process.env.KASPI_PAYMENT_PHONE || "").trim(),
+    instructions: String(
+      process.env.KASPI_PAYMENT_INSTRUCTIONS ||
+        "Переведите точную сумму и укажите название компании в комментарии к переводу."
+    ).trim(),
+  },
 };
 
 config.supabase.isConfigured = Boolean(config.supabase.url && config.supabase.anonKey);

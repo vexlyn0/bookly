@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ-панель — Bookly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/platform-admin.css">
+</head>
+<body class="platform-admin is-loading">
+  <div class="platform-admin__loader" id="admin-loader">
+    <div class="auth-loader__spinner" aria-hidden="true"></div>
+    <p>Проверка доступа…</p>
+  </div>
+
+  <div class="platform-admin__denied" id="admin-denied" hidden>
+    <h1>Нет доступа</h1>
+    <p>Эта панель доступна только администраторам платформы Bookly.</p>
+    <a class="btn btn--outline" href="/app">Вернуться в панель</a>
+  </div>
+
+  <div class="platform-admin__layout" id="admin-app" hidden>
+    <aside class="platform-admin__sidebar">
+      <div class="platform-admin__brand">Bookly Admin</div>
+      <nav class="platform-admin__nav" aria-label="Разделы админки">
+        <button type="button" class="is-active" data-view="overview">Главная</button>
+        <button type="button" data-view="organizations">Организации</button>
+        <button type="button" data-view="payments">Платежи</button>
+      </nav>
+      <p class="platform-admin__user" id="admin-user-email"></p>
+      <button class="btn btn--ghost btn--sm" type="button" id="admin-logout">Выйти</button>
+    </aside>
+
+    <main class="platform-admin__main">
+      <header class="platform-admin__header">
+        <h1 id="admin-page-title">Главная</h1>
+        <a class="btn btn--outline btn--sm" href="/app">Кабинет</a>
+      </header>
+      <div id="admin-content"></div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth/errors.js"></script>
+  <script src="/js/auth/client.js"></script>
+  <script src="/js/platform-admin/api.js"></script>
+  <script src="/js/platform-admin/ui.js"></script>
+  <script src="/js/platform-admin/app.js"></script>
+</body>
+</html>
