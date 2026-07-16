@@ -158,23 +158,25 @@ async function runtimeValidate(client) {
 
   const { rows: fkRows } = await client.query(`
     select
-      conrelid::regclass::text as table_name,
+      n.nspname || '.' || cl.relname as table_name,
       a.attname as column_name,
-      confdeltype
+      c.confdeltype
     from pg_constraint c
+    join pg_class cl on cl.oid = c.conrelid
+    join pg_namespace n on n.oid = cl.relnamespace
     join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any (c.conkey)
     where c.contype = 'f'
       and (
         (
-          conrelid::regclass::text = 'public.manual_payment_requests'
+          c.conrelid = 'public.manual_payment_requests'::regclass
           and a.attname in ('requested_by_user_id', 'reviewed_by_user_id')
         )
         or (
-          conrelid::regclass::text = 'public.platform_admin_audit_log'
+          c.conrelid = 'public.platform_admin_audit_log'::regclass
           and a.attname = 'admin_user_id'
         )
         or (
-          conrelid::regclass::text = 'public.organization_subscriptions'
+          c.conrelid = 'public.organization_subscriptions'::regclass
           and a.attname = 'suspended_by_user_id'
         )
       )
@@ -232,7 +234,7 @@ async function runtimeValidate(client) {
     where n.nspname = 'public' and p.proname = 'billing_create_manual_payment_request'
     limit 1
   `);
-  if (!fnSrc.length || !fnSrc[0].src.includes("role = 'owner'")) {
+  if (!fnSrc.length || !fnSrc[0].src.includes("_require_owner_organization_id")) {
     fail("billing_create_manual_payment_request должен требовать owner role");
   }
   if (!fnSrc[0].src.toLowerCase().includes("get stacked diagnostics")) {

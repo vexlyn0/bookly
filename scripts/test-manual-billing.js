@@ -69,6 +69,23 @@ function daysBetween(a, b) {
   return (new Date(a).getTime() - new Date(b).getTime()) / (1000 * 60 * 60 * 24);
 }
 
+async function assertNoError(result, label) {
+  if (result?.error) fail(`Не удалось ${label}: ${result.error.message}`);
+  return result;
+}
+
+async function readSubscription(admin, organizationId, columns, label) {
+  const { data, error } = await admin
+    .from("organization_subscriptions")
+    .select(columns)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if (error || !data) {
+    fail(`Не удалось прочитать подписку ${label}: ${error?.message || "нет строки"}`);
+  }
+  return data;
+}
+
 async function main() {
   if (!url || !anonKey || !serviceKey || !email || !password) {
     fail("Задайте SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, TEST_EMAIL, TEST_PASSWORD");
@@ -191,7 +208,10 @@ async function main() {
     }
     ok("6. нельзя создать две pending-заявки");
 
-    await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId);
+    await assertNoError(
+      await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId),
+      "очистить заявки перед race"
+    );
     const [raceA, raceB] = await Promise.all([
       request(app)
         .post("/api/billing/payment-requests")
@@ -208,11 +228,12 @@ async function main() {
     }
     const raceCreated = raceA.status === 201 ? raceA.body.request : raceB.body.request;
     cleanup.requestIds.push(raceCreated.id);
-    const { data: racePending } = await admin
+    const { data: racePending, error: racePendingError } = await admin
       .from("manual_payment_requests")
       .select("id")
       .eq("organization_id", testOrgId)
       .eq("status", "pending");
+    if (racePendingError) fail(`Не удалось прочитать pending после race: ${racePendingError.message}`);
     if ((racePending || []).length !== 1) fail("parallel race: должна остаться одна pending");
     ok("4-5. parallel POST → одна pending, второй 409");
 
@@ -232,13 +253,15 @@ async function main() {
     } else if (recreatePending.status === 201) {
       cleanup.requestIds.push(recreatePending.body.request.id);
     }
-    const { data: pendingNow } = await admin
+    const { data: pendingNow, error: pendingNowError } = await admin
       .from("manual_payment_requests")
       .select("id")
       .eq("organization_id", testOrgId)
       .eq("status", "pending")
       .maybeSingle();
-    if (!pendingNow?.id) fail("Нет pending заявки для дальнейших тестов");
+    if (pendingNowError || !pendingNow?.id) {
+      fail(`Нет pending заявки для дальнейших тестов: ${pendingNowError?.message || "нет строки"}`);
+    }
     let created = { id: pendingNow.id, amount: 6990 };
     ok("3. owner может создавать заявку");
     ok("5. amount определяется сервером (6990)");
@@ -252,7 +275,10 @@ async function main() {
     ok("7. owner видит только свои заявки");
 
     // Grant ephemeral user as platform admin temporarily for approve tests
-    await admin.from("platform_admins").upsert({ user_id: ephemeral.id, role: "admin" });
+    await assertNoError(
+      await admin.from("platform_admins").upsert({ user_id: ephemeral.id, role: "admin" }),
+      "выдать platform admin"
+    );
 
     const adminList = await request(app)
       .get("/api/admin/payment-requests")
@@ -260,7 +286,10 @@ async function main() {
     if (adminList.status !== 200) fail("admin list failed");
     ok("2/8. platform admin входит и видит заявки");
 
-    await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId);
+    await assertNoError(
+      await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId),
+      "очистить заявки перед mismatch"
+    );
 
     const mismatchReq = await request(app)
       .post("/api/billing/payment-requests")
@@ -268,10 +297,13 @@ async function main() {
       .send({ payer_name: "Mismatch", billing_months: 1 });
     if (mismatchReq.status !== 201) fail("mismatch setup failed");
     cleanup.requestIds.push(mismatchReq.body.request.id);
-    await admin
-      .from("manual_payment_requests")
-      .update({ amount: 1 })
-      .eq("id", mismatchReq.body.request.id);
+    await assertNoError(
+      await admin
+        .from("manual_payment_requests")
+        .update({ amount: 1 })
+        .eq("id", mismatchReq.body.request.id),
+      "подменить amount заявки"
+    );
     const mismatchApprove = await request(app)
       .post(`/api/admin/payment-requests/${mismatchReq.body.request.id}/approve`)
       .set("Authorization", `Bearer ${ephemeralToken}`)
@@ -282,11 +314,17 @@ async function main() {
     ok("6. изменённая сумма даёт PAYMENT_AMOUNT_MISMATCH");
 
     const trialEnds = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
-    await admin
-      .from("organization_subscriptions")
-      .update({ status: "trialing", trial_ends_at: trialEnds, current_period_end: null })
-      .eq("organization_id", testOrgId);
-    await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId);
+    await assertNoError(
+      await admin
+        .from("organization_subscriptions")
+        .update({ status: "trialing", trial_ends_at: trialEnds, current_period_end: null })
+        .eq("organization_id", testOrgId),
+      "подготовить trialing"
+    );
+    await assertNoError(
+      await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId),
+      "очистить заявки перед trial pay"
+    );
     const trialReq = await request(app)
       .post("/api/billing/payment-requests")
       .set("Authorization", `Bearer ${ephemeralToken}`)
@@ -298,11 +336,12 @@ async function main() {
       .set("Authorization", `Bearer ${ephemeralToken}`)
       .send({});
     if (trialApprove.status !== 200) fail("trial approve failed");
-    const { data: trialSub } = await admin
-      .from("organization_subscriptions")
-      .select("current_period_start, current_period_end")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const trialSub = await readSubscription(
+      admin,
+      testOrgId,
+      "current_period_start, current_period_end",
+      "после trial approve"
+    );
     const expectedTrialEnd = new Date(trialEnds).getTime() + 30 * 24 * 60 * 60 * 1000;
     const actualEnd = new Date(trialSub.current_period_end).getTime();
     if (Math.abs(actualEnd - expectedTrialEnd) > 5000) {
@@ -312,18 +351,24 @@ async function main() {
 
     // suspended + status_before_suspension=trialing: оплата/extend не сжигают trial
     const suspendedTrialEnds = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
-    await admin
-      .from("organization_subscriptions")
-      .update({
-        status: "suspended",
-        status_before_suspension: "trialing",
-        trial_ends_at: suspendedTrialEnds,
-        current_period_end: null,
-        suspended_at: new Date().toISOString(),
-        suspension_reason: "test suspended trialing",
-      })
-      .eq("organization_id", testOrgId);
-    await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId);
+    await assertNoError(
+      await admin
+        .from("organization_subscriptions")
+        .update({
+          status: "suspended",
+          status_before_suspension: "trialing",
+          trial_ends_at: suspendedTrialEnds,
+          current_period_end: null,
+          suspended_at: new Date().toISOString(),
+          suspension_reason: "test suspended trialing",
+        })
+        .eq("organization_id", testOrgId),
+      "подготовить suspended+trialing"
+    );
+    await assertNoError(
+      await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId),
+      "очистить заявки перед suspended-trialing"
+    );
     const suspendedTrialReq = await request(app)
       .post("/api/billing/payment-requests")
       .set("Authorization", `Bearer ${ephemeralToken}`)
@@ -335,11 +380,12 @@ async function main() {
       .set("Authorization", `Bearer ${ephemeralToken}`)
       .send({});
     if (suspendedTrialApprove.status !== 200) fail("suspended-trialing approve failed");
-    const { data: suspendedTrialSub } = await admin
-      .from("organization_subscriptions")
-      .select("status, current_period_start, current_period_end")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const suspendedTrialSub = await readSubscription(
+      admin,
+      testOrgId,
+      "status, current_period_start, current_period_end",
+      "после suspended-trialing approve"
+    );
     if (suspendedTrialSub.status !== "suspended") {
       fail("approve suspended-trialing не должен разблокировать");
     }
@@ -367,11 +413,12 @@ async function main() {
     if (suspendedTrialExtend.body.subscription?.status !== "suspended") {
       fail("extend suspended-trialing не должен разблокировать");
     }
-    const { data: afterSuspendedTrialExtend } = await admin
-      .from("organization_subscriptions")
-      .select("current_period_start, current_period_end, status")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const afterSuspendedTrialExtend = await readSubscription(
+      admin,
+      testOrgId,
+      "current_period_start, current_period_end, status",
+      "после suspended-trialing extend"
+    );
     const extendStartDiff = Math.abs(
       new Date(afterSuspendedTrialExtend.current_period_start).getTime() -
         new Date(beforeSuspendedTrialExtend).getTime()
@@ -389,13 +436,17 @@ async function main() {
     }
     ok("10c. extend ставит current_period_start = v_base");
 
-    await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId);
-    const { data: pendingNow2 } = await admin
+    await assertNoError(
+      await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId),
+      "очистить заявки перед expired flow"
+    );
+    const { data: pendingNow2, error: pendingNow2Error } = await admin
       .from("manual_payment_requests")
       .select("id")
       .eq("organization_id", testOrgId)
       .eq("status", "pending")
       .maybeSingle();
+    if (pendingNow2Error) fail(`Не удалось проверить pending: ${pendingNow2Error.message}`);
     if (!pendingNow2?.id) {
       const freshPending = await request(app)
         .post("/api/billing/payment-requests")
@@ -408,16 +459,21 @@ async function main() {
       created = { id: pendingNow2.id };
     }
 
-    const beforeApprove = await admin
-      .from("organization_subscriptions")
-      .select("status, current_period_end")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
-
-    await admin
-      .from("organization_subscriptions")
-      .update({ status: "expired", current_period_end: null })
-      .eq("organization_id", testOrgId);
+    await assertNoError(
+      await admin
+        .from("organization_subscriptions")
+        .update({
+          status: "expired",
+          current_period_start: null,
+          current_period_end: null,
+          status_before_suspension: null,
+          suspended_at: null,
+          suspended_by_user_id: null,
+          suspension_reason: null,
+        })
+        .eq("organization_id", testOrgId),
+      "подготовить expired"
+    );
 
     const approveRes = await request(app)
       .post(`/api/admin/payment-requests/${created.id}/approve`)
@@ -425,11 +481,12 @@ async function main() {
       .send({ admin_note: "Тест подтверждения" });
     if (approveRes.status !== 200) fail(`approve: ${approveRes.status} ${approveRes.body?.message}`);
 
-    const afterApprove = await admin
-      .from("organization_subscriptions")
-      .select("status, current_period_start, current_period_end, payment_provider, last_payment_status")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const afterApprove = await readSubscription(
+      admin,
+      testOrgId,
+      "status, current_period_start, current_period_end, payment_provider, last_payment_status",
+      "после approve"
+    );
 
     if (afterApprove.status !== "active") fail("после approve status должен быть active");
     if (afterApprove.payment_provider !== "manual_kaspi") fail("payment_provider должен быть manual_kaspi");
@@ -449,17 +506,21 @@ async function main() {
     if (secondApprove.status !== 409) fail("повторный approve должен вернуть 409");
     ok("13. повторный approve не продлевает второй раз");
 
-    const afterSecond = await admin
-      .from("organization_subscriptions")
-      .select("current_period_end")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const afterSecond = await readSubscription(
+      admin,
+      testOrgId,
+      "current_period_end",
+      "после повторного approve"
+    );
     if (String(afterSecond.current_period_end) !== String(periodEndBeforeSecond)) {
       fail("повторный approve изменил current_period_end");
     }
 
     // active extension from current_period_end
-    await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId);
+    await assertNoError(
+      await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId),
+      "очистить заявки перед active extend"
+    );
     const activeReqRes = await request(app)
       .post("/api/billing/payment-requests")
       .set("Authorization", `Bearer ${ephemeralToken}`)
@@ -468,11 +529,12 @@ async function main() {
     const activeReqId = activeReqRes.body.request.id;
     cleanup.requestIds.push(activeReqId);
 
-    const beforeActiveExtend = await admin
-      .from("organization_subscriptions")
-      .select("current_period_end")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const beforeActiveExtend = await readSubscription(
+      admin,
+      testOrgId,
+      "current_period_end",
+      "перед active extend"
+    );
 
     const approveActive = await request(app)
       .post(`/api/admin/payment-requests/${activeReqId}/approve`)
@@ -480,11 +542,12 @@ async function main() {
       .send({});
     if (approveActive.status !== 200) fail("approve active extend failed");
 
-    const afterActiveExtend = await admin
-      .from("organization_subscriptions")
-      .select("current_period_start, current_period_end")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const afterActiveExtend = await readSubscription(
+      admin,
+      testOrgId,
+      "current_period_start, current_period_end",
+      "после active extend"
+    );
 
     const startDiff = Math.abs(
       new Date(afterActiveExtend.current_period_start).getTime() -
@@ -494,18 +557,23 @@ async function main() {
     ok("11. active подписка продлевается от current_period_end");
 
     // reject flow
-    await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId);
+    await assertNoError(
+      await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId),
+      "очистить заявки перед reject"
+    );
     const rejectReqRes = await request(app)
       .post("/api/billing/payment-requests")
       .set("Authorization", `Bearer ${ephemeralToken}`)
       .send({ payer_name: "На отклонение", billing_months: 1 });
+    if (rejectReqRes.status !== 201) fail("reject request create failed");
     const rejectReqId = rejectReqRes.body.request.id;
     cleanup.requestIds.push(rejectReqId);
-    const subBeforeReject = await admin
-      .from("organization_subscriptions")
-      .select("status, current_period_end")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const subBeforeReject = await readSubscription(
+      admin,
+      testOrgId,
+      "status, current_period_end",
+      "перед reject"
+    );
 
     const rejectRes = await request(app)
       .post(`/api/admin/payment-requests/${rejectReqId}/reject`)
@@ -513,11 +581,12 @@ async function main() {
       .send({ admin_note: "Тестовый отказ" });
     if (rejectRes.status !== 200) fail("reject failed");
 
-    const subAfterReject = await admin
-      .from("organization_subscriptions")
-      .select("status, current_period_end")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const subAfterReject = await readSubscription(
+      admin,
+      testOrgId,
+      "status, current_period_end",
+      "после reject"
+    );
     if (
       subAfterReject.status !== subBeforeReject.status ||
       String(subAfterReject.current_period_end) !== String(subBeforeReject.current_period_end)
@@ -533,10 +602,11 @@ async function main() {
     if (ownerRejectAttempt.status !== 403) fail("не-admin не должен reject");
     ok("15. не-admin не может approve/reject");
 
-    const { data: auditRows } = await admin
+    const { data: auditRows, error: auditRowsError } = await admin
       .from("platform_admin_audit_log")
       .select("action")
       .eq("organization_id", testOrgId);
+    if (auditRowsError) fail(`Не удалось прочитать audit: ${auditRowsError.message}`);
     const actions = new Set((auditRows || []).map((r) => r.action));
     if (!actions.has("PAYMENT_APPROVED") || !actions.has("SUBSCRIPTION_EXTENDED") || !actions.has("PAYMENT_REJECTED")) {
       fail("audit log неполный");
@@ -559,33 +629,39 @@ async function main() {
       fail("suspend failed");
     }
 
-    const { data: suspendedSub } = await admin
-      .from("organization_subscriptions")
-      .select("status")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const suspendedSub = await readSubscription(admin, testOrgId, "status", "после suspend");
     if (suspendedSub.status !== "suspended") fail("suspend не установил статус");
 
     // Try insert service while suspended via admin direct update trigger path - use RPC access
-    const { data: suspendedAccess } = await admin.rpc("get_subscription_access_internal", {
-      p_organization_id: testOrgId,
-    });
+    const { data: suspendedAccess, error: suspendedAccessError } = await admin.rpc(
+      "get_subscription_access_internal",
+      {
+        p_organization_id: testOrgId,
+      }
+    );
+    if (suspendedAccessError) {
+      fail(`Не удалось проверить доступ suspended: ${suspendedAccessError.message}`);
+    }
     const accessRow = Array.isArray(suspendedAccess) ? suspendedAccess[0] : suspendedAccess;
     if (accessRow?.allowed) fail("suspend должен блокировать доступ");
     ok("18. suspend блокирует бизнес-операции");
 
-    await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId);
+    await assertNoError(
+      await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId),
+      "очистить заявки перед suspended approve"
+    );
     const suspendedPending = await request(app)
       .post("/api/billing/payment-requests")
       .set("Authorization", `Bearer ${ephemeralToken}`)
       .send({ payer_name: "Suspended Pay", billing_months: 1 });
     if (suspendedPending.status !== 201) fail("suspended pending failed");
     cleanup.requestIds.push(suspendedPending.body.request.id);
-    const periodBeforeSuspendedApprove = await admin
-      .from("organization_subscriptions")
-      .select("current_period_end, suspended_at, suspension_reason")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const periodBeforeSuspendedApprove = await readSubscription(
+      admin,
+      testOrgId,
+      "current_period_end, suspended_at, suspension_reason",
+      "перед suspended approve"
+    );
 
     const suspendedApprove = await request(app)
       .post(`/api/admin/payment-requests/${suspendedPending.body.request.id}/approve`)
@@ -593,16 +669,20 @@ async function main() {
       .send({});
     if (suspendedApprove.status !== 200) fail("suspended approve failed");
 
-    const { data: afterSuspendedApprove } = await admin
-      .from("organization_subscriptions")
-      .select("status, status_before_suspension, current_period_end, suspended_at, suspension_reason")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const afterSuspendedApprove = await readSubscription(
+      admin,
+      testOrgId,
+      "status, status_before_suspension, current_period_end, suspended_at, suspension_reason",
+      "после suspended approve"
+    );
     if (afterSuspendedApprove.status !== "suspended") fail("approve suspended не должен разблокировать");
     if (afterSuspendedApprove.status_before_suspension !== "active") {
       fail("status_before_suspension должен быть active после оплаты");
     }
-    if (new Date(afterSuspendedApprove.current_period_end) <= new Date(periodBeforeSuspendedApprove.current_period_end)) {
+    if (
+      new Date(afterSuspendedApprove.current_period_end) <=
+      new Date(periodBeforeSuspendedApprove.current_period_end)
+    ) {
       fail("approve suspended должен продлить период");
     }
     ok("7. approve suspended не разблокирует, но продлевает период");
@@ -622,11 +702,7 @@ async function main() {
       .set("Authorization", `Bearer ${ephemeralToken}`)
       .send({});
     if (unsuspendRes.status !== 200) fail("unsuspend failed");
-    const { data: afterUnsuspend } = await admin
-      .from("organization_subscriptions")
-      .select("status")
-      .eq("organization_id", testOrgId)
-      .maybeSingle();
+    const afterUnsuspend = await readSubscription(admin, testOrgId, "status", "после unsuspend");
     if (afterUnsuspend.status !== "active") fail("unsuspend после оплаты должен восстановить active");
     ok("9. unsuspend после оплаты восстанавливает active");
     ok("19. unsuspend восстанавливает корректный статус");
@@ -655,7 +731,10 @@ async function main() {
     ok("3. owner может создать заявку для своей организации (flow OK)");
 
     // 21. amount по billing_months
-    await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId);
+    await assertNoError(
+      await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId),
+      "очистить заявки перед multi-month"
+    );
     const multiMonthRes = await request(app)
       .post("/api/billing/payment-requests")
       .set("Authorization", `Bearer ${ephemeralToken}`)
@@ -701,7 +780,10 @@ async function main() {
     }
     ok("billing_months: 0/abc/1.5/13 → VALIDATION_ERROR");
 
-    await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId);
+    await assertNoError(
+      await admin.from("manual_payment_requests").delete().eq("organization_id", testOrgId),
+      "очистить заявки перед default months"
+    );
     const defaultMonths = await request(app)
       .post("/api/billing/payment-requests")
       .set("Authorization", `Bearer ${ephemeralToken}`)
@@ -736,7 +818,10 @@ async function main() {
     }
     const sampleAuditId = auditBeforeDelete[0].id;
 
-    await admin.from("platform_admins").delete().eq("user_id", ephemeral.id);
+    await assertNoError(
+      await admin.from("platform_admins").delete().eq("user_id", ephemeral.id),
+      "удалить platform admin перед deleteUser"
+    );
     const { error: deleteUserError } = await admin.auth.admin.deleteUser(ephemeral.id);
     if (deleteUserError) fail(`deleteUser failed: ${deleteUserError.message}`);
 
