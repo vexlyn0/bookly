@@ -1411,6 +1411,10 @@
   font-size: 14px;
 }
 
+.subscription-banner[hidden] {
+  display: none !important;
+}
+
 .subscription-banner--suspended {
   color: #b91c1c;
   background: #fef2f2;

@@ -16,9 +16,13 @@
   </div>
 
   <div class="platform-admin__denied" id="admin-denied" hidden>
-    <h1>Нет доступа</h1>
-    <p>Эта панель доступна только администраторам платформы Bookly.</p>
-    <a class="btn btn--outline" href="/app">Вернуться в панель</a>
+    <h1 id="admin-denied-title">Нет доступа</h1>
+    <p id="admin-denied-message">Эта панель доступна только администраторам платформы Bookly.</p>
+    <div class="platform-admin__denied-actions">
+      <a class="btn btn--primary" id="admin-denied-login" href="/login" hidden>Войти</a>
+      <button class="btn btn--primary" type="button" id="admin-denied-retry" hidden>Повторить</button>
+      <a class="btn btn--outline" href="/app">Вернуться в панель</a>
+    </div>
   </div>
 
   <div class="platform-admin__layout" id="admin-app" hidden>

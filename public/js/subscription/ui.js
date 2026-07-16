@@ -3,8 +3,11 @@
  */
 window.BooklySubscriptionUI = (() => {
   let organization = null;
+  /** Единое состояние доступа (источник истины: subscription access API). */
   let access = null;
   let billingInfo = null;
+  let refreshPromise = null;
+  let focusBound = false;
   const els = {};
 
   function cacheElements() {
@@ -23,6 +26,7 @@ window.BooklySubscriptionUI = (() => {
     els.banner = document.getElementById("subscription-banner");
     els.bannerText = document.getElementById("subscription-banner-text");
     els.bannerLink = document.getElementById("subscription-banner-link");
+    els.planBadge = document.getElementById("plan-badge");
 
     els.kaspiBlock = document.getElementById("kaspi-payment-block");
     els.kaspiRecipient = document.getElementById("kaspi-recipient");
@@ -56,31 +60,107 @@ window.BooklySubscriptionUI = (() => {
     els.kaspiCancelRequest?.addEventListener("click", handleCancelRequest);
     els.billingMonths?.addEventListener("change", updateKaspiAmount);
 
-    await refresh();
+    if (!focusBound) {
+      focusBound = true;
+      window.addEventListener("focus", () => {
+        refreshBillingAndSubscription().catch(() => {});
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          refreshBillingAndSubscription().catch(() => {});
+        }
+      });
+    }
+
+    return refreshBillingAndSubscription();
+  }
+
+  /**
+   * Единая точка обновления billing + subscription.
+   * Источник истины статуса — getAccess / payment-info.subscription (access API).
+   * latest_request.approved сам по себе статус подписки не задаёт.
+   */
+  async function refreshBillingAndSubscription() {
+    if (!organization) return null;
+    if (refreshPromise) return refreshPromise;
+
+    refreshPromise = (async () => {
+      let nextBilling = null;
+      let nextAccess = null;
+
+      try {
+        nextBilling = await BooklyBilling.getPaymentInfo();
+      } catch (error) {
+        BooklyAuthErrors.logError("billing:load", error);
+        nextBilling = null;
+      }
+
+      try {
+        nextAccess = await BooklySubscription.getAccess(organization.id);
+      } catch (error) {
+        BooklyAuthErrors.logError("subscription:load", error);
+        nextAccess = null;
+      }
+
+      // payment-info.subscription тоже из access API — используем как запасной/свежий снимок
+      if (nextBilling?.subscription) {
+        const fromBilling = BooklySubscription.sanitizeAccess(nextBilling.subscription);
+        if (!nextAccess) {
+          nextAccess = fromBilling;
+        } else if (
+          fromBilling.status === "active" &&
+          fromBilling.allowed &&
+          !(nextAccess.status === "active" && nextAccess.allowed)
+        ) {
+          nextAccess = fromBilling;
+        }
+      }
+
+      const latest = nextBilling?.latest_request;
+      const looksStaleAfterApprove =
+        latest?.status === "approved" &&
+        (!nextAccess ||
+          nextAccess.allowed !== true ||
+          nextAccess.status === "expired" ||
+          nextAccess.status === "trialing");
+
+      if (looksStaleAfterApprove) {
+        try {
+          const retryAccess = await BooklySubscription.getAccess(organization.id);
+          if (retryAccess) nextAccess = retryAccess;
+          const retryBilling = await BooklyBilling.getPaymentInfo();
+          if (retryBilling) {
+            nextBilling = retryBilling;
+            if (retryBilling.subscription) {
+              const fromRetry = BooklySubscription.sanitizeAccess(retryBilling.subscription);
+              if (fromRetry.allowed && fromRetry.status === "active") {
+                nextAccess = fromRetry;
+              }
+            }
+          }
+        } catch (error) {
+          BooklyAuthErrors.logError("subscription:refresh-after-approve", error);
+        }
+      }
+
+      billingInfo = nextBilling;
+      access = nextAccess;
+
+      renderPanel();
+      renderKaspi();
+      renderBanner();
+      return access;
+    })();
+
+    try {
+      return await refreshPromise;
+    } finally {
+      refreshPromise = null;
+    }
   }
 
   async function refresh() {
-    if (!organization) return null;
-
-    try {
-      access = await BooklySubscription.getAccess(organization.id);
-    } catch (error) {
-      BooklyAuthErrors.logError("subscription:load", error);
-      access = null;
-    }
-
-    try {
-      billingInfo = await BooklyBilling.getPaymentInfo();
-      access = billingInfo.subscription || access;
-    } catch (error) {
-      BooklyAuthErrors.logError("billing:load", error);
-      billingInfo = null;
-    }
-
-    renderPanel();
-    renderKaspi();
-    renderBanner();
-    return access;
+    return refreshBillingAndSubscription();
   }
 
   function renderPanel() {
@@ -92,6 +172,14 @@ window.BooklySubscriptionUI = (() => {
       const amount = plan?.price_amount ?? 6990;
       const currency = plan?.currency || "KZT";
       els.planPrice.textContent = `${BooklySubscription.formatPrice(amount, currency)} / месяц`;
+    }
+
+    if (els.planBadge && access?.status === "active" && access.allowed) {
+      els.planBadge.textContent = plan?.name || "Pro";
+      els.planBadge.className = "badge badge--success";
+    } else if (els.planBadge && access?.status === "trialing" && access.allowed) {
+      els.planBadge.textContent = "Пробный";
+      els.planBadge.className = "badge badge--muted";
     }
 
     if (!access) {
@@ -106,14 +194,21 @@ window.BooklySubscriptionUI = (() => {
 
     if (els.explain) els.explain.textContent = BooklySubscription.explain(access);
 
-    toggleRow(els.trialRow, els.trialValue, access.status === "trialing", access.trial_ends_at);
+    // Не опираться только на trial_ends_at: при active показываем оплаченный период
+    const showTrial =
+      access.status === "trialing" && Boolean(access.trial_ends_at);
+    const showPeriod =
+      (access.status === "active" || access.status === "canceled") &&
+      Boolean(access.current_period_end);
+
+    toggleRow(els.trialRow, els.trialValue, showTrial, access.trial_ends_at);
+    toggleRow(els.periodRow, els.periodValue, showPeriod, access.current_period_end);
     toggleRow(
-      els.periodRow,
-      els.periodValue,
-      access.status === "active" || access.status === "canceled",
-      access.current_period_end
+      els.graceRow,
+      els.graceValue,
+      access.status === "past_due",
+      access.grace_period_ends_at
     );
-    toggleRow(els.graceRow, els.graceValue, access.status === "past_due", access.grace_period_ends_at);
 
     if (els.cancelNote) {
       els.cancelNote.hidden = access.status !== "canceled";
@@ -169,7 +264,9 @@ window.BooklySubscriptionUI = (() => {
       return `<strong>Ожидает проверки</strong><br>Отправлено: ${sentAt}`;
     }
     if (request.status === "approved") {
-      const until = BooklySubscription.formatDate(request.approved_period_end);
+      const until = BooklySubscription.formatDate(
+        access?.current_period_end || request.approved_period_end
+      );
       return `<strong>Оплата подтверждена</strong><br>Доступ до: ${until}`;
     }
     if (request.status === "rejected") {
@@ -242,7 +339,7 @@ window.BooklySubscriptionUI = (() => {
         billing_months: Number(formData.get("billing_months") || 1),
       });
       toggleForm(false);
-      await refresh();
+      await refreshBillingAndSubscription();
     } catch (error) {
       if (els.kaspiMessage) {
         els.kaspiMessage.hidden = false;
@@ -257,7 +354,7 @@ window.BooklySubscriptionUI = (() => {
 
     try {
       await BooklyBilling.cancelPaymentRequest(latest.id);
-      await refresh();
+      await refreshBillingAndSubscription();
     } catch (error) {
       if (els.kaspiMessage) {
         els.kaspiMessage.hidden = false;
@@ -274,26 +371,61 @@ window.BooklySubscriptionUI = (() => {
     }
   }
 
+  /**
+   * Приоритет баннера:
+   * suspended → active+allowed (скрыть) → trialing+allowed (скрыть) →
+   * past_due → expired / subscription required.
+   * Нельзя показывать expired только из-за прошедшего trial_ends_at при status=active.
+   */
   function renderBanner() {
-    document.querySelectorAll(".subscription-banner").forEach((el) => {
-      el.hidden = true;
-    });
-
     if (!els.banner) return;
 
-    if (!access || access.allowed) {
+    const hideBanner = () => {
       els.banner.hidden = true;
+      els.banner.classList.remove("subscription-banner--suspended");
+    };
+
+    if (!access) {
+      hideBanner();
+      return;
+    }
+
+    if (access.status === "suspended" || access.reason === "ORGANIZATION_SUSPENDED") {
+      els.banner.hidden = false;
+      els.banner.classList.add("subscription-banner--suspended");
+      if (els.bannerText) {
+        els.bannerText.textContent =
+          "Организация приостановлена. Обратитесь в поддержку.";
+      }
+      return;
+    }
+
+    if (access.status === "active" && access.allowed) {
+      hideBanner();
+      return;
+    }
+
+    if (access.status === "trialing" && access.allowed) {
+      hideBanner();
+      return;
+    }
+
+    if (access.allowed === true) {
+      hideBanner();
       return;
     }
 
     els.banner.hidden = false;
-    els.banner.classList.toggle("subscription-banner--suspended", access.reason === "ORGANIZATION_SUSPENDED");
+    els.banner.classList.remove("subscription-banner--suspended");
 
     if (els.bannerText) {
-      els.bannerText.textContent =
-        access.reason === "ORGANIZATION_SUSPENDED"
-          ? "Организация приостановлена. Обратитесь в поддержку."
-          : "Подписка закончилась. Продлите доступ, чтобы продолжить работу.";
+      if (access.status === "past_due") {
+        els.bannerText.textContent =
+          "Не удалось продлить подписку. Оплатите доступ, чтобы продолжить работу.";
+      } else {
+        els.bannerText.textContent =
+          "Подписка закончилась. Продлите доступ, чтобы продолжить работу.";
+      }
     }
   }
 
@@ -301,5 +433,10 @@ window.BooklySubscriptionUI = (() => {
     return Boolean(access && access.allowed !== true);
   }
 
-  return { init, refresh, isBlocked };
+  return {
+    init,
+    refresh,
+    refreshBillingAndSubscription,
+    isBlocked,
+  };
 })();

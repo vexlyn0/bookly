@@ -4,45 +4,95 @@
 (async function initPlatformAdmin() {
   const loader = document.getElementById("admin-loader");
   const denied = document.getElementById("admin-denied");
+  const deniedTitle = document.getElementById("admin-denied-title");
+  const deniedMessage = document.getElementById("admin-denied-message");
+  const deniedLogin = document.getElementById("admin-denied-login");
+  const deniedRetry = document.getElementById("admin-denied-retry");
   const app = document.getElementById("admin-app");
   const content = document.getElementById("admin-content");
   const pageTitle = document.getElementById("admin-page-title");
   const userEmail = document.getElementById("admin-user-email");
 
   let currentView = "overview";
+  let bootDone = false;
 
-  function showDenied() {
-    loader.hidden = true;
-    denied.hidden = false;
-    app.hidden = true;
+  function hideLoader() {
+    if (loader) loader.hidden = true;
     document.body.classList.remove("is-loading");
+  }
+
+  function showGate({ title, message, showLogin = false, showRetry = false }) {
+    hideLoader();
+    if (app) app.hidden = true;
+    if (denied) denied.hidden = false;
+    if (deniedTitle) deniedTitle.textContent = title;
+    if (deniedMessage) deniedMessage.textContent = message;
+    if (deniedLogin) {
+      deniedLogin.hidden = !showLogin;
+      deniedLogin.href = booklyPath("/login") + `?next=${encodeURIComponent(booklyPath("/admin"))}`;
+    }
+    if (deniedRetry) deniedRetry.hidden = !showRetry;
   }
 
   function showApp() {
-    loader.hidden = true;
-    denied.hidden = true;
-    app.hidden = false;
-    document.body.classList.remove("is-loading");
+    hideLoader();
+    if (denied) denied.hidden = true;
+    if (app) app.hidden = false;
   }
 
-  async function ensureAuth() {
-    const user = await BooklyAuth.getUser();
-    if (!user) {
-      window.location.replace(booklyPath("/login"));
-      return null;
-    }
-    if (userEmail) userEmail.textContent = user.email || "";
-    return user;
-  }
+  function handleAdminMeError(error) {
+    const status = error?.status;
+    const code = error?.code;
 
-  async function ensureAdmin() {
-    try {
-      const payload = await BooklyPlatformAdminApi.me();
-      return payload.admin;
-    } catch (error) {
-      if (error.status === 403 || error.status === 401) return null;
-      throw error;
+    if (status === 401) {
+      showGate({
+        title: "Сессия истекла",
+        message: "Сессия истекла, войдите снова.",
+        showLogin: true,
+      });
+      return;
     }
+
+    if (status === 403) {
+      showGate({
+        title: "Нет доступа",
+        message: "Нет доступа к админ-панели.",
+      });
+      return;
+    }
+
+    if (status === 500) {
+      showGate({
+        title: "Ошибка проверки доступа",
+        message: "Ошибка проверки доступа. Попробуйте позже.",
+        showRetry: true,
+      });
+      return;
+    }
+
+    if (code === "TIMEOUT") {
+      showGate({
+        title: "Сервер не отвечает",
+        message: "Превышено время ожидания. Проверьте соединение и повторите.",
+        showRetry: true,
+      });
+      return;
+    }
+
+    if (code === "NETWORK_ERROR" || status === 0) {
+      showGate({
+        title: "Ошибка сети",
+        message: error?.message || "Не удалось связаться с сервером.",
+        showRetry: true,
+      });
+      return;
+    }
+
+    showGate({
+      title: "Ошибка проверки доступа",
+      message: error?.message || "Не удалось проверить доступ.",
+      showRetry: true,
+    });
   }
 
   async function loadOverview() {
@@ -230,24 +280,110 @@
   });
 
   document.getElementById("admin-logout")?.addEventListener("click", async () => {
-    await BooklyAuth.signOut();
+    await BooklyAuth.signOut({ redirect: false });
     window.location.replace(booklyPath("/login"));
   });
 
-  try {
-    const user = await ensureAuth();
-    if (!user) return;
+  deniedRetry?.addEventListener("click", () => {
+    window.location.reload();
+  });
 
-    const admin = await ensureAdmin();
-    if (!admin) {
-      showDenied();
+  async function boot() {
+    if (!window.supabase?.createClient) {
+      showGate({
+        title: "Ошибка загрузки",
+        message: "Supabase SDK не загружен. Обновите страницу.",
+        showRetry: true,
+      });
+      return;
+    }
+
+    if (!window.BooklyAuth) {
+      showGate({
+        title: "Ошибка загрузки",
+        message: "Модуль авторизации не загружен.",
+        showRetry: true,
+      });
+      return;
+    }
+
+    let session = null;
+    try {
+      session = await BooklyAuth.waitForSession({ timeoutMs: 10000 });
+    } catch (error) {
+      console.error("[platform-admin] получение session", error?.message || "unknown");
+      showGate({
+        title: "Ошибка проверки доступа",
+        message: "Не удалось получить сессию.",
+        showRetry: true,
+        showLogin: true,
+      });
+      return;
+    }
+
+    if (!session) {
+      showGate({
+        title: "Войдите в аккаунт",
+        message: "Чтобы открыть админ-панель, войдите в аккаунт Bookly.",
+        showLogin: true,
+      });
+      return;
+    }
+
+    if (userEmail) userEmail.textContent = session.user?.email || "";
+
+    let adminPayload = null;
+    try {
+      adminPayload = await BooklyPlatformAdminApi.me(session.access_token);
+    } catch (error) {
+      console.error("[platform-admin] запрос /api/admin/me", error?.code || error?.status || "unknown");
+      handleAdminMeError(error);
+      return;
+    }
+
+    if (!adminPayload?.admin) {
+      showGate({
+        title: "Нет доступа",
+        message: "Нет доступа к админ-панели.",
+      });
       return;
     }
 
     showApp();
-    await loadOverview();
-  } catch (error) {
-    console.error(error);
-    showDenied();
+
+    try {
+      await loadOverview();
+    } catch (error) {
+      console.error("[platform-admin] загрузка overview", error?.code || error?.status || "unknown");
+      content.innerHTML = `<div class="platform-admin__empty">${BooklyPlatformAdminUI.escapeHtml(
+        error?.message || "Не удалось загрузить обзор"
+      )}</div>`;
+    }
   }
+
+  try {
+    await boot();
+  } catch (error) {
+    console.error("[platform-admin] init", error?.message || "unknown");
+    showGate({
+      title: "Ошибка проверки доступа",
+      message: error?.message || "Не удалось открыть админ-панель.",
+      showRetry: true,
+    });
+  } finally {
+    bootDone = true;
+    hideLoader();
+  }
+
+  // safety: если что-то пошло не так до finally
+  setTimeout(() => {
+    if (!bootDone) hideLoader();
+    if (loader && !loader.hidden && app?.hidden && denied?.hidden) {
+      showGate({
+        title: "Ошибка проверки доступа",
+        message: "Проверка доступа заняла слишком много времени.",
+        showRetry: true,
+      });
+    }
+  }, 15000);
 })();

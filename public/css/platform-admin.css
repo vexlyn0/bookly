@@ -18,6 +18,19 @@
   text-align: center;
 }
 
+.platform-admin__loader[hidden],
+.platform-admin__denied[hidden],
+.platform-admin__layout[hidden] {
+  display: none !important;
+}
+
+.platform-admin__denied-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
 .platform-admin__denied h1 {
   margin: 0;
 }

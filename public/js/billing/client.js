@@ -15,7 +15,10 @@ window.BooklyBilling = (() => {
 
   async function request(path, options = {}) {
     const headers = await authHeaders();
-    const response = await fetch(booklyApiUrl(path), {
+    const separator = path.includes("?") ? "&" : "?";
+    const url = `${booklyApiUrl(path)}${separator}_t=${Date.now()}`;
+    const response = await fetch(url, {
+      cache: "no-store",
       ...options,
       headers: { ...headers, ...(options.headers || {}) },
     });

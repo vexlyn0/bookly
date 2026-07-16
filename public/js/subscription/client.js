@@ -35,6 +35,38 @@ window.BooklySubscription = (() => {
     suspended: "Приостановлена",
   };
 
+  function sanitizeAccess(row) {
+    const access =
+      row || {
+        allowed: false,
+        status: null,
+        reason: "SUBSCRIPTION_NOT_FOUND",
+        plan_code: null,
+        trial_ends_at: null,
+        current_period_end: null,
+        grace_period_ends_at: null,
+        days_remaining: null,
+      };
+
+    for (const field of FORBIDDEN_ACCESS_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(access, field)) {
+        delete access[field];
+      }
+    }
+
+    return {
+      allowed: access.allowed === true,
+      status: access.status || null,
+      reason: access.reason || null,
+      plan_code: access.plan_code || null,
+      trial_ends_at: access.trial_ends_at || null,
+      current_period_end: access.current_period_end || null,
+      grace_period_ends_at: access.grace_period_ends_at || null,
+      days_remaining:
+        access.days_remaining == null ? null : Number(access.days_remaining),
+    };
+  }
+
   /**
    * Получить состояние доступа по подписке своей организации.
    * Только через RPC — прямой SELECT organization_subscriptions запрещён
@@ -54,26 +86,7 @@ window.BooklySubscription = (() => {
     }
 
     const row = Array.isArray(data) ? data[0] : data;
-
-    const access =
-      row || {
-        allowed: false,
-        status: null,
-        reason: "SUBSCRIPTION_NOT_FOUND",
-        plan_code: null,
-        trial_ends_at: null,
-        current_period_end: null,
-        grace_period_ends_at: null,
-        days_remaining: null,
-      };
-
-    for (const field of FORBIDDEN_ACCESS_FIELDS) {
-      if (Object.prototype.hasOwnProperty.call(access, field)) {
-        delete access[field];
-      }
-    }
-
-    return access;
+    return sanitizeAccess(row);
   }
 
   /**
@@ -159,6 +172,7 @@ window.BooklySubscription = (() => {
 
   return {
     getAccess,
+    sanitizeAccess,
     mapDbError,
     statusLabel,
     formatDate,

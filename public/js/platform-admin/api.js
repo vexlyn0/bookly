@@ -2,35 +2,75 @@
  * API глобальной админ-панели Bookly
  */
 window.BooklyPlatformAdminApi = (() => {
-  async function authHeaders() {
+  const DEFAULT_TIMEOUT_MS = 10000;
+
+  async function getAccessToken() {
     const supabase = await BooklyAuth.getClient();
-    const { data } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error("[platform-admin] получение session", error.message || "unknown");
+      throw Object.assign(new Error("Не удалось получить сессию"), {
+        code: "SESSION_ERROR",
+        status: 401,
+      });
+    }
     const token = data?.session?.access_token;
-    if (!token) throw new Error("Требуется авторизация");
-    return {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    };
+    if (!token) {
+      throw Object.assign(new Error("Требуется авторизация"), {
+        code: "UNAUTHORIZED",
+        status: 401,
+      });
+    }
+    return token;
   }
 
   async function request(path, options = {}) {
-    const headers = await authHeaders();
-    const response = await fetch(booklyApiUrl(path), {
-      ...options,
-      headers: { ...headers, ...(options.headers || {}) },
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) {
-      const error = new Error(payload.message || "Ошибка запроса");
-      error.code = payload.code;
-      error.status = response.status;
-      throw error;
+    const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const token = options.accessToken || (await getAccessToken());
+      const { accessToken: _accessToken, timeoutMs: _timeoutMs, ...fetchOptions } = options;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        ...(fetchOptions.headers || {}),
+      };
+
+      const response = await fetch(booklyApiUrl(path), {
+        ...fetchOptions,
+        headers,
+        signal: controller.signal,
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        const error = new Error(payload.message || "Ошибка запроса");
+        error.code = payload.code || "REQUEST_FAILED";
+        error.status = response.status;
+        throw error;
+      }
+      return payload;
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        const timeoutError = new Error("Превышено время ожидания ответа сервера");
+        timeoutError.code = "TIMEOUT";
+        timeoutError.status = 0;
+        throw timeoutError;
+      }
+      if (error?.status || error?.code) throw error;
+      const networkError = new Error(error?.message || "Ошибка сети");
+      networkError.code = "NETWORK_ERROR";
+      networkError.status = 0;
+      throw networkError;
+    } finally {
+      clearTimeout(timer);
     }
-    return payload;
   }
 
   return {
-    me: () => request("/api/admin/me"),
+    me: (accessToken) => request("/api/admin/me", accessToken ? { accessToken } : {}),
     overview: () => request("/api/admin/overview"),
     organizations: (params = {}) => {
       const query = new URLSearchParams(params).toString();
