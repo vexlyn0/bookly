@@ -207,7 +207,7 @@ window.BooklyScheduleUI = (() => {
       close();
     } catch (error) {
       BooklyAuthErrors.logError("schedule:save", error);
-      showError(error.message || "Не удалось сохранить график.");
+      showError(BooklySubscription.mapDbError(error) || error.message || "Не удалось сохранить график.");
     } finally {
       BooklyAuthUI.setButtonLoading(els.submit, false, "Сохранение…", "Сохранить");
     }

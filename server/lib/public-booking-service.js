@@ -14,6 +14,7 @@ const {
   MAX_BOOKING_DAYS_AHEAD,
 } = require("./slots");
 const { validatePublicBookingPayload, validationError } = require("./public-booking-validation");
+const { requireOrganizationSubscriptionAccess } = require("./subscription-service");
 
 const PUBLIC_ORG_FIELDS = `
   id,
@@ -141,6 +142,11 @@ async function requirePublicOrganization(slug) {
   if (!organization) {
     throw appError("Организация не найдена", "ORGANIZATION_NOT_FOUND", 404);
   }
+
+  // Платформенный гейт (подписка) проверяется раньше настройки public_booking_enabled:
+  // без активной подписки онлайн-запись недоступна независимо от бизнес-настроек.
+  await requireOrganizationSubscriptionAccess(organization.id);
+
   if (organization.public_booking_enabled !== true) {
     throw appError("Онлайн-запись временно недоступна", "PUBLIC_BOOKING_DISABLED", 403);
   }

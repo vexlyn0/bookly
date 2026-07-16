@@ -1311,3 +1311,120 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ========== Тариф и оплата ========== */
+
+.subscription-card {
+  max-width: 560px;
+  padding: var(--space-6);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.subscription-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.subscription-card__plan {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.subscription-card__price {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.subscription-card__explain {
+  margin: 0 0 var(--space-5);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.subscription-card__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+}
+
+.subscription-card__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.subscription-card__row dt {
+  color: var(--color-text-muted);
+}
+
+.subscription-card__row dd {
+  margin: 0;
+  font-weight: var(--weight-medium);
+}
+
+.subscription-card__cancel-note {
+  margin: 0 0 var(--space-4);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.subscription-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.subscription-card__upgrade-message {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.badge--success {
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.badge--danger {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.subscription-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  color: #92400e;
+  background: #fffbeb;
+  border-bottom: 1px solid #fde68a;
+  font-size: 14px;
+}
+
+.subscription-banner--suspended {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-bottom-color: #fecaca;
+}
+
+.subscription-banner__link {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: inherit;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}

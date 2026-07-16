@@ -16,6 +16,9 @@ window.BooklyBookingsErrors = (() => {
     BOOKING_RESCHEDULE_SERVICE_INACTIVE: "Нельзя перенести запись: услуга неактивна.",
     BOOKING_RESCHEDULE_STAFF_INACTIVE: "Нельзя перенести запись: сотрудник неактивен.",
     BOOKING_INVALID_DURATION: "Некорректная длительность услуги.",
+    SUBSCRIPTION_REQUIRED:
+      "Подписка закончилась. Продлите доступ в разделе «Тариф и оплата», чтобы продолжить работу.",
+    ORGANIZATION_SUSPENDED: "Организация приостановлена. Обратитесь в поддержку.",
   };
 
   const EXCLUDE_PATTERNS = [

@@ -14,6 +14,7 @@
     "db:booking-status-fix": "node scripts/setup-booking-status-fix.js",
     "db:booking-reschedule-fix": "node scripts/setup-booking-reschedule-fix.js",
     "db:public-booking": "node scripts/setup-public-booking.js",
+    "db:subscriptions": "node scripts/setup-subscriptions.js",
     "test:services": "node scripts/test-services-api.js",
     "test:staff": "node scripts/test-staff-api.js",
     "test:schedules": "node scripts/test-schedules-api.js",
@@ -23,7 +24,9 @@
     "test:booking-reschedule-fix": "node scripts/test-booking-reschedule-fix.js",
     "test:public-booking": "node scripts/test-public-booking.js",
     "test:public-booking-unit": "node scripts/test-public-booking-service-unit.js",
-    "validate:migration-009": "node scripts/validate-migration-009.js"
+    "test:subscriptions": "node scripts/test-subscriptions.js",
+    "validate:migration-009": "node scripts/validate-migration-009.js",
+    "validate:migration-010": "node scripts/validate-migration-010.js"
   },
   "keywords": [
     "saas",

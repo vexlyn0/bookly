@@ -221,7 +221,7 @@ window.BooklyStaffUI = (() => {
     } catch (error) {
       event.currentTarget.checked = !nextValue;
       BooklyAuthErrors.logError("staff:toggle", error);
-      alert(error.message || "Не удалось изменить статус сотрудника.");
+      alert(BooklySubscription.mapDbError(error) || error.message || "Не удалось изменить статус сотрудника.");
     } finally {
       event.currentTarget.disabled = false;
     }
@@ -355,7 +355,7 @@ window.BooklyStaffUI = (() => {
       closeModals();
     } catch (error) {
       BooklyAuthErrors.logError("staff:save", error);
-      showFormError(error.message || "Не удалось сохранить сотрудника.");
+      showFormError(BooklySubscription.mapDbError(error) || error.message || "Не удалось сохранить сотрудника.");
     } finally {
       BooklyAuthUI.setButtonLoading(els.formSubmit, false, "Сохранение…", editingId ? "Сохранить" : "Добавить");
     }
@@ -374,7 +374,7 @@ window.BooklyStaffUI = (() => {
       closeModals();
     } catch (error) {
       BooklyAuthErrors.logError("staff:delete", error);
-      alert(error.message || "Не удалось удалить сотрудника.");
+      alert(BooklySubscription.mapDbError(error) || error.message || "Не удалось удалить сотрудника.");
     } finally {
       BooklyAuthUI.setButtonLoading(els.deleteConfirm, false, "Удаление…", "Удалить");
     }

@@ -186,7 +186,7 @@ window.BooklyServicesUI = (() => {
     } catch (error) {
       event.currentTarget.checked = !nextValue;
       BooklyAuthErrors.logError("services:toggle", error);
-      alert(error.message || "Не удалось изменить статус услуги.");
+      alert(BooklySubscription.mapDbError(error) || error.message || "Не удалось изменить статус услуги.");
     } finally {
       event.currentTarget.disabled = false;
     }
@@ -281,7 +281,7 @@ window.BooklyServicesUI = (() => {
       closeModals();
     } catch (error) {
       BooklyAuthErrors.logError("services:save", error);
-      showFormError(error.message || "Не удалось сохранить услугу.");
+      showFormError(BooklySubscription.mapDbError(error) || error.message || "Не удалось сохранить услугу.");
     } finally {
       BooklyAuthUI.setButtonLoading(els.formSubmit, false, "Сохранение…", editingId ? "Сохранить" : "Добавить");
     }
@@ -300,7 +300,7 @@ window.BooklyServicesUI = (() => {
       closeModals();
     } catch (error) {
       BooklyAuthErrors.logError("services:delete", error);
-      alert(error.message || "Не удалось удалить услугу.");
+      alert(BooklySubscription.mapDbError(error) || error.message || "Не удалось удалить услугу.");
     } finally {
       BooklyAuthUI.setButtonLoading(els.deleteConfirm, false, "Удаление…", "Удалить");
     }

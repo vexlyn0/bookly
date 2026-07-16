@@ -85,10 +85,9 @@
 
       <div class="sidebar__section">
         <p class="sidebar__section-title">Аккаунт</p>
-        <button class="sidebar__link" type="button" data-section="subscription" disabled>
+        <button class="sidebar__link" type="button" data-section="subscription">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          Подписка
-          <span class="sidebar__badge">скоро</span>
+          Тариф и оплата
         </button>
         <button class="sidebar__link" type="button" data-section="settings" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -126,6 +125,11 @@
         <span class="badge badge--muted" id="plan-badge">Starter</span>
       </div>
     </header>
+
+    <div class="subscription-banner" id="subscription-banner" role="alert" hidden>
+      <span class="subscription-banner__text" id="subscription-banner-text">Подписка закончилась. Продлите доступ, чтобы продолжить работу</span>
+      <button class="subscription-banner__link" type="button" id="subscription-banner-link">Тариф и оплата</button>
+    </div>
 
     <div class="content">
       <!-- Обзор -->
@@ -306,6 +310,52 @@
               </div>
             </div>
           </aside>
+        </div>
+      </section>
+
+      <!-- Тариф и оплата -->
+      <section class="panel subscription-panel" id="subscription-section" data-section="subscription" hidden>
+        <header class="panel__header">
+          <div>
+            <h2 class="panel__title">Тариф и оплата</h2>
+            <p class="panel__subtitle">Текущий тариф, статус подписки и доступ к онлайн-записи.</p>
+          </div>
+        </header>
+
+        <div class="subscription-card">
+          <div class="subscription-card__head">
+            <div>
+              <h3 class="subscription-card__plan" id="subscription-plan-name">Bookly Pro</h3>
+              <p class="subscription-card__price" id="subscription-plan-price">6 990 ₸ / месяц</p>
+            </div>
+            <span class="badge" id="subscription-status-badge">—</span>
+          </div>
+
+          <p class="subscription-card__explain" id="subscription-explain">Загрузка…</p>
+
+          <dl class="subscription-card__rows">
+            <div class="subscription-card__row" id="subscription-trial-row" hidden>
+              <dt>Пробный период до</dt>
+              <dd id="subscription-trial-value">—</dd>
+            </div>
+            <div class="subscription-card__row" id="subscription-period-row" hidden>
+              <dt>Оплаченный период до</dt>
+              <dd id="subscription-period-value">—</dd>
+            </div>
+            <div class="subscription-card__row" id="subscription-grace-row" hidden>
+              <dt>Оплатите до</dt>
+              <dd id="subscription-grace-value">—</dd>
+            </div>
+          </dl>
+
+          <p class="subscription-card__cancel-note" id="subscription-cancel-note" hidden>
+            Автопродление отключено. Доступ сохранится до конца оплаченного периода.
+          </p>
+
+          <div class="subscription-card__actions">
+            <button class="btn btn--primary" type="button" id="subscription-upgrade-btn">Оформить подписку</button>
+            <p class="subscription-card__upgrade-message" id="subscription-upgrade-message" hidden></p>
+          </div>
         </div>
       </section>
     </div>
@@ -599,6 +649,8 @@
   <script src="/js/bookings/ui.js"></script>
   <script src="/js/public-settings/validation.js"></script>
   <script src="/js/public-settings/ui.js"></script>
+  <script src="/js/subscription/client.js"></script>
+  <script src="/js/subscription/ui.js"></script>
   <script src="/js/app/shell.js"></script>
   <script src="/js/pages/app.js"></script>
 </body>

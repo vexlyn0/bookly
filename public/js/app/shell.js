@@ -8,6 +8,7 @@ window.BooklyAppShell = (() => {
     staff: { title: "Сотрудники", subtitle: "Сотрудники" },
     bookings: { title: "Записи", subtitle: "Записи" },
     "public-booking": { title: "Онлайн-запись", subtitle: "Онлайн-запись" },
+    subscription: { title: "Тариф и оплата", subtitle: "Тариф и оплата" },
   };
 
   function init() {

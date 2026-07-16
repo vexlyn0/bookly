@@ -78,6 +78,7 @@
   BooklyScheduleUI.init(organization);
   BooklyBookingsUI.init(organization);
   BooklyPublicSettingsUI.init(organization);
+  BooklySubscriptionUI.init(organization);
 
   document.getElementById("dashboard-go-services")?.addEventListener("click", () => {
     document.querySelector('.sidebar__link[data-section="services"]')?.click();
