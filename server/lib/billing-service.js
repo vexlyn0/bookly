@@ -167,12 +167,28 @@ async function getActiveProPlan() {
 
 function getKaspiPaymentInfo(plan, billingMonths = 1) {
   const months = Math.max(1, Math.min(12, Number(billingMonths) || 1));
+  const amount = plan.price_amount * months;
+  const currency = plan.currency;
+
+  if (!config.kaspi.isConfigured) {
+    return {
+      configured: false,
+      recipient: null,
+      phone: null,
+      instructions: null,
+      amount,
+      currency,
+      billing_months: months,
+    };
+  }
+
   return {
+    configured: true,
     recipient: config.kaspi.recipient,
     phone: config.kaspi.phone,
     instructions: config.kaspi.instructions,
-    amount: plan.price_amount * months,
-    currency: plan.currency,
+    amount,
+    currency,
     billing_months: months,
   };
 }
@@ -239,6 +255,14 @@ async function listPaymentRequests(userId) {
 }
 
 async function createPaymentRequest(userId, body) {
+  if (!config.kaspi.isConfigured) {
+    throw appError(
+      "Реквизиты оплаты пока не настроены",
+      "PAYMENT_DETAILS_NOT_CONFIGURED",
+      503
+    );
+  }
+
   await requireOwnerOrganizationId(userId);
   const validated = validateCreateBody(body || {});
   const admin = getSupabaseAdmin();

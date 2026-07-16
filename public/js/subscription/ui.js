@@ -221,6 +221,37 @@ window.BooklySubscriptionUI = (() => {
     const kaspi = billingInfo?.kaspi;
     const latest = billingInfo?.latest_request;
     const hasPending = latest?.status === "pending";
+    const kaspiConfigured = kaspi?.configured === true;
+
+    if (!kaspiConfigured) {
+      if (els.kaspiRecipient) els.kaspiRecipient.textContent = "—";
+      if (els.kaspiPhone) els.kaspiPhone.textContent = "—";
+      if (els.kaspiAmount) els.kaspiAmount.textContent = "—";
+      if (els.kaspiInstructions) {
+        els.kaspiInstructions.textContent =
+          "Реквизиты оплаты пока не настроены. Свяжитесь с поддержкой.";
+      }
+      if (els.kaspiPaidBtn) {
+        els.kaspiPaidBtn.hidden = false;
+        els.kaspiPaidBtn.disabled = true;
+        els.kaspiPaidBtn.title = "Реквизиты оплаты пока не настроены";
+      }
+      if (els.kaspiFormWrap) els.kaspiFormWrap.hidden = true;
+      if (els.kaspiCancelRequest) els.kaspiCancelRequest.hidden = true;
+      if (els.kaspiRequestStatus && latest) {
+        els.kaspiRequestStatus.hidden = false;
+        els.kaspiRequestStatus.className = `kaspi-request-status kaspi-request-status--${latest.status}`;
+        els.kaspiRequestStatus.innerHTML = renderRequestStatus(latest);
+      } else if (els.kaspiRequestStatus) {
+        els.kaspiRequestStatus.hidden = true;
+      }
+      if (els.kaspiMessage) {
+        els.kaspiMessage.hidden = false;
+        els.kaspiMessage.textContent =
+          "Реквизиты оплаты пока не настроены. Свяжитесь с поддержкой.";
+      }
+      return;
+    }
 
     if (kaspi) {
       if (els.kaspiRecipient) els.kaspiRecipient.textContent = kaspi.recipient || "—";
@@ -232,6 +263,7 @@ window.BooklySubscriptionUI = (() => {
     if (els.kaspiPaidBtn) {
       els.kaspiPaidBtn.hidden = hasPending;
       els.kaspiPaidBtn.disabled = hasPending;
+      els.kaspiPaidBtn.title = "";
     }
 
     if (els.kaspiFormWrap) {
@@ -295,6 +327,14 @@ window.BooklySubscriptionUI = (() => {
   }
 
   function toggleForm(show) {
+    if (billingInfo?.kaspi?.configured !== true) {
+      if (els.kaspiMessage) {
+        els.kaspiMessage.hidden = false;
+        els.kaspiMessage.textContent =
+          "Реквизиты оплаты пока не настроены. Свяжитесь с поддержкой.";
+      }
+      return;
+    }
     if (els.kaspiFormWrap) els.kaspiFormWrap.hidden = !show;
     if (show && els.kaspiForm) els.kaspiForm.reset();
     if (show && els.billingMonths) els.billingMonths.value = "1";
@@ -321,6 +361,15 @@ window.BooklySubscriptionUI = (() => {
   async function handleSubmitPayment(event) {
     event.preventDefault();
     if (!els.kaspiForm) return;
+
+    if (billingInfo?.kaspi?.configured !== true) {
+      if (els.kaspiMessage) {
+        els.kaspiMessage.hidden = false;
+        els.kaspiMessage.textContent =
+          "Реквизиты оплаты пока не настроены. Свяжитесь с поддержкой.";
+      }
+      return;
+    }
 
     const formData = new FormData(els.kaspiForm);
     const paymentDateRaw = String(formData.get("payment_date") || "").trim();

@@ -9,10 +9,11 @@ const config = require("../config");
 const router = Router();
 
 router.get("/", (req, res) => {
-  if (!config.supabase.isConfigured) {
+  if (!config.supabase.isPublicConfigured) {
     return res.status(503).json({
       ok: false,
-      message: "Supabase не настроен. Заполните SUPABASE_URL и SUPABASE_ANON_KEY в .env",
+      code: "SUPABASE_NOT_CONFIGURED",
+      message: "Сервис авторизации временно недоступен. Попробуйте позже.",
     });
   }
 

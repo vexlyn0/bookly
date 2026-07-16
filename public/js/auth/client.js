@@ -27,17 +27,29 @@ window.BooklyAuth = (() => {
       try {
         config = await response.json();
       } catch {
-        throw new Error("Supabase Auth не настроен. Заполните .env на сервере.");
+        throw Object.assign(
+          new Error("Не удалось загрузить конфигурацию авторизации."),
+          { code: "CONFIG_PARSE_ERROR", status: response.status }
+        );
       }
 
       if (!response.ok || !config.supabaseUrl || !config.supabaseAnonKey) {
-        throw new Error(
-          config.message || "Supabase Auth не настроен. Заполните .env на сервере."
+        throw Object.assign(
+          new Error(
+            config.message ||
+              "Сервис авторизации временно недоступен. Попробуйте позже."
+          ),
+          {
+            code: config.code || "SUPABASE_NOT_CONFIGURED",
+            status: response.status || 503,
+          }
         );
       }
 
       if (!window.supabase?.createClient) {
-        throw new Error("Supabase SDK не загружен.");
+        throw Object.assign(new Error("Не удалось загрузить модуль авторизации."), {
+          code: "SDK_MISSING",
+        });
       }
 
       client = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, {

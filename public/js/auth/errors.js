@@ -78,15 +78,45 @@ window.BooklyAuthErrors = (() => {
       return error.trim() || FALLBACK;
     }
 
-    // 1. Точное совпадение по коду Supabase
     const code = String(error.code || "").trim();
+    if (code === "SUPABASE_NOT_CONFIGURED" || code === "CONFIG_PARSE_ERROR") {
+      return "Сервис авторизации временно недоступен. Попробуйте позже.";
+    }
+    if (code === "SDK_MISSING") {
+      return "Не удалось загрузить модуль авторизации. Обновите страницу.";
+    }
+
+    // 1. Точное совпадение по коду Supabase
     if (code && CODE_MESSAGES[code]) {
       return CODE_MESSAGES[code];
     }
 
-    // 2. Оригинальное сообщение от Supabase (без подмены regex)
     const message = String(error.message || error.error_description || "").trim();
+    const lower = message.toLowerCase();
+
+    if (
+      lower.includes("invalid api key") ||
+      (lower.includes("jwt") && lower.includes("invalid")) ||
+      error.status === 401
+    ) {
+      return "Ошибка конфигурации авторизации. Обратитесь в поддержку.";
+    }
+
+    if (
+      lower.includes("failed to fetch") ||
+      lower.includes("networkerror") ||
+      lower.includes("network request failed") ||
+      code === "NETWORK_ERROR"
+    ) {
+      return "Ошибка сети. Проверьте соединение и попробуйте снова.";
+    }
+
+    // 2. Оригинальное сообщение от Supabase (без подмены regex)
     if (message) {
+      // Не показываем технические подсказки про .env пользователю
+      if (lower.includes(".env") || lower.includes("service_role") || lower.includes("anon_key")) {
+        return "Сервис авторизации временно недоступен. Попробуйте позже.";
+      }
       return message;
     }
 

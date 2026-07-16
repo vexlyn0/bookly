@@ -13,7 +13,7 @@ function getSupabaseAdmin() {
   }
 
   if (!config.supabase.serviceRoleKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for public booking API");
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required");
   }
 
   if (!adminClient) {

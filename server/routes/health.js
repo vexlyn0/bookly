@@ -1,5 +1,6 @@
 /**
  * GET /api/health
+ * Безопасный статус конфигурации без секретов и реквизитов.
  */
 
 const { Router } = require("express");
@@ -10,10 +11,8 @@ const router = Router();
 router.get("/", (req, res) => {
   res.json({
     ok: true,
-    service: "bookly",
-    version: "0.1.0",
-    environment: config.nodeEnv,
-    supabaseConfigured: config.supabase.isConfigured,
+    supabase_configured: Boolean(config.supabase.isConfigured),
+    kaspi_configured: Boolean(config.kaspi.isConfigured),
   });
 });
 

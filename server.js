@@ -2,8 +2,11 @@
  * Bookly — точка входа сервера
  */
 
-const app = require("./server/app");
 const config = require("./server/config");
+
+config.assertRequiredEnvOrExit();
+
+const app = require("./server/app");
 
 const server = app.listen(config.port, "0.0.0.0", () => {
   console.log(`Bookly running at http://localhost:${config.port}`);
@@ -15,9 +18,7 @@ const server = app.listen(config.port, "0.0.0.0", () => {
   console.log(`Admin:      http://localhost:${config.port}/admin`);
   console.log(`Booking:    http://localhost:${config.port}/book/:slug`);
   console.log(`Supabase:   ${config.supabase.isConfigured ? "configured" : "not configured"}`);
-  if (config.supabase.isConfigured) {
-    console.log(`Supabase URL: ${config.supabase.url}`);
-  }
+  console.log(`Kaspi:      ${config.kaspi.isConfigured ? "configured" : "not configured"}`);
   console.log(`Запуск: npm run dev`);
 });
 
