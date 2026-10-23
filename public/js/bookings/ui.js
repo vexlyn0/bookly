@@ -935,9 +935,13 @@ window.BooklyBookingsUI = (() => {
 
     document.getElementById("client-notify-title").textContent =
       { canceled: "Запись отменена", rescheduled: "Запись перенесена", created: "Запись создана" }[kind];
-    document.getElementById("client-notify-staff").textContent = describeStaffNotice(
-      kind === "canceled" ? before.staff_id : after.staff_id
-    );
+    const clientInTelegram = Boolean((kind === "canceled" ? before : after)?.client_telegram_chat_id);
+    document.getElementById("client-notify-staff").textContent = [
+      describeStaffNotice(kind === "canceled" ? before.staff_id : after.staff_id),
+      clientInTelegram ? "Клиент подключён к Telegram-боту и получит сообщение автоматически." : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
     document.getElementById("client-notify-preview").textContent = message;
 
     const hint = document.getElementById("client-notify-hint");

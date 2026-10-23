@@ -12,6 +12,7 @@ const { getSupabaseAdmin } = require("./supabase-admin");
 const { appError } = require("./subscription-service");
 const { formatTimeForInput, formatDateInTimezone } = require("./slots");
 const telegram = require("./telegram-service");
+const clientBot = require("./client-bot-service");
 
 const EVENTS = new Set(["created", "updated", "deleted"]);
 const STATUSES = new Set(["pending", "confirmed", "canceled", "completed", "no_show"]);
@@ -32,6 +33,9 @@ const BOOKING_SELECT = `
   client_email,
   client_comment,
   public_reference,
+  manage_token,
+  client_phone_key,
+  client_telegram_chat_id,
   services(name),
   staff(name)
 `;
@@ -205,7 +209,7 @@ async function notifyBookingChange(userId, body = {}) {
   const [orgResult, bookingResult] = await Promise.all([
     supabase
       .from("organizations")
-      .select("id, name, public_name, timezone")
+      .select("id, name, public_name, address, timezone")
       .eq("id", organizationId)
       .maybeSingle(),
     supabase.from("bookings").select(BOOKING_SELECT).eq("id", bookingId).maybeSingle(),
@@ -226,7 +230,11 @@ async function notifyBookingChange(userId, body = {}) {
     throw appError("Запись не найдена", "BOOKING_NOT_FOUND", 404);
   }
 
-  return deliverChangeNotifications({ organization, event, booking, previous });
+  const result = await deliverChangeNotifications({ organization, event, booking, previous });
+
+  // Клиенту в Telegram, если он подключён к боту.
+  const clientSent = await clientBot.notifyClientOfChange({ organization, event, booking, previous });
+  return { ...result, client_sent: clientSent };
 }
 
 /**

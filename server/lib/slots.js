@@ -121,7 +121,29 @@ function computeSlots({
   return slots;
 }
 
+/** Минут от «сейчас» в часовом поясе организации до начала записи. */
+function minutesUntil(dateStr, timeStr, timeZone, now = new Date()) {
+  let today;
+  let nowMinutes;
+  try {
+    today = formatDateInTimezone(now, timeZone);
+    nowMinutes = getMinutesInTimezone(now, timeZone);
+  } catch {
+    today = formatDateInTimezone(now, "UTC");
+    nowMinutes = getMinutesInTimezone(now, "UTC");
+  }
+
+  const toUtc = (value) => {
+    const [y, m, d] = value.split("-").map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+
+  const days = Math.round((toUtc(String(dateStr)) - toUtc(today)) / 86400000);
+  return days * 1440 + (timeToMinutes(timeStr) ?? 0) - nowMinutes;
+}
+
 module.exports = {
+  minutesUntil,
   SLOT_STEP_MINUTES,
   MAX_BOOKING_DAYS_AHEAD,
   timeToMinutes,

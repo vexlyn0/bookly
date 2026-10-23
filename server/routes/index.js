@@ -10,6 +10,7 @@ const billingRoutes = require("./billing");
 const platformAdminRoutes = require("./platform-admin");
 const telegramRoutes = require("./telegram");
 const bookingsRoutes = require("./bookings");
+const cronRoutes = require("./cron");
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use("/api/billing", billingRoutes);
 router.use("/api/admin", platformAdminRoutes);
 router.use("/api/telegram", telegramRoutes);
 router.use("/api/bookings", bookingsRoutes);
+router.use("/api/cron", cronRoutes);
 
 module.exports = router;

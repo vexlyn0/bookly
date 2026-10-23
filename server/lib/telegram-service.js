@@ -46,9 +46,12 @@ const BOOKING_SELECT = `
   client_email,
   client_comment,
   public_reference,
+  manage_token,
+  client_phone_key,
+  client_telegram_chat_id,
   services(name),
   staff(name),
-  organizations(name, public_name)
+  organizations(name, public_name, address, timezone)
 `;
 
 // -----------------------------------------------------------------------------
@@ -405,12 +408,19 @@ async function sendToStaff(staff, text, extra = {}) {
 // -----------------------------------------------------------------------------
 
 const HELP_TEXT = [
-  "🤖 <b>Bookly</b> — уведомления о записях.",
+  "🤖 <b>Bookly</b> — онлайн-запись.",
   "",
-  "Чтобы подключить уведомления, откройте кабинет Bookly → «Сотрудники» → «Telegram» и перейдите по ссылке.",
+  "<b>Клиентам:</b> поделитесь номером телефона — и здесь будут ваши записи, изменения и напоминания. Кнопка «📋 Мои записи» покажет предстоящие визиты.",
   "",
-  "/stop — отключить уведомления в этом чате",
+  "<b>Мастерам:</b> чтобы получать записи, откройте ссылку из кабинета Bookly (раздел «Сотрудники» → «Telegram»).",
+  "",
+  "/stop — отключить уведомления мастера в этом чате",
 ].join("\n");
+
+/** Ленивая загрузка: client-bot-service сам зависит от telegram-service. */
+function clientBot() {
+  return require("./client-bot-service");
+}
 
 async function linkStaff(chatId, token) {
   if (!LINK_TOKEN_PATTERN.test(token)) {
@@ -479,6 +489,11 @@ const SHARE_PHONE_KEYBOARD = {
   one_time_keyboard: true,
 };
 
+const SHARE_PHONE_KEYBOARD_WITH_LIST = {
+  keyboard: [[{ text: "📋 Мои записи" }], [{ text: "📱 Поделиться номером", request_contact: true }]],
+  resize_keyboard: true,
+};
+
 /** /start v_<token> — клиент пришёл подтвердить номер для онлайн-записи. */
 async function startPhoneVerification(chatId, token) {
   let verification = null;
@@ -532,22 +547,23 @@ async function handleContact(message) {
 
   const removeKeyboard = { reply_markup: { remove_keyboard: true } };
 
+  if (result === "none") {
+    // Не подтверждение записи — клиент просто подключает бота.
+    await clientBot().handleSharedContact(chatId, message.from?.id, contact.phone_number);
+    return;
+  }
+
   if (result === "verified") {
+    await clientBot().linkClient(chatId, message.from?.id, contact.phone_number);
     await sendMessage(
       chatId,
       "✅ Номер подтверждён!\n\nВернитесь на страницу записи — она завершится автоматически. Сюда придёт подтверждение записи.",
-      removeKeyboard
+      { reply_markup: clientBot().CLIENT_KEYBOARD }
     );
   } else if (result === "mismatch") {
     await sendMessage(
       chatId,
       "❌ Номер этого Telegram не совпадает с номером, указанным в записи.\n\nВернитесь на страницу записи и укажите номер, к которому привязан ваш Telegram.",
-      removeKeyboard
-    );
-  } else {
-    await sendMessage(
-      chatId,
-      "⌛ Заявка на подтверждение не найдена или устарела. Вернитесь на страницу записи и нажмите «Подтвердить номер» ещё раз.",
       removeKeyboard
     );
   }
@@ -590,6 +606,11 @@ async function handleMessage(message) {
   const parsed = parseCommand(message.text);
   let reply = HELP_TEXT;
 
+  if (message.text?.trim() === clientBot().MY_BOOKINGS_TEXT || parsed?.command === "my") {
+    await clientBot().showMyBookings(chatId);
+    return;
+  }
+
   if (parsed?.command === "start" && /^v_[0-9a-f]{32}$/.test(parsed.args)) {
     await startPhoneVerification(chatId, parsed.args.slice(2));
     return;
@@ -599,12 +620,21 @@ async function handleMessage(message) {
     reply = await linkStaff(chatId, parsed.args);
   } else if (parsed?.command === "stop") {
     reply = await unlinkChat(chatId);
+  } else {
+    // Приветствие / непонятный текст: подсказка и кнопки для клиентов.
+    await sendMessage(chatId, reply, { reply_markup: SHARE_PHONE_KEYBOARD_WITH_LIST });
+    return;
   }
 
   await sendMessage(chatId, reply);
 }
 
 async function handleCallback(callbackQuery) {
+  if (String(callbackQuery?.data || "").startsWith("cl:")) {
+    await clientBot().handleClientCallback(callbackQuery);
+    return;
+  }
+
   const { id: callbackId, data, message } = callbackQuery;
   const chatId = message?.chat?.id;
   const parsed = parseCallbackData(data);
@@ -679,9 +709,18 @@ async function handleCallback(callbackQuery) {
     return;
   }
 
+  const previous = { ...booking, status: "pending" };
   booking.status = updated.status;
   await answerCallback(callbackId, nextStatus === "confirmed" ? "Запись подтверждена" : "Запись отклонена");
   await editMessage(chatId, message.message_id, formatBookingMessage(viewFromBookingRow(booking)));
+
+  // Клиенту в Telegram (если он подключён): «подтверждена» / «отменена салоном».
+  await clientBot().notifyClientOfChange({
+    organization: booking.organizations || {},
+    event: "updated",
+    booking,
+    previous,
+  });
 }
 
 async function handleUpdate(update) {
@@ -704,6 +743,11 @@ module.exports = {
   notifyNewBooking,
   sendToStaff,
   sendClientBookingConfirmation,
+  sendMessage,
+  editMessage,
+  answerCallback,
+  logTelegramError,
+  SHARE_PHONE_KEYBOARD,
   handleUpdate,
   planBookingChangeNotifications,
   viewFromBookingRow,

@@ -36,6 +36,10 @@ const config = {
   publicDir: PUBLIC_DIR,
   port: Number(process.env.PORT) || 3000,
   nodeEnv: process.env.NODE_ENV || "development",
+  /** Адрес сайта для ссылок в сообщениях бота. Render задаёт RENDER_EXTERNAL_URL сам. */
+  publicUrl: String(process.env.PUBLIC_APP_URL || process.env.RENDER_EXTERNAL_URL || "")
+    .trim()
+    .replace(/\/+$/, ""),
   supabase: {
     url: supabase.url,
     anonKey: supabase.anonKey,

@@ -7,7 +7,7 @@ const assert = require("assert");
 
 // --- Подмена Supabase: таблицы в памяти --------------------------------------
 
-const tables = { phone_verifications: [], organizations: [] };
+const tables = { phone_verifications: [], organizations: [], telegram_clients: [] };
 
 function fakeSupabase() {
   return {
@@ -27,6 +27,11 @@ function fakeSupabase() {
         insert(row) {
           insertRow = row;
           return builder;
+        },
+        upsert(row) {
+          tables[table] = tables[table].filter((item) => item.chat_id !== row.chat_id);
+          tables[table].push(row);
+          return Promise.resolve({ data: null, error: null });
         },
         update(payload) {
           patch = payload;
@@ -98,6 +103,7 @@ function ok(message) {
 
 function reset() {
   tables.phone_verifications = [];
+  tables.telegram_clients = [];
   sent.length = 0;
 }
 
@@ -135,8 +141,13 @@ async function testHappyPath() {
   // Telegram присылает номер без плюса
   await telegram.handleUpdate(contactUpdate("77011234567"));
   assert.ok(sent[1].text.includes("Номер подтверждён"));
-  assert.strictEqual(sent[1].reply_markup.remove_keyboard, true);
+  assert.strictEqual(sent[1].reply_markup.keyboard[0][0].text, "📋 Мои записи");
   assert.strictEqual((await verification.getStatus(token)).status, "verified");
+  assert.deepStrictEqual(
+    tables.telegram_clients.map((row) => [row.chat_id, row.phone_key]),
+    [[String(CHAT), "77011234567"]],
+    "клиент привязан к боту по подтверждённому номеру"
+  );
 
   const row = await verification.requireVerified(ORG, token, "+7 701 123-45-67");
   assert.strictEqual(row.chat_id, String(CHAT));

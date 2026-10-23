@@ -23,6 +23,8 @@ const server = app.listen(config.port, "0.0.0.0", () => {
   console.log(`Telegram:   ${config.telegram.isConfigured ? "configured" : "not configured"}`);
   console.log(`Запуск: npm run dev`);
   telegramService.init();
+  // Напоминания клиентам (Pro) — каждые 5 минут, пока сервер работает
+  require("./server/lib/client-bot-service").startReminderScheduler();
 });
 
 server.on("error", (error) => {

@@ -15,9 +15,8 @@ const {
   computeSlots,
   findScheduleForDate,
   formatTimeForInput,
-  formatDateInTimezone,
-  getMinutesInTimezone,
   isDateTooFarAhead,
+  minutesUntil,
   isPastSlot,
   timeToMinutes,
   MAX_BOOKING_DAYS_AHEAD,
@@ -62,27 +61,6 @@ function appError(message, code, status) {
 function internalError(context, error) {
   console.error("[client-manage]", context, error?.code || "unknown");
   return appError("Не удалось выполнить запрос. Попробуйте позже", "INTERNAL_ERROR", 500);
-}
-
-/** Минут от «сейчас» в часовом поясе организации до начала записи. */
-function minutesUntil(dateStr, timeStr, timeZone, now = new Date()) {
-  let today;
-  let nowMinutes;
-  try {
-    today = formatDateInTimezone(now, timeZone);
-    nowMinutes = getMinutesInTimezone(now, timeZone);
-  } catch {
-    today = formatDateInTimezone(now, "UTC");
-    nowMinutes = getMinutesInTimezone(now, "UTC");
-  }
-
-  const toUtc = (value) => {
-    const [y, m, d] = value.split("-").map(Number);
-    return Date.UTC(y, m - 1, d);
-  };
-
-  const days = Math.round((toUtc(String(dateStr)) - toUtc(today)) / 86400000);
-  return days * 1440 + (timeToMinutes(timeStr) ?? 0) - nowMinutes;
 }
 
 /**
