@@ -4,14 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bookly — онлайн-запись для салонов и мастеров. Бесплатно</title>
-  <meta name="description" content="Бесплатная онлайн-запись для салонов, барбершопов и мастеров в Казахстане. Клиент сам выбирает мастера и время по ссылке, а вы получаете запись в Telegram. До 5 мастеров — бесплатно навсегда.">
-  <meta property="og:title" content="Bookly — онлайн-запись для салонов и мастеров">
-  <meta property="og:description" content="Клиент сам выбирает мастера и время по ссылке, вы получаете запись в Telegram. Бесплатно до 5 мастеров.">
+  <meta name="description" content="Бесплатная онлайн-запись для салонов, барбершопов и мастеров в Казахстане. Клиенты сами выбирают мастера и время по ссылке из Instagram и 2ГИС, мастер получает запись в Telegram. До 5 мастеров — бесплатно навсегда.">
+  <meta property="og:title" content="Bookly — хватит записывать клиентов в тетрадку">
+  <meta property="og:description" content="Ссылка в Instagram — и клиенты сами выбирают мастера и время. Мастер узнаёт в Telegram. Бесплатно до 5 мастеров.">
   <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0d0c14">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="/css/landing.css">
 </head>
@@ -24,15 +25,16 @@
       </a>
 
       <nav class="nav" id="nav" aria-label="Основная навигация">
+        <a href="#pain" class="nav__link">Зачем</a>
         <a href="#features" class="nav__link">Возможности</a>
-        <a href="#how" class="nav__link">Как это работает</a>
         <a href="#pricing" class="nav__link">Цены</a>
         <a href="#faq" class="nav__link">Вопросы</a>
+        <a href="/login" class="nav__link nav__link--mobile">Войти</a>
       </nav>
 
       <div class="header__actions">
         <a href="/login" class="btn btn--ghost btn--sm header__login">Войти</a>
-        <a href="/register" class="btn btn--primary btn--sm">Начать бесплатно</a>
+        <a href="/register" class="btn btn--light btn--sm">Начать бесплатно</a>
       </div>
 
       <button class="burger" id="burger" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="nav">
@@ -43,344 +45,305 @@
   </header>
 
   <main>
-    <!-- Hero -->
+    <!-- Первый экран -->
     <section class="hero" id="hero">
-      <div class="hero__bg" aria-hidden="true">
-        <div class="hero__grid"></div>
-        <div class="hero__glow"></div>
-      </div>
+      <div class="hero__glow" aria-hidden="true"></div>
+      <div class="container hero__inner">
+        <p class="pill reveal"><span class="pill__dot"></span>Онлайн-запись для салонов Казахстана · 0 ₸ до 5 мастеров</p>
 
-      <div class="container">
-        <div class="hero__content">
-          <div class="hero__badge reveal">
-            <span class="badge">Бесплатно навсегда · до 5 мастеров</span>
-          </div>
+        <h1 class="hero__title reveal reveal--delay-1">
+          Хватит записывать клиентов <span class="hero__accent">в&nbsp;тетрадку</span>
+        </h1>
 
-          <h1 class="hero__title reveal reveal--delay-1">
-            Онлайн-запись для салонов <span>без звонков и переписок</span>
-          </h1>
+        <p class="hero__text reveal reveal--delay-2">
+          Поставьте ссылку в Instagram или 2ГИС — клиенты сами выберут мастера и свободное время, даже ночью.
+          Мастер узнает о записи в Telegram, а вы перестанете отвечать на «а есть время завтра?».
+        </p>
 
-          <p class="hero__text reveal reveal--delay-2">
-            Клиент открывает вашу ссылку, сам выбирает услугу, мастера и свободное время.
-            Запись сразу появляется в кабинете, а мастер получает её в Telegram.
-          </p>
-
-          <div class="hero__actions reveal reveal--delay-3">
-            <a href="/register" class="btn btn--accent btn--lg">Создать страницу записи</a>
-            <a href="#how" class="btn btn--outline btn--lg">Как это работает</a>
-          </div>
-          <p class="hero__note reveal reveal--delay-3">Без карты и пробного периода. Настройка — 10 минут.</p>
+        <div class="hero__actions reveal reveal--delay-3">
+          <a href="/register" class="btn btn--primary btn--lg">Начать бесплатно</a>
+          <a href="#how" class="btn btn--ghost btn--lg">Как это работает →</a>
         </div>
+        <p class="hero__note reveal reveal--delay-3">Без карты · настройка за 10 минут · клиенту не нужно ничего скачивать</p>
 
-        <div class="demo reveal reveal--delay-4" aria-label="Пример страницы записи и уведомления">
-          <div class="demo-widget">
-            <div class="demo-widget__head">
-              <span class="demo-widget__avatar">A</span>
-              <div>
-                <strong>Aura Beauty</strong>
-                <span>Салон красоты · Алматы</span>
+        <!-- Продукт в кадре -->
+        <div class="showcase reveal reveal--delay-4" aria-label="Пример: календарь салона, страница записи и уведомление в Telegram">
+          <div class="window">
+            <div class="window__bar">
+              <span></span><span></span><span></span>
+              <p class="window__url">bookly.kz/app · Календарь</p>
+            </div>
+            <div class="cal-demo">
+              <div class="cal-demo__head">
+                <span class="cal-demo__title">Четверг, 13 ноября</span>
+                <span class="cal-demo__tabs"><b>День</b><i>Неделя</i></span>
+              </div>
+              <div class="cal-demo__grid">
+                <div class="cal-demo__times">
+                  <span>10:00</span><span>11:00</span><span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span>
+                </div>
+                <div class="cal-demo__col">
+                  <p class="cal-demo__name">Айгерим</p>
+                  <div class="ev ev--violet" style="top:4%;height:26%"><b>Алия</b>Маникюр</div>
+                  <div class="ev ev--teal" style="top:52%;height:22%"><b>Сауле</b>Педикюр</div>
+                </div>
+                <div class="cal-demo__col">
+                  <p class="cal-demo__name">Дана</p>
+                  <div class="ev ev--coral" style="top:18%;height:18%"><b>Мадина</b>Брови</div>
+                  <div class="ev ev--violet" style="top:60%;height:30%"><b>Жанна</b>Окрашивание</div>
+                </div>
+                <div class="cal-demo__col">
+                  <p class="cal-demo__name">Ерлан</p>
+                  <div class="ev ev--amber" style="top:8%;height:16%"><b>Арман</b>Стрижка</div>
+                  <div class="ev ev--teal" style="top:34%;height:16%"><b>Тимур</b>Борода</div>
+                  <div class="ev ev--new" style="top:68%;height:16%"><b>+ Алан</b>онлайн</div>
+                </div>
               </div>
             </div>
-
-            <p class="demo-widget__label">Услуга</p>
-            <div class="demo-widget__service">
-              <div><strong>Маникюр с покрытием</strong><span>1 ч 30 мин</span></div>
-              <b>8 000 ₸</b>
-            </div>
-
-            <p class="demo-widget__label">Мастер</p>
-            <div class="demo-widget__masters">
-              <span class="is-selected">Айгерим</span>
-              <span>Дана</span>
-              <span>Мадина</span>
-            </div>
-
-            <p class="demo-widget__label">Четверг, 13 ноября</p>
-            <div class="demo-widget__slots">
-              <span>10:00</span><span>11:30</span><span class="is-selected">13:00</span>
-              <span>14:30</span><span>16:00</span><span>17:30</span>
-            </div>
-
-            <span class="demo-widget__cta">Записаться · 13 ноя, 13:00</span>
           </div>
 
-          <div class="demo-telegram">
-            <div class="demo-telegram__bar">
-              <span class="demo-telegram__logo">B</span>
-              <div><strong>Bookly</strong><span>бот</span></div>
+          <div class="phone">
+            <div class="phone__notch"></div>
+            <div class="phone__cover"></div>
+            <div class="phone__logo">A</div>
+            <p class="phone__name">Aura Beauty</p>
+            <p class="phone__label">Выберите мастера</p>
+            <div class="phone__masters">
+              <div class="phone__master is-selected"><i>А</i><b>Айгерим</b><span>сегодня 15:00</span></div>
+              <div class="phone__master"><i>Д</i><b>Дана</b><span>завтра 11:00</span></div>
             </div>
-            <div class="demo-telegram__msg">
-              <p><b>🔔 Новая запись</b> · Aura Beauty</p>
-              <p><b>📅 13.11 (чт), 13:00–14:30</b></p>
-              <p>💼 Маникюр с покрытием</p>
-              <p>👤 Мастер: Айгерим</p>
-              <p>🙋 Алия · 📞 +7 707 ••• 23 41</p>
-              <p class="demo-telegram__status">Статус: ⏳ Ожидает подтверждения</p>
-              <div class="demo-telegram__buttons">
-                <span>✅ Подтвердить</span>
-                <span>❌ Отклонить</span>
-              </div>
-            </div>
+            <div class="phone__slots"><span>14:00</span><span class="is-selected">15:00</span><span>16:30</span></div>
+            <div class="phone__cta">Записаться на 15:00</div>
+          </div>
+
+          <div class="tg">
+            <div class="tg__head"><span class="tg__logo">B</span><b>Bookly</b><i>бот</i></div>
+            <p><b>🔔 Новая запись</b> · Aura Beauty</p>
+            <p>📅 <b>13.11 (чт), 15:00–16:30</b></p>
+            <p>💼 Маникюр · 👤 Айгерим</p>
+            <div class="tg__buttons"><span>✅ Подтвердить</span><span>❌ Отклонить</span></div>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Для кого -->
-    <section class="section audience" id="audience">
+    <section class="audience" aria-label="Для кого">
       <div class="container">
-        <p class="audience__title reveal">Подходит всем, к кому записываются на время</p>
-        <ul class="audience__list reveal">
-          <li>Салоны красоты</li>
+        <ul class="audience__list">
           <li>Барбершопы</li>
+          <li>Салоны красоты</li>
           <li>Ногтевые студии</li>
+          <li>Брови и ресницы</li>
           <li>Косметология</li>
           <li>Массаж и SPA</li>
           <li>Тату-студии</li>
-          <li>Стоматологии и клиники</li>
           <li>Частные мастера</li>
         </ul>
       </div>
     </section>
 
-    <!-- Возможности -->
-    <section class="section features" id="features">
+    <!-- Боль → решение -->
+    <section class="section" id="pain">
       <div class="container">
-        <div class="section__header section__header--center">
-          <p class="section__eyebrow reveal">Возможности</p>
-          <h2 class="section__title reveal">Всё, чтобы клиенты записывались сами</h2>
-          <p class="section__subtitle reveal">
-            Сделано для команды: у каждого мастера свои услуги и график, а владелец видит весь салон.
-          </p>
+        <div class="section__header">
+          <p class="eyebrow reveal">Знакомо?</p>
+          <h2 class="section__title reveal">Салон теряет клиентов не из-за мастеров</h2>
+          <p class="section__subtitle reveal">А из-за того, что записаться неудобно. Bookly убирает эти потери.</p>
+        </div>
+
+        <div class="pain__grid">
+          <article class="pain-card reveal">
+            <p class="pain-card__problem">«Звонят, пока я стригу — не беру трубку, клиент уходит к соседям»</p>
+            <p class="pain-card__solution"><span>Bookly</span>Клиент записывается сам по ссылке, вы не отвлекаетесь от работы.</p>
+          </article>
+          <article class="pain-card reveal reveal--delay-1">
+            <p class="pain-card__problem">«Пишут в директ в 23:00, утром уже записались в другое место»</p>
+            <p class="pain-card__solution"><span>Bookly</span>Запись работает 24/7 и показывает только реально свободное время.</p>
+          </article>
+          <article class="pain-card reveal reveal--delay-2">
+            <p class="pain-card__problem">«Клиент не пришёл, а окно могли занять другие»</p>
+            <p class="pain-card__solution"><span>Bookly</span>Напоминание за сутки и за 2 часа, а отменить можно в один клик — время сразу освобождается.</p>
+          </article>
+        </div>
+
+        <ul class="stats reveal">
+          <li><b>0 ₸</b><span>до 5 мастеров, навсегда</span></li>
+          <li><b>24/7</b><span>онлайн-запись</span></li>
+          <li><b>10 мин</b><span>на настройку</span></li>
+          <li><b>0</b><span>приложений для клиента</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Возможности -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section__header">
+          <p class="eyebrow reveal">Возможности</p>
+          <h2 class="section__title reveal">Всё для салона — в одном месте</h2>
+          <p class="section__subtitle reveal">У каждого мастера свои услуги и график, а владелец видит весь салон.</p>
         </div>
 
         <div class="features__grid">
-          <article class="feature-card reveal">
-            <div class="feature-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            </div>
-            <h3 class="feature-card__title">Страница записи по ссылке</h3>
-            <p class="feature-card__text">Поставьте ссылку в Instagram, WhatsApp или 2ГИС. Клиент записывается за минуту, без регистрации и звонков.</p>
+          <article class="feature reveal">
+            <span class="feature__icon">🔗</span>
+            <h3>Страница записи в цвете салона</h3>
+            <p>Ссылка для Instagram, WhatsApp и 2ГИС. Логотип, адрес, услуги с ценами — клиент записывается за минуту.</p>
           </article>
-
-          <article class="feature-card reveal reveal--delay-1">
-            <div class="feature-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            <h3 class="feature-card__title">Клиент выбирает мастера</h3>
-            <p class="feature-card__text">У каждого мастера свои услуги и рабочие дни. Клиент видит только тех, кто делает нужную услугу.</p>
+          <article class="feature reveal reveal--delay-1">
+            <span class="feature__icon">⚡</span>
+            <h3>«Ближайшее свободное время»</h3>
+            <p>Клиент сразу видит, к какому мастеру можно попасть быстрее, — и не уходит искать дальше.</p>
           </article>
-
-          <article class="feature-card reveal reveal--delay-2">
-            <div class="feature-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            </div>
-            <h3 class="feature-card__title">Только свободное время</h3>
-            <p class="feature-card__text">Bookly учитывает график мастера и длительность услуги. Двух клиентов на одно время не будет.</p>
+          <article class="feature reveal reveal--delay-2">
+            <span class="feature__icon">✈️</span>
+            <h3>Мастер узнаёт в Telegram</h3>
+            <p>Новые записи, переносы и отмены — мастеру в Telegram, с кнопками «Подтвердить» и «Отклонить».</p>
           </article>
-
-          <article class="feature-card reveal">
-            <div class="feature-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
-            </div>
-            <h3 class="feature-card__title">Запись сразу в Telegram</h3>
-            <p class="feature-card__text">Мастер получает новую запись в Telegram за секунду — с телефоном клиента и кнопками «Подтвердить» и «Отклонить».</p>
+          <article class="feature reveal">
+            <span class="feature__icon">🔁</span>
+            <h3>Клиент сам переносит и отменяет</h3>
+            <p>По личной ссылке или в боте. Вы задаёте срок — например, не позже чем за 2 часа до визита.</p>
           </article>
-
-          <article class="feature-card reveal reveal--delay-1">
-            <div class="feature-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            </div>
-            <h3 class="feature-card__title">Подтверждение — как вам удобно</h3>
-            <p class="feature-card__text">Записи подтверждаются автоматически или вручную — тогда новая запись ждёт, пока вы или мастер её не подтвердите.</p>
+          <article class="feature reveal reveal--delay-1">
+            <span class="feature__icon">🛡️</span>
+            <h3>Защита от фейковых записей</h3>
+            <p>Подтверждение номера через Telegram, не больше 2 записей на номер и чёрный список.</p>
           </article>
-
-          <article class="feature-card reveal reveal--delay-2">
-            <div class="feature-card__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            </div>
-            <h3 class="feature-card__title">Записи по телефону — тоже здесь</h3>
-            <p class="feature-card__text">Клиент позвонил или написал в директ — добавьте запись в кабинете. Все записи салона в одном месте.</p>
+          <article class="feature reveal reveal--delay-2">
+            <span class="feature__icon">🗓️</span>
+            <h3>Календарь всего салона</h3>
+            <p>Все мастера на одном экране. Нажали на свободное время — запись по звонку добавлена за секунды.</p>
           </article>
         </div>
       </div>
     </section>
 
     <!-- Как это работает -->
-    <section class="section how" id="how">
+    <section class="section" id="how">
       <div class="container">
-        <div class="section__header section__header--center">
-          <p class="section__eyebrow reveal">Как это работает</p>
-          <h2 class="section__title reveal">Три шага до первой записи</h2>
+        <div class="section__header">
+          <p class="eyebrow reveal">Как это работает</p>
+          <h2 class="section__title reveal">Первая онлайн-запись — сегодня</h2>
         </div>
 
-        <ol class="how__steps">
-          <li class="how__step reveal">
-            <span class="how__num">01</span>
+        <ol class="steps">
+          <li class="step reveal">
+            <span class="step__num">1</span>
             <h3>Добавьте услуги и мастеров</h3>
-            <p>Название, длительность и цена услуги. У каждого мастера — его услуги и график по дням недели.</p>
+            <p>Название, длительность и цена. У каждого мастера — свои услуги и рабочие дни.</p>
           </li>
-          <li class="how__step reveal reveal--delay-1">
-            <span class="how__num">02</span>
-            <h3>Поделитесь ссылкой</h3>
-            <p>Включите онлайн-запись и поставьте ссылку в Instagram, WhatsApp, сторис или карточку в 2ГИС.</p>
+          <li class="step reveal reveal--delay-1">
+            <span class="step__num">2</span>
+            <h3>Поставьте ссылку</h3>
+            <p>В шапку Instagram, в сторис, в WhatsApp и в карточку 2ГИС.</p>
           </li>
-          <li class="how__step reveal reveal--delay-2">
-            <span class="how__num">03</span>
+          <li class="step reveal reveal--delay-2">
+            <span class="step__num">3</span>
             <h3>Получайте записи</h3>
-            <p>Записи появляются в кабинете, а мастер получает их в Telegram. Никаких звонков и потерянных сообщений.</p>
+            <p>Записи появляются в календаре, мастер получает их в Telegram. Звонков становится меньше с первого дня.</p>
           </li>
         </ol>
       </div>
     </section>
 
     <!-- Цены -->
-    <section class="section pricing" id="pricing">
+    <section class="section" id="pricing">
       <div class="container">
-        <div class="section__header section__header--center">
-          <p class="section__eyebrow reveal">Цены</p>
+        <div class="section__header">
+          <p class="eyebrow reveal">Цены</p>
           <h2 class="section__title reveal">Бесплатно — навсегда</h2>
-          <p class="section__subtitle reveal">
-            Без карты, без пробного периода и без лимита записей. Pro — когда салону нужно больше.
-          </p>
+          <p class="section__subtitle reveal">Без лимита записей и без карты. Pro — когда салону нужно больше, первые 14 дней бесплатно.</p>
         </div>
 
-        <div class="pricing__grid pricing__grid--two">
-          <article class="pricing-card reveal">
-            <h3 class="pricing-card__name">Free</h3>
-            <p class="pricing-card__desc">Для мастеров и небольших салонов</p>
-            <div class="pricing-card__price">
-              <span class="pricing-card__amount">0 ₸</span>
-              <span class="pricing-card__period"> / навсегда</span>
-            </div>
-            <ul class="pricing-card__features">
-              <li><svg class="pricing-card__check" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>До 5 активных мастеров</li>
-              <li><svg class="pricing-card__check" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Записи без лимита</li>
-              <li><svg class="pricing-card__check" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Страница записи по ссылке</li>
-              <li><svg class="pricing-card__check" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Услуги, графики мастеров, ручные записи</li>
-              <li><svg class="pricing-card__check" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Уведомления мастерам в Telegram</li>
-              <li><svg class="pricing-card__check" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Небольшая подпись Bookly на странице записи</li>
+        <div class="pricing">
+          <article class="price-card reveal">
+            <h3 class="price-card__name">Free</h3>
+            <p class="price-card__desc">Для мастеров и небольших салонов</p>
+            <p class="price-card__price"><b>0 ₸</b><span>навсегда</span></p>
+            <ul class="price-card__list">
+              <li>До 5 активных мастеров</li>
+              <li>Записи без лимита</li>
+              <li>Страница записи в цвете салона</li>
+              <li>Календарь, графики, записи по звонку</li>
+              <li>Уведомления мастерам в Telegram</li>
+              <li>Клиент сам переносит и отменяет</li>
+              <li>Защита от фейковых записей</li>
+              <li class="is-muted">Небольшая подпись Bookly на странице записи</li>
             </ul>
-            <a href="/register" class="btn btn--accent btn--full">Начать бесплатно</a>
+            <a href="/register" class="btn btn--ghost btn--full">Начать бесплатно</a>
           </article>
 
-          <article class="pricing-card pricing-card--featured reveal reveal--delay-1">
-            <span class="pricing-card__badge badge">Для команд</span>
-            <h3 class="pricing-card__name">Pro</h3>
-            <p class="pricing-card__desc">Для салонов, которым нужно больше</p>
-            <div class="pricing-card__price">
-              <span class="pricing-card__amount">6 990 ₸</span>
-              <span class="pricing-card__period"> / месяц</span>
-            </div>
-            <ul class="pricing-card__features">
-              <li><svg class="pricing-card__check" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Всё из Free</li>
-              <li><svg class="pricing-card__check" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Мастеров без лимита</li>
-              <li><svg class="pricing-card__check" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Без подписи Bookly</li>
-              <li><svg class="pricing-card__check" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Напоминания клиентам в Telegram за сутки и за 2 часа</li>
-              <li class="pricing-card__soon">Предоплата через Kaspi <span>скоро</span></li>
-              <li class="pricing-card__soon">База клиентов и аналитика <span>скоро</span></li>
+          <article class="price-card price-card--pro reveal reveal--delay-1">
+            <span class="price-card__badge">14 дней бесплатно</span>
+            <h3 class="price-card__name">Pro</h3>
+            <p class="price-card__desc">Для салонов, которым нужно больше</p>
+            <p class="price-card__price"><b>6 990 ₸</b><span>в месяц</span></p>
+            <ul class="price-card__list">
+              <li>Всё из Free</li>
+              <li>Мастеров без лимита</li>
+              <li>Напоминания клиентам в Telegram за сутки и за 2 часа</li>
+              <li>Без подписи Bookly</li>
+              <li class="is-soon">Предоплата через Kaspi <span>скоро</span></li>
+              <li class="is-soon">База клиентов и аналитика <span>скоро</span></li>
             </ul>
-            <a href="/register" class="btn btn--outline btn--full">Начать с Free</a>
-            <p class="pricing-card__note">Оплата переводом через Kaspi. Подключается в кабинете.</p>
+            <a href="/register" class="btn btn--primary btn--full">Попробовать Pro бесплатно</a>
+            <p class="price-card__note">Оплата переводом через Kaspi. Закончится Pro — вернётесь на Free, данные сохранятся.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <!-- FAQ -->
-    <section class="section faq" id="faq">
-      <div class="container">
-        <div class="section__header section__header--center">
-          <p class="section__eyebrow reveal">Вопросы</p>
+    <!-- Вопросы -->
+    <section class="section" id="faq">
+      <div class="container container--narrow">
+        <div class="section__header">
+          <p class="eyebrow reveal">Вопросы</p>
           <h2 class="section__title reveal">Частые вопросы</h2>
         </div>
 
-        <div class="faq__list" id="faq-list">
-          <div class="faq-item reveal">
-            <button class="faq-item__question" type="button" aria-expanded="false">
-              Это правда бесплатно?
-              <svg class="faq-item__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4v12M4 10h12"/></svg>
-            </button>
-            <div class="faq-item__answer">
-              <div class="faq-item__answer-inner">
-                <p>Да. Тариф Free не ограничен по времени и количеству записей — без карты и пробного периода. Платить нужно, только если в салоне больше 5 мастеров или вы хотите функции Pro.</p>
-              </div>
-            </div>
+        <div class="faq" id="faq-list">
+          <div class="faq-item">
+            <button class="faq-item__question" type="button" aria-expanded="false">Это правда бесплатно?<span class="faq-item__icon" aria-hidden="true"></span></button>
+            <div class="faq-item__answer"><div class="faq-item__answer-inner"><p>Да. Free не ограничен по времени и количеству записей, карта не нужна. Платить нужно, только если в салоне больше 5 мастеров или нужны функции Pro — например, напоминания клиентам.</p></div></div>
           </div>
-
-          <div class="faq-item reveal">
-            <button class="faq-item__question" type="button" aria-expanded="false">
-              Нужно ли клиенту регистрироваться или скачивать приложение?
-              <svg class="faq-item__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4v12M4 10h12"/></svg>
-            </button>
-            <div class="faq-item__answer">
-              <div class="faq-item__answer-inner">
-                <p>Нет. Клиент открывает вашу ссылку в браузере телефона, выбирает услугу, мастера и время, оставляет имя и телефон — и всё.</p>
-              </div>
-            </div>
+          <div class="faq-item">
+            <button class="faq-item__question" type="button" aria-expanded="false">Клиенту нужно что-то скачивать или регистрироваться?<span class="faq-item__icon" aria-hidden="true"></span></button>
+            <div class="faq-item__answer"><div class="faq-item__answer-inner"><p>Нет. Клиент открывает ссылку в браузере телефона, выбирает услугу, мастера и время, оставляет имя и телефон. Если хочет — подключает нашего Telegram-бота и видит там свои записи.</p></div></div>
           </div>
-
-          <div class="faq-item reveal">
-            <button class="faq-item__question" type="button" aria-expanded="false">
-              Как мастер узнаёт о новой записи?
-              <svg class="faq-item__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4v12M4 10h12"/></svg>
-            </button>
-            <div class="faq-item__answer">
-              <div class="faq-item__answer-inner">
-                <p>Через Telegram. В кабинете у каждого мастера есть кнопка «Подключить Telegram» — мастер один раз нажимает Start в боте и дальше получает каждую свою запись с телефоном клиента. Если записи подтверждаются вручную, в сообщении есть кнопки «Подтвердить» и «Отклонить». Это бесплатно.</p>
-              </div>
-            </div>
+          <div class="faq-item">
+            <button class="faq-item__question" type="button" aria-expanded="false">Как мастер узнаёт о записи?<span class="faq-item__icon" aria-hidden="true"></span></button>
+            <div class="faq-item__answer"><div class="faq-item__answer-inner"><p>Через Telegram. Вы отправляете мастеру его личную ссылку (можно прямо в WhatsApp из кабинета), он один раз нажимает Start — и дальше получает свои новые записи, переносы и отмены.</p></div></div>
           </div>
-
-          <div class="faq-item reveal">
-            <button class="faq-item__question" type="button" aria-expanded="false">
-              Что будет, если мастеров больше пяти?
-              <svg class="faq-item__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4v12M4 10h12"/></svg>
-            </button>
-            <div class="faq-item__answer">
-              <div class="faq-item__answer-inner">
-                <p>На Free одновременно активны до 5 мастеров — остальных можно добавить, но держать на паузе. Если нужна вся команда сразу, подключите Pro: мастеров без лимита.</p>
-              </div>
-            </div>
+          <div class="faq-item">
+            <button class="faq-item__question" type="button" aria-expanded="false">Может ли клиент сам отменить или перенести запись?<span class="faq-item__icon" aria-hidden="true"></span></button>
+            <div class="faq-item__answer"><div class="faq-item__answer-inner"><p>Да — по личной ссылке после записи или в Telegram-боте. Вы сами решаете, до какого момента это можно сделать (например, не позже чем за 2 часа), а перенести запись клиент может не больше 2 раз. Мастер сразу получает уведомление.</p></div></div>
           </div>
-
-          <div class="faq-item reveal">
-            <button class="faq-item__question" type="button" aria-expanded="false">
-              Как оплатить Pro?
-              <svg class="faq-item__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4v12M4 10h12"/></svg>
-            </button>
-            <div class="faq-item__answer">
-              <div class="faq-item__answer-inner">
-                <p>Переводом через Kaspi: в кабинете, в разделе «Тариф и оплата», указаны реквизиты и сумма. После перевода нажмите «Я оплатил» — мы проверим платёж и включим Pro. Если Pro закончится, вы вернётесь на Free, все данные сохранятся.</p>
-              </div>
-            </div>
+          <div class="faq-item">
+            <button class="faq-item__question" type="button" aria-expanded="false">А если кто-то будет делать фейковые записи?<span class="faq-item__icon" aria-hidden="true"></span></button>
+            <div class="faq-item__answer"><div class="faq-item__answer-inner"><p>На один номер — не больше 2 предстоящих записей, есть чёрный список, а по желанию можно включить подтверждение номера через Telegram: записаться на чужой номер станет невозможно.</p></div></div>
           </div>
-
-          <div class="faq-item reveal">
-            <button class="faq-item__question" type="button" aria-expanded="false">
-              Можно ли пользоваться с телефона?
-              <svg class="faq-item__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4v12M4 10h12"/></svg>
-            </button>
-            <div class="faq-item__answer">
-              <div class="faq-item__answer-inner">
-                <p>Да. И кабинет, и страница записи открываются в браузере телефона или компьютера — ничего устанавливать не нужно.</p>
-              </div>
-            </div>
+          <div class="faq-item">
+            <button class="faq-item__question" type="button" aria-expanded="false">Как оплатить Pro?<span class="faq-item__icon" aria-hidden="true"></span></button>
+            <div class="faq-item__answer"><div class="faq-item__answer-inner"><p>Сначала можно попробовать 14 дней бесплатно. Дальше — переводом через Kaspi: в кабинете, в разделе «Тариф и оплата», указаны реквизиты. После перевода нажмите «Я оплатил» — мы проверим и включим Pro.</p></div></div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-item__question" type="button" aria-expanded="false">Можно пользоваться с телефона?<span class="faq-item__icon" aria-hidden="true"></span></button>
+            <div class="faq-item__answer"><div class="faq-item__answer-inner"><p>Да. И кабинет, и страница записи работают в браузере телефона и компьютера — ничего устанавливать не нужно.</p></div></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- CTA -->
+    <!-- Финальный призыв -->
     <section class="cta">
       <div class="container">
         <div class="cta__card reveal">
-          <h2 class="cta__title">Создайте страницу записи за 10 минут</h2>
-          <p class="cta__text">
-            Бесплатно навсегда до 5 мастеров. Без карты и пробного периода.
-          </p>
+          <h2 class="cta__title">Закройте тетрадку. Откройте запись 24/7</h2>
+          <p class="cta__text">Бесплатно навсегда до 5 мастеров. Настройка — 10 минут.</p>
           <div class="cta__actions">
-            <a href="/register" class="btn btn--primary btn--lg">Начать бесплатно</a>
+            <a href="/register" class="btn btn--light btn--lg">Начать бесплатно</a>
             <a href="/login" class="btn btn--ghost btn--lg">Уже есть аккаунт</a>
           </div>
         </div>
@@ -394,15 +357,13 @@
         <span class="logo__mark">B</span>
         Bookly
       </a>
-
       <nav class="footer__links" aria-label="Подвал">
-        <a href="#features" class="footer__link">Возможности</a>
-        <a href="#pricing" class="footer__link">Цены</a>
-        <a href="#faq" class="footer__link">Вопросы</a>
-        <a href="/login" class="footer__link">Войти</a>
+        <a href="#features">Возможности</a>
+        <a href="#pricing">Цены</a>
+        <a href="#faq">Вопросы</a>
+        <a href="/login">Войти</a>
       </nav>
-
-      <p class="footer__copy">© 2026 Bookly · Онлайн-запись для салонов и мастеров</p>
+      <p class="footer__copy">© 2026 Bookly · Онлайн-запись для салонов и мастеров Казахстана</p>
     </div>
   </footer>
 
