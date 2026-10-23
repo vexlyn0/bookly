@@ -12,6 +12,7 @@ const {
   createPublicBooking,
 } = require("../lib/public-booking-service");
 const { bookingCreateLimiter } = require("../middleware/booking-rate-limit");
+const clientManage = require("../lib/client-manage-service");
 
 const router = Router();
 
@@ -98,5 +99,42 @@ router.post(
     }
   }
 );
+
+// Личная ссылка клиента на запись: просмотр, отмена, перенос.
+router.get("/manage/:token", async (req, res) => {
+  try {
+    const result = await clientManage.getManageInfo(req.params.token);
+    return res.json({ ok: true, ...result });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+router.get("/manage/:token/slots", async (req, res) => {
+  try {
+    const result = await clientManage.getManageSlots(req.params.token, String(req.query.date || "").trim());
+    return res.json({ ok: true, ...result });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+router.post("/manage/:token/cancel", bookingCreateLimiter, async (req, res) => {
+  try {
+    const result = await clientManage.cancelByToken(req.params.token);
+    return res.json({ ok: true, ...result });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+router.post("/manage/:token/reschedule", bookingCreateLimiter, async (req, res) => {
+  try {
+    const result = await clientManage.rescheduleByToken(req.params.token, req.body || {});
+    return res.json({ ok: true, ...result });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
 
 module.exports = router;

@@ -41,6 +41,11 @@ app.get("/book/:slug", (req, res) => {
   res.sendFile(path.join(config.publicDir, "book", "index.html"));
 });
 
+// Личная ссылка клиента на запись (отмена / перенос)
+app.get("/b/:token", (req, res) => {
+  res.sendFile(path.join(config.publicDir, "book", "manage.html"));
+});
+
 app.use((req, res) => {
   res.status(404).json({
     ok: false,

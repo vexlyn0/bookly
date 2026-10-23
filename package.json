@@ -39,6 +39,7 @@
     "telegram:setup": "node scripts/telegram-setup.js",
     "test:telegram-unit": "node scripts/test-telegram-service-unit.js",
     "test:booking-notify-unit": "node scripts/test-booking-notify-unit.js",
+    "test:client-manage-unit": "node scripts/test-client-manage-unit.js",
     "db:freemium": "node scripts/setup-freemium.js",
     "test:migrations": "node scripts/test-migrations.mjs",
     "test:plan-unit": "node scripts/test-plan-unit.js"

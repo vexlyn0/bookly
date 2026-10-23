@@ -44,6 +44,11 @@ const TITLES = {
   deleted: "🗑 <b>Запись удалена</b>",
 };
 
+const CLIENT_TITLES = {
+  rescheduled: "🔁 <b>Клиент перенёс запись</b>",
+  canceled: "❌ <b>Клиент отменил запись</b>",
+};
+
 function text(value, max) {
   return String(value ?? "").trim().slice(0, max);
 }
@@ -108,8 +113,9 @@ async function getUserOrganizationId(userId) {
 }
 
 /** Текст сообщения для одного получателя. */
-function buildMessage(kind, { organization, booking, previous, staffById }) {
+function buildMessage(kind, { organization, booking, previous, staffById, byClient = false }) {
   const organizationName = organization.public_name || organization.name || "";
+  const title = (byClient && CLIENT_TITLES[kind]) || TITLES[kind];
 
   if (kind === "deleted") {
     return telegram.formatBookingMessage(
@@ -123,7 +129,7 @@ function buildMessage(kind, { organization, booking, previous, staffById }) {
         clientName: previous.client_name,
         clientPhone: previous.client_phone,
       },
-      { title: TITLES.deleted, showStatus: false }
+      { title, showStatus: false }
     );
   }
 
@@ -141,14 +147,14 @@ function buildMessage(kind, { organization, booking, previous, staffById }) {
           endTime: previous.end_time,
           reference: "",
         },
-        { title: TITLES.reassigned, showStatus: false }
+        { title, showStatus: false }
       ) + (nextStaff ? `\n\nТеперь у мастера: ${telegram.escapeHtml(nextStaff)}` : "")
     );
   }
 
   if (kind === "rescheduled") {
     return telegram.formatBookingMessage(view, {
-      title: TITLES.rescheduled,
+      title,
       before: formatShortDateTime(previous.booking_date, previous.start_time),
     });
   }
@@ -161,11 +167,11 @@ function buildMessage(kind, { organization, booking, previous, staffById }) {
         startTime: previous.start_time,
         endTime: previous.end_time,
       },
-      { title: TITLES.canceled, showStatus: false }
+      { title, showStatus: false }
     );
   }
 
-  return telegram.formatBookingMessage(view, { title: TITLES.new });
+  return telegram.formatBookingMessage(view, { title });
 }
 
 /** Дата, по которой решаем, не в прошлом ли запись (о прошедших не пишем). */
@@ -220,6 +226,17 @@ async function notifyBookingChange(userId, body = {}) {
     throw appError("Запись не найдена", "BOOKING_NOT_FOUND", 404);
   }
 
+  return deliverChangeNotifications({ organization, event, booking, previous });
+}
+
+/**
+ * Рассылает мастерам уведомления об изменении записи. Запись и снимок «до»
+ * уже проверены вызывающим кодом. byClient — изменение сделал сам клиент.
+ */
+async function deliverChangeNotifications({ organization, event, booking, previous, byClient = false }) {
+  const organizationId = organization.id;
+  const supabase = getSupabaseAdmin();
+
   const plan = telegram.planBookingChangeNotifications({ event, booking, previous });
   if (!plan.length) return { sent: 0 };
 
@@ -248,7 +265,7 @@ async function notifyBookingChange(userId, body = {}) {
     if (!staff?.telegram_chat_id) continue;
     if (relevantDate(kind, booking, previous) < today) continue;
 
-    const message = buildMessage(kind, { organization, booking, previous, staffById });
+    const message = buildMessage(kind, { organization, booking, previous, staffById, byClient });
     const keyboard =
       kind === "new" || kind === "rescheduled"
         ? { reply_markup: telegram.bookingKeyboard(booking.id, booking.status) }
@@ -262,6 +279,7 @@ async function notifyBookingChange(userId, body = {}) {
 
 module.exports = {
   notifyBookingChange,
+  deliverChangeNotifications,
   // для тестов
   sanitizeSnapshot,
   buildMessage,

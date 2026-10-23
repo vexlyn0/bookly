@@ -51,6 +51,14 @@
       <h2 class="pb-success__title">Запись создана</h2>
       <p class="pb-success__status" id="pb-success-status"></p>
       <dl class="pb-success__details" id="pb-success-details"></dl>
+      <div class="pb-manage-link" id="pb-manage-link" hidden>
+        <p class="pb-manage-link__title">Сохраните ссылку на запись</p>
+        <p class="pb-manage-link__text">По ней можно перенести или отменить запись, если планы изменятся.</p>
+        <div class="pb-manage-link__actions">
+          <a class="btn btn--outline btn--sm" id="pb-manage-whatsapp" href="#" target="_blank" rel="noopener">Сохранить в WhatsApp</a>
+          <button class="btn btn--ghost btn--sm" type="button" id="pb-manage-copy">Скопировать ссылку</button>
+        </div>
+      </div>
       <button class="btn btn--primary" type="button" id="pb-success-restart">Создать ещё одну запись</button>
     </section>
   </main>

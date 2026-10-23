@@ -37,6 +37,13 @@ window.BooklyPublicSettingsValidation = (() => {
       errors.booking_confirmation_mode = "Выберите режим подтверждения.";
     }
 
+    // "off" — клиент не может сам менять запись (null в базе)
+    const cutoffRaw = String(payload.client_manage_cutoff_hours ?? "2");
+    const cutoff = cutoffRaw === "off" ? null : Number(cutoffRaw);
+    if (cutoff !== null && !(Number.isInteger(cutoff) && cutoff >= 0 && cutoff <= 168)) {
+      errors.client_manage_cutoff_hours = "Выберите срок отмены.";
+    }
+
     return {
       valid: Object.keys(errors).length === 0,
       errors,
@@ -48,6 +55,7 @@ window.BooklyPublicSettingsValidation = (() => {
         address: address || null,
         public_booking_enabled: Boolean(payload.public_booking_enabled),
         booking_confirmation_mode: mode,
+        client_manage_cutoff_hours: cutoff,
       },
     };
   }

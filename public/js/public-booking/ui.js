@@ -86,6 +86,37 @@ window.PublicBookingUI = (() => {
       <div><dt>Дата</dt><dd>${escapeHtml(formatDateRu(booking.booking_date))}</dd></div>
       <div><dt>Время</dt><dd>${escapeHtml(booking.start_time)} – ${escapeHtml(booking.end_time)}</dd></div>
     `;
+
+    renderManageLink(booking);
+  }
+
+  /** Личная ссылка клиента: перенос / отмена записи. */
+  function renderManageLink(booking) {
+    const block = document.getElementById("pb-manage-link");
+    if (!block) return;
+
+    block.hidden = !booking.manage_url;
+    if (!booking.manage_url) return;
+
+    const url = `${window.location.origin}${booking.manage_url}`;
+    const orgName = els.heroName?.textContent || "";
+    const message =
+      `Моя запись${orgName ? ` в «${orgName}»` : ""}: ${booking.service_name}, ` +
+      `${formatDateRu(booking.booking_date)} в ${booking.start_time}. ` +
+      `Перенести или отменить: ${url}`;
+
+    document.getElementById("pb-manage-whatsapp").href = `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+    const copyBtn = document.getElementById("pb-manage-copy");
+    copyBtn.textContent = "Скопировать ссылку";
+    copyBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(url);
+        copyBtn.textContent = "Скопировано ✓";
+      } catch {
+        window.prompt("Скопируйте ссылку:", url);
+      }
+    };
   }
 
   function renderOrganization(organization) {

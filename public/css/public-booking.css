@@ -378,3 +378,92 @@
 .pb-header[hidden] {
   display: none;
 }
+
+/* Моя запись (/b/<token>) и ссылка на запись после создания */
+.pm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.pm-actions .btn {
+  flex: 1 1 180px;
+  text-decoration: none;
+  text-align: center;
+}
+
+.pm-hint {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.pm-notice {
+  margin: 0 0 16px;
+}
+
+.pm-status {
+  font-weight: 600;
+}
+
+.pm-status--confirmed {
+  color: #15803d;
+}
+
+.pm-status--pending {
+  color: #b45309;
+}
+
+.pm-status--canceled,
+.pm-status--no_show {
+  color: #b91c1c;
+}
+
+.pm-danger {
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.35);
+}
+
+.pm-danger-solid {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.pm-danger-solid:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.pb-manage-link {
+  max-width: 420px;
+  margin: 0 auto 24px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  text-align: left;
+}
+
+.pb-manage-link__title {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.pb-manage-link__text {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.pb-manage-link__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pb-manage-link__actions .btn {
+  flex: 1 1 140px;
+  text-decoration: none;
+  text-align: center;
+}

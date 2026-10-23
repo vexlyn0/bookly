@@ -810,9 +810,16 @@ window.BooklyBookingsUI = (() => {
   }
 
   function getClientChangeKind(before, after) {
-    if (!before || !ACTIVE_STATUSES.includes(before.status)) return null;
-
     const today = BooklyBookingsSlots.formatDateLocal(new Date());
+
+    // Запись создана в кабинете (клиент позвонил) — отправить подтверждение и ссылку.
+    if (!before) {
+      return after && ACTIVE_STATUSES.includes(after.status) && after.booking_date >= today
+        ? "created"
+        : null;
+    }
+
+    if (!ACTIVE_STATUSES.includes(before.status)) return null;
 
     if (!after || after.status === "canceled") {
       return before.booking_date >= today ? "canceled" : null;
@@ -854,12 +861,23 @@ window.BooklyBookingsUI = (() => {
     const when = `${formatDateLong(booking.booking_date)} в ${BooklyBookingsSlots.formatTimeForInput(booking.start_time)}`;
     const service = booking.services?.name || "";
 
+    const staffName = booking.staff?.name || "";
+    const manageUrl = booking.manage_token ? `${window.location.origin}/b/${booking.manage_token}` : "";
+    const manageLine = manageUrl ? ` Перенести или отменить: ${manageUrl}` : "";
+
+    if (kind === "created") {
+      return (
+        `${greeting} Вы записаны в «${orgName}»: ${when}` +
+        `${service ? ` — ${service}` : ""}${staffName ? `, мастер ${staffName}` : ""}.` +
+        manageLine
+      );
+    }
+
     if (kind === "rescheduled") {
-      const staffName = booking.staff?.name || "";
       return (
         `${greeting} Ваша запись в «${orgName}» перенесена на ${when}` +
-        `${service ? ` — ${service}` : ""}${staffName ? `, мастер ${staffName}` : ""}. ` +
-        "Если время не подходит, ответьте на это сообщение."
+        `${service ? ` — ${service}` : ""}${staffName ? `, мастер ${staffName}` : ""}.` +
+        (manageLine || " Если время не подходит, ответьте на это сообщение.")
       );
     }
 
@@ -889,7 +907,7 @@ window.BooklyBookingsUI = (() => {
     const waNumber = toWhatsAppNumber(booking.client_phone);
 
     document.getElementById("client-notify-title").textContent =
-      kind === "canceled" ? "Запись отменена" : "Запись перенесена";
+      { canceled: "Запись отменена", rescheduled: "Запись перенесена", created: "Запись создана" }[kind];
     document.getElementById("client-notify-staff").textContent = describeStaffNotice(
       kind === "canceled" ? before.staff_id : after.staff_id
     );

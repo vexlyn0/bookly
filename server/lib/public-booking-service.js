@@ -312,6 +312,7 @@ function toPublicBookingResponse(booking, service, staff) {
     success: true,
     booking: {
       reference: booking.public_reference,
+      manage_url: booking.manage_token ? `/b/${booking.manage_token}` : "",
       status: booking.status,
       service_name: service.name,
       staff_name: staff.name,
@@ -344,7 +345,7 @@ async function insertPublicBooking(supabase, organization, payload, service, sta
     const { data, error } = await supabase
       .from("bookings")
       .insert(insertPayload)
-      .select("id, public_reference, status, booking_date, start_time, end_time")
+      .select("id, public_reference, manage_token, status, booking_date, start_time, end_time")
       .single();
 
     if (!error && data?.public_reference) {

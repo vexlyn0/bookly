@@ -133,4 +133,5 @@ module.exports = {
   isPastSlot,
   isDateTooFarAhead,
   formatDateInTimezone,
+  getMinutesInTimezone,
 };

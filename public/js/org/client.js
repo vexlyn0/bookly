@@ -40,6 +40,7 @@ window.BooklyOrg = (() => {
           address,
           public_booking_enabled,
           booking_confirmation_mode,
+          client_manage_cutoff_hours,
           created_at,
           updated_at
         )
@@ -153,6 +154,7 @@ window.BooklyOrg = (() => {
         address: payload.address,
         public_booking_enabled: payload.public_booking_enabled,
         booking_confirmation_mode: payload.booking_confirmation_mode,
+        client_manage_cutoff_hours: payload.client_manage_cutoff_hours,
       })
       .eq("id", organizationId)
       .select(`
@@ -167,6 +169,7 @@ window.BooklyOrg = (() => {
         address,
         public_booking_enabled,
         booking_confirmation_mode,
+        client_manage_cutoff_hours,
         created_at,
         updated_at
       `)

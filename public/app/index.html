@@ -291,6 +291,22 @@
                 </select>
               </label>
 
+              <label class="field">
+                <span class="field__label">Клиент может сам отменить или перенести запись</span>
+                <select class="field__select" name="client_manage_cutoff_hours">
+                  <option value="0">В любое время до визита</option>
+                  <option value="1">Не позже чем за 1 час</option>
+                  <option value="2">Не позже чем за 2 часа</option>
+                  <option value="3">Не позже чем за 3 часа</option>
+                  <option value="6">Не позже чем за 6 часов</option>
+                  <option value="12">Не позже чем за 12 часов</option>
+                  <option value="24">Не позже чем за сутки</option>
+                  <option value="48">Не позже чем за 2 суток</option>
+                  <option value="off">Нельзя — только через салон</option>
+                </select>
+                <span class="field__hint">Ссылку на запись клиент получает после онлайн-записи. Перенести сам он может до 2 раз, мастер получает уведомление в Telegram.</span>
+              </label>
+
               <p class="alert alert--error" id="public-booking-form-error" role="alert" hidden></p>
               <p class="alert alert--success" id="public-booking-form-success" role="status" hidden></p>
 

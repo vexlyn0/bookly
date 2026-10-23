@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Моя запись — Bookly</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/public-booking.css">
+</head>
+<body class="public-booking-page">
+  <main class="pb-main">
+    <div class="pb-loader" id="pm-loader" aria-live="polite">
+      <div class="pb-loader__spinner" aria-hidden="true"></div>
+      <p>Загрузка…</p>
+    </div>
+
+    <div class="pb-error-screen" id="pm-error" hidden>
+      <h1 class="pb-error-screen__title">Запись не найдена</h1>
+      <p class="pb-error-screen__text" id="pm-error-text">Проверьте ссылку или свяжитесь с салоном.</p>
+    </div>
+
+    <div id="pm-app" hidden>
+      <section class="pb-hero">
+        <p class="pb-hero__eyebrow">Моя запись</p>
+        <h1 class="pb-hero__title" id="pm-org-name">—</h1>
+        <div class="pb-hero__meta" id="pm-org-meta"></div>
+      </section>
+
+      <section class="pb-panel" id="pm-panel" aria-live="polite"></section>
+    </div>
+  </main>
+
+  <script src="/js/public-booking/errors.js"></script>
+  <script src="/js/public-booking/manage.js"></script>
+</body>
+</html>

@@ -60,7 +60,7 @@ config.telegram.token = "test-token";
 config.telegram.isConfigured = true;
 
 const telegram = require("../server/lib/telegram-service");
-const { notifyBookingChange, sanitizeSnapshot } = require("../server/lib/booking-notify-service");
+const { notifyBookingChange, sanitizeSnapshot, buildMessage } = require("../server/lib/booking-notify-service");
 
 const USER = "u0000000-0000-4000-8000-000000000001";
 const ORG = "0a000000-0000-4000-8000-000000000001";
@@ -173,7 +173,15 @@ async function testReschedule() {
   assert.ok(sent[0].text.includes("Было: <s>"));
   assert.ok(sent[0].text.includes("12:00"));
   assert.ok(sent[0].text.includes("14:00–15:00"));
-  ok("Перенос 12:00 → 14:00: мастеру приходит «Запись перенесена», было/стало");
+  const byClient = buildMessage("rescheduled", {
+    organization: tables.organizations[0],
+    booking: bookingRow(),
+    previous: snapshot(),
+    staffById: new Map(),
+    byClient: true,
+  });
+  assert.ok(byClient.includes("Клиент перенёс запись"));
+  ok("Перенос 12:00 → 14:00: мастеру приходит «Запись перенесена», было/стало; от клиента — «Клиент перенёс»");
 }
 
 async function testReassign() {

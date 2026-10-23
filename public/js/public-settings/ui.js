@@ -54,6 +54,13 @@ window.BooklyPublicSettingsUI = (() => {
       organization.public_booking_enabled === true;
     els.form.elements.namedItem("booking_confirmation_mode").value =
       organization.booking_confirmation_mode || "auto";
+
+    const cutoffSelect = els.form.elements.namedItem("client_manage_cutoff_hours");
+    if (cutoffSelect) {
+      const cutoff = organization.client_manage_cutoff_hours;
+      cutoffSelect.value = cutoff === null ? "off" : String(cutoff ?? 2);
+      if (!cutoffSelect.value) cutoffSelect.value = "2";
+    }
   }
 
   function hideMessages() {
@@ -110,6 +117,7 @@ window.BooklyPublicSettingsUI = (() => {
       address: form.elements.namedItem("address").value,
       public_booking_enabled: form.elements.namedItem("public_booking_enabled").checked,
       booking_confirmation_mode: form.elements.namedItem("booking_confirmation_mode").value,
+      client_manage_cutoff_hours: form.elements.namedItem("client_manage_cutoff_hours")?.value ?? "2",
     };
 
     const result = BooklyPublicSettingsValidation.validate(payload);
