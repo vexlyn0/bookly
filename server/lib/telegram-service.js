@@ -15,6 +15,7 @@ const config = require("../config");
 const { getSupabaseAdmin } = require("./supabase-admin");
 const { formatTimeForInput } = require("./slots");
 const { mapSubscriptionError } = require("./subscription-service");
+const phoneVerification = require("./phone-verification-service");
 
 const API_BASE = "https://api.telegram.org";
 const REQUEST_TIMEOUT_MS = 8000;
@@ -472,6 +473,108 @@ async function unlinkChat(chatId) {
   return "🔕 Уведомления отключены. Чтобы включить снова, используйте ссылку из кабинета Bookly.";
 }
 
+const SHARE_PHONE_KEYBOARD = {
+  keyboard: [[{ text: "📱 Поделиться номером", request_contact: true }]],
+  resize_keyboard: true,
+  one_time_keyboard: true,
+};
+
+/** /start v_<token> — клиент пришёл подтвердить номер для онлайн-записи. */
+async function startPhoneVerification(chatId, token) {
+  let verification = null;
+  try {
+    verification = await phoneVerification.attachChat(token, chatId);
+  } catch (error) {
+    logTelegramError("startPhoneVerification", error);
+  }
+
+  if (!verification) {
+    await sendMessage(
+      chatId,
+      "⌛ Ссылка устарела. Вернитесь на страницу записи и нажмите «Подтвердить номер» ещё раз."
+    );
+    return;
+  }
+
+  const orgName = verification.organizations?.public_name || verification.organizations?.name || "";
+  await sendMessage(
+    chatId,
+    [
+      `📲 Подтверждение номера для записи${orgName ? ` в «${escapeHtml(orgName)}»` : ""}.`,
+      "",
+      "Нажмите кнопку <b>«Поделиться номером»</b> внизу 👇",
+    ].join("\n"),
+    { reply_markup: SHARE_PHONE_KEYBOARD }
+  );
+}
+
+/** Клиент поделился контактом — сверяем с заявкой. */
+async function handleContact(message) {
+  const chatId = message.chat.id;
+  const contact = message.contact;
+
+  // Только собственный контакт: чужой номер из записной книжки не принимаем.
+  if (!contact?.user_id || contact.user_id !== message.from?.id) {
+    await sendMessage(chatId, "Отправьте свой номер кнопкой «📱 Поделиться номером».", {
+      reply_markup: SHARE_PHONE_KEYBOARD,
+    });
+    return;
+  }
+
+  let result = "none";
+  try {
+    result = await phoneVerification.confirmContact(chatId, contact.phone_number);
+  } catch (error) {
+    logTelegramError("handleContact", error);
+    await sendMessage(chatId, "⚠️ Не удалось проверить номер. Попробуйте ещё раз.");
+    return;
+  }
+
+  const removeKeyboard = { reply_markup: { remove_keyboard: true } };
+
+  if (result === "verified") {
+    await sendMessage(
+      chatId,
+      "✅ Номер подтверждён!\n\nВернитесь на страницу записи — она завершится автоматически. Сюда придёт подтверждение записи.",
+      removeKeyboard
+    );
+  } else if (result === "mismatch") {
+    await sendMessage(
+      chatId,
+      "❌ Номер этого Telegram не совпадает с номером, указанным в записи.\n\nВернитесь на страницу записи и укажите номер, к которому привязан ваш Telegram.",
+      removeKeyboard
+    );
+  } else {
+    await sendMessage(
+      chatId,
+      "⌛ Заявка на подтверждение не найдена или устарела. Вернитесь на страницу записи и нажмите «Подтвердить номер» ещё раз.",
+      removeKeyboard
+    );
+  }
+}
+
+/** Подтверждение записи клиенту (если номер подтверждён через бота). Никогда не бросает. */
+async function sendClientBookingConfirmation(chatId, view, manageUrl) {
+  if (!isEnabled() || !chatId) return;
+  const lines = [
+    `✅ <b>Вы записаны</b> · ${escapeHtml(view.organizationName)}`,
+    "",
+    `📅 <b>${escapeHtml(formatDate(view.bookingDate))}, ${escapeHtml(formatTimeForInput(view.startTime))}–${escapeHtml(
+      formatTimeForInput(view.endTime)
+    )}</b>`,
+    `💼 ${escapeHtml(view.serviceName)}`,
+    `👤 Мастер: ${escapeHtml(view.staffName)}`,
+  ];
+  if (view.status === "pending") lines.push("", "⏳ Салон подтвердит запись.");
+  if (manageUrl) lines.push("", `Перенести или отменить: ${escapeHtml(manageUrl)}`);
+
+  try {
+    await sendMessage(chatId, lines.join("\n"));
+  } catch (error) {
+    logTelegramError("sendClientBookingConfirmation", error);
+  }
+}
+
 async function handleMessage(message) {
   const chatId = message.chat?.id;
   if (!chatId) return;
@@ -479,8 +582,18 @@ async function handleMessage(message) {
   // Данные клиентов отправляем только в личные чаты.
   if (message.chat.type !== "private") return;
 
+  if (message.contact) {
+    await handleContact(message);
+    return;
+  }
+
   const parsed = parseCommand(message.text);
   let reply = HELP_TEXT;
+
+  if (parsed?.command === "start" && /^v_[0-9a-f]{32}$/.test(parsed.args)) {
+    await startPhoneVerification(chatId, parsed.args.slice(2));
+    return;
+  }
 
   if (parsed?.command === "start" && parsed.args) {
     reply = await linkStaff(chatId, parsed.args);
@@ -577,7 +690,7 @@ async function handleUpdate(update) {
     return;
   }
 
-  if (update?.message?.text) {
+  if (update?.message?.text || update?.message?.contact) {
     await handleMessage(update.message);
   }
 }
@@ -590,6 +703,7 @@ module.exports = {
   callApi,
   notifyNewBooking,
   sendToStaff,
+  sendClientBookingConfirmation,
   handleUpdate,
   planBookingChangeNotifications,
   viewFromBookingRow,

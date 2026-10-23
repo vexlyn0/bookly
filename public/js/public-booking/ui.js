@@ -357,11 +357,63 @@ window.PublicBookingUI = (() => {
         ${state.selection.clientEmail ? `<div class="pb-summary__row"><span class="pb-summary__label">Email</span><span>${escapeHtml(state.selection.clientEmail)}</span></div>` : ""}
         ${state.selection.clientComment ? `<div class="pb-summary__row"><span class="pb-summary__label">Комментарий</span><span>${escapeHtml(state.selection.clientComment)}</span></div>` : ""}
       </div>
+      ${renderVerification(state)}
+    `;
+  }
+
+  /** Кнопка подтверждения записи или шаг «Подтвердите номер в Telegram». */
+  function renderVerification(state) {
+    const required = state.organization?.phone_verification_required;
+    const v = state.verification;
+    const verified = v?.status === "verified" && v.phone === state.selection.clientPhone;
+    const phone = escapeHtml(state.selection.clientPhone);
+
+    if (!required || verified) {
+      return `
+        <div class="pb-panel__actions">
+          <button class="btn btn--ghost" type="button" data-action="back">Назад</button>
+          <button class="btn btn--primary" type="button" data-action="submit-booking" id="pb-submit-btn">Подтвердить запись</button>
+        </div>`;
+    }
+
+    if (v?.status === "waiting") {
+      return `
+        <div class="pb-verify">
+          <p class="pb-verify__title">Подтвердите номер ${phone}</p>
+          <ol class="pb-verify__steps">
+            <li>Откройте Telegram кнопкой ниже.</li>
+            <li>Нажмите <b>Start</b>, затем <b>«Поделиться номером»</b>.</li>
+            <li>Вернитесь сюда — запись создастся сама.</li>
+          </ol>
+          <a class="btn btn--primary pb-verify__open" href="${escapeHtml(v.botUrl)}" target="_blank" rel="noopener">Открыть Telegram</a>
+          <p class="pb-verify__wait"><span class="pb-verify__spinner" aria-hidden="true"></span>Ждём подтверждения…</p>
+        </div>
+        <div class="pb-panel__actions">
+          <button class="btn btn--ghost" type="button" data-action="change-phone">Изменить номер</button>
+        </div>`;
+    }
+
+    if (v?.status === "mismatch" || v?.status === "expired") {
+      const text =
+        v.status === "mismatch"
+          ? `Номер вашего Telegram не совпадает с ${phone}. Укажите номер, к которому привязан Telegram.`
+          : "Время на подтверждение истекло. Попробуйте ещё раз.";
+      return `
+        <p class="alert alert--error pb-alert" role="alert">${text}</p>
+        <div class="pb-panel__actions">
+          <button class="btn btn--ghost" type="button" data-action="change-phone">Изменить номер</button>
+          <button class="btn btn--primary" type="button" data-action="retry-verification">Подтвердить ещё раз</button>
+        </div>`;
+    }
+
+    return `
+      <p class="pb-verify__note">Чтобы защитить расписание от фейковых записей, салон просит подтвердить номер в Telegram — это бесплатно и займёт 10 секунд.</p>
       <div class="pb-panel__actions">
         <button class="btn btn--ghost" type="button" data-action="back">Назад</button>
-        <button class="btn btn--primary" type="button" data-action="submit-booking" id="pb-submit-btn">Подтвердить запись</button>
-      </div>
-    `;
+        <button class="btn btn--primary" type="button" data-action="submit-booking" id="pb-submit-btn" ${v?.status === "creating" ? "disabled" : ""}>
+          ${v?.status === "creating" ? "Подождите…" : "Подтвердить номер в Telegram"}
+        </button>
+      </div>`;
   }
 
   return {

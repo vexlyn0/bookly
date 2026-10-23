@@ -467,3 +467,70 @@
   text-decoration: none;
   text-align: center;
 }
+
+/* Подтверждение номера в Telegram */
+.pb-verify {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(42, 171, 238, 0.08);
+  border: 1px solid rgba(42, 171, 238, 0.3);
+}
+
+.pb-verify__title {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.pb-verify__steps {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  display: grid;
+  gap: 4px;
+}
+
+.pb-verify__open {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  background: #2aabee;
+  border-color: #2aabee;
+}
+
+.pb-verify__open:hover {
+  background: #229ed9;
+  border-color: #229ed9;
+}
+
+.pb-verify__wait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.pb-verify__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(42, 171, 238, 0.3);
+  border-top-color: #2aabee;
+  border-radius: 50%;
+  animation: pb-verify-spin 0.8s linear infinite;
+}
+
+@keyframes pb-verify-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pb-verify__note {
+  margin: 20px 0 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}

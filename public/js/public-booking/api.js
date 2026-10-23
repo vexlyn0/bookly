@@ -56,6 +56,15 @@ window.PublicBookingApi = (() => {
       });
       return request(`/organizations/${encodeURIComponent(slug)}/slots?${query}`);
     },
+    createPhoneVerification(slug, clientPhone) {
+      return request(`/organizations/${encodeURIComponent(slug)}/phone-verifications`, {
+        method: "POST",
+        body: JSON.stringify({ client_phone: clientPhone }),
+      });
+    },
+    getPhoneVerification(token) {
+      return request(`/phone-verifications/${encodeURIComponent(token)}?_t=${Date.now()}`);
+    },
     createBooking(slug, body) {
       return request(`/organizations/${encodeURIComponent(slug)}/bookings`, {
         method: "POST",

@@ -41,6 +41,7 @@
     "test:booking-notify-unit": "node scripts/test-booking-notify-unit.js",
     "test:client-manage-unit": "node scripts/test-client-manage-unit.js",
     "test:client-limits-unit": "node scripts/test-client-limits-unit.js",
+    "test:phone-verification-unit": "node scripts/test-phone-verification-unit.js",
     "db:freemium": "node scripts/setup-freemium.js",
     "test:migrations": "node scripts/test-migrations.mjs",
     "test:plan-unit": "node scripts/test-plan-unit.js"

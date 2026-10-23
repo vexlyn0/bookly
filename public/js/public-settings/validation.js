@@ -56,6 +56,7 @@ window.BooklyPublicSettingsValidation = (() => {
         public_booking_enabled: Boolean(payload.public_booking_enabled),
         booking_confirmation_mode: mode,
         client_manage_cutoff_hours: cutoff,
+        require_phone_verification: Boolean(payload.require_phone_verification),
       },
     };
   }

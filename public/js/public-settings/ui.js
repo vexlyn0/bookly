@@ -55,6 +55,9 @@ window.BooklyPublicSettingsUI = (() => {
     els.form.elements.namedItem("booking_confirmation_mode").value =
       organization.booking_confirmation_mode || "auto";
 
+    const verifyInput = els.form.elements.namedItem("require_phone_verification");
+    if (verifyInput) verifyInput.checked = organization.require_phone_verification === true;
+
     const cutoffSelect = els.form.elements.namedItem("client_manage_cutoff_hours");
     if (cutoffSelect) {
       const cutoff = organization.client_manage_cutoff_hours;
@@ -118,6 +121,7 @@ window.BooklyPublicSettingsUI = (() => {
       public_booking_enabled: form.elements.namedItem("public_booking_enabled").checked,
       booking_confirmation_mode: form.elements.namedItem("booking_confirmation_mode").value,
       client_manage_cutoff_hours: form.elements.namedItem("client_manage_cutoff_hours")?.value ?? "2",
+      require_phone_verification: Boolean(form.elements.namedItem("require_phone_verification")?.checked),
     };
 
     const result = BooklyPublicSettingsValidation.validate(payload);

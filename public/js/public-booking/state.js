@@ -32,6 +32,8 @@ window.PublicBookingState = (() => {
         consent: false,
       },
       result: null,
+      /** Подтверждение номера в Telegram: { token, botUrl, phone, status } */
+      verification: null,
     };
   }
 

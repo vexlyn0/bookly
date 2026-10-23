@@ -135,7 +135,22 @@ window.PublicBookingApp = (() => {
     }
 
     if (action === "submit-booking") {
-      await submitBooking();
+      if (needsVerification()) {
+        await startVerification();
+      } else {
+        await submitBooking();
+      }
+      return;
+    }
+
+    if (action === "retry-verification") {
+      await startVerification();
+      return;
+    }
+
+    if (action === "change-phone") {
+      stopPolling();
+      setState({ step: "client", verification: null, error: "" });
       return;
     }
 
@@ -206,12 +221,16 @@ window.PublicBookingApp = (() => {
         client_email: state.selection.clientEmail || null,
         client_comment: state.selection.clientComment || null,
         website: "",
+        verification_token: state.verification?.token || undefined,
       });
 
+      stopPolling();
       state.result = result;
       PublicBookingUI.showSuccess(result);
     } catch (error) {
-      setState({ error: error.message || PublicBookingErrors.MESSAGES.GENERIC });
+      // Подтверждение устарело — пройти заново.
+      const verification = error.code === "PHONE_NOT_VERIFIED" ? null : state.verification;
+      setState({ error: error.message || PublicBookingErrors.MESSAGES.GENERIC, verification });
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.textContent = "Подтвердить запись";
@@ -221,11 +240,86 @@ window.PublicBookingApp = (() => {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Подтверждение номера в Telegram
+  // ---------------------------------------------------------------------------
+
+  let pollTimer = null;
+
+  function needsVerification() {
+    if (!state.organization?.phone_verification_required) return false;
+    const v = state.verification;
+    return !(v && v.status === "verified" && v.phone === state.selection.clientPhone);
+  }
+
+  function stopPolling() {
+    clearTimeout(pollTimer);
+    pollTimer = null;
+  }
+
+  async function startVerification() {
+    if (submitting) return;
+    stopPolling();
+    setState({ error: "", verification: { status: "creating", phone: state.selection.clientPhone } });
+
+    try {
+      const result = await PublicBookingApi.createPhoneVerification(slug, state.selection.clientPhone);
+      setState({
+        verification: {
+          token: result.token,
+          botUrl: result.bot_url,
+          phone: state.selection.clientPhone,
+          status: "waiting",
+        },
+      });
+      schedulePoll(1500);
+    } catch (error) {
+      setState({ verification: null, error: error.message || PublicBookingErrors.MESSAGES.GENERIC });
+    }
+  }
+
+  function schedulePoll(delay = 2500) {
+    stopPolling();
+    pollTimer = setTimeout(pollVerification, delay);
+  }
+
+  async function pollVerification() {
+    const current = state.verification;
+    if (!current?.token || current.status !== "waiting" || state.step !== "confirm") return;
+
+    try {
+      const { status } = await PublicBookingApi.getPhoneVerification(current.token);
+      if (state.verification?.token !== current.token) return;
+
+      if (status === "verified") {
+        setState({ verification: { ...current, status: "verified" } });
+        await submitBooking();
+        return;
+      }
+      if (status === "mismatch" || status === "expired") {
+        setState({ verification: { ...current, status } });
+        return;
+      }
+    } catch {
+      // сеть пропала — пробуем ещё
+    }
+    schedulePoll();
+  }
+
+  // Вернулись из Telegram — проверить сразу, не дожидаясь таймера.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && state.verification?.status === "waiting") {
+      schedulePoll(0);
+    }
+  });
+
   function goBack() {
     const order = PublicBookingState.STEPS.map((step) => step.id);
     const index = order.indexOf(state.step);
     if (index <= 0) return;
-    setState({ step: order[index - 1], error: "" });
+    stopPolling();
+    const verification = state.verification?.status === "verified" ? state.verification : null;
+    setState({ step: order[index - 1], error: "", verification });
   }
 
   function restartFlow() {

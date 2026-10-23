@@ -18,6 +18,7 @@ const {
 const { validatePublicBookingPayload, validationError } = require("./public-booking-validation");
 const { requireOrganizationOperational } = require("./subscription-service");
 const telegramService = require("./telegram-service");
+const phoneVerification = require("./phone-verification-service");
 
 const PUBLIC_ORG_FIELDS = `
   id,
@@ -29,7 +30,8 @@ const PUBLIC_ORG_FIELDS = `
   address,
   timezone,
   public_booking_enabled,
-  booking_confirmation_mode
+  booking_confirmation_mode,
+  require_phone_verification
 `;
 
 const REFERENCE_PATTERN = /^BK-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
@@ -225,6 +227,7 @@ function toPublicOrganization(organization) {
     phone: organization.phone || "",
     address: organization.address || "",
     show_branding: organization.show_branding !== false,
+    phone_verification_required: phoneVerification.isRequired(organization),
   };
 }
 
@@ -385,7 +388,7 @@ function toPublicBookingResponse(booking, service, staff) {
   };
 }
 
-async function insertPublicBooking(supabase, organization, payload, service, staff, status) {
+async function insertPublicBooking(supabase, organization, payload, service, staff, status, extra = {}) {
   const startTime = formatTimeForInput(payload.start_time);
   const endTime = computeBookingEndTime(startTime, service.duration_minutes);
   const insertPayload = {
@@ -401,6 +404,7 @@ async function insertPublicBooking(supabase, organization, payload, service, sta
     end_time: endTime,
     status,
     source: "public_booking",
+    ...extra,
   };
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -432,7 +436,7 @@ async function insertPublicBooking(supabase, organization, payload, service, sta
   throw appError("Не удалось создать запись", "BOOKING_REFERENCE_GENERATION_FAILED", 500);
 }
 
-async function createPublicBooking(slug, body, { honeypotFilled = false } = {}) {
+async function createPublicBooking(slug, body, { honeypotFilled = false, baseUrl = "" } = {}) {
   if (honeypotFilled) {
     return { success: true };
   }
@@ -489,6 +493,11 @@ async function createPublicBooking(slug, body, { honeypotFilled = false } = {}) 
 
   await assertClientMayBook(supabase, organization, payload.client_phone);
 
+  // Номер подтверждён в Telegram-боте (если владелец включил проверку).
+  const verification = phoneVerification.isRequired(organization)
+    ? await phoneVerification.requireVerified(organization, body?.verification_token, payload.client_phone)
+    : null;
+
   const { slots } = await getPublicSlots(slug, {
     serviceId: payload.service_id,
     staffId: payload.staff_id,
@@ -510,8 +519,26 @@ async function createPublicBooking(slug, body, { honeypotFilled = false } = {}) 
     payload,
     service,
     staff,
-    status
+    status,
+    verification?.chat_id ? { client_telegram_chat_id: verification.chat_id } : {}
   );
+
+  if (verification) {
+    await phoneVerification.markUsed(verification.id);
+    void telegramService.sendClientBookingConfirmation(
+      verification.chat_id,
+      {
+        organizationName: organization.public_name || organization.name,
+        serviceName: service.name,
+        staffName: staff.name,
+        bookingDate: row.booking_date,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        status: row.status,
+      },
+      baseUrl && response.booking.manage_url ? `${baseUrl}${response.booking.manage_url}` : ""
+    );
+  }
 
   // Не ждём Telegram: уведомление не должно задерживать или ломать ответ клиенту.
   void telegramService.notifyNewBooking({
@@ -525,7 +552,19 @@ async function createPublicBooking(slug, body, { honeypotFilled = false } = {}) 
   return response;
 }
 
+/**
+ * Заявка на подтверждение номера: заранее проверяем чёрный список и лимит,
+ * чтобы клиент не проходил подтверждение впустую.
+ */
+async function createPhoneVerification(slug, body = {}) {
+  const organization = await requirePublicOrganization(slug);
+  const clientPhone = String(body.client_phone || "").trim();
+  await assertClientMayBook(getSupabaseAdmin(), organization, clientPhone);
+  return phoneVerification.create(organization, clientPhone);
+}
+
 module.exports = {
+  createPhoneVerification,
   getOrganizationBySlug,
   requirePublicOrganization,
   toPublicOrganization,
