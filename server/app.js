@@ -25,6 +25,14 @@ app.get("/register", (req, res) => {
   res.sendFile(path.join(config.publicDir, "register.html"));
 });
 
+app.get("/forgot-password", (req, res) => {
+  res.sendFile(path.join(config.publicDir, "forgot-password.html"));
+});
+
+app.get("/reset-password", (req, res) => {
+  res.sendFile(path.join(config.publicDir, "reset-password.html"));
+});
+
 app.get(["/onboarding", "/onboarding/"], (req, res) => {
   res.sendFile(path.join(config.publicDir, "onboarding", "index.html"));
 });

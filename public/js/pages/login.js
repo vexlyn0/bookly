@@ -10,6 +10,11 @@
 
   if (!form) return;
 
+  // Адрес возврата (например, /admin) сохраняем и для «Забыли пароль?».
+  const next = new URLSearchParams(window.location.search).get("next");
+  const forgotLink = document.getElementById("login-forgot-link");
+  if (next && forgotLink) forgotLink.href = `/forgot-password?next=${encodeURIComponent(next)}`;
+
   const emailInput = form.elements.namedItem("email");
   const passwordInput = form.elements.namedItem("password");
 

@@ -108,6 +108,15 @@ window.BooklyOrg = (() => {
   async function redirectAfterAuth() {
     log("redirectAfterAuth: start");
 
+    const target = BooklyAuth.getRedirectTarget();
+    const targetPath = target.replace(window.BOOKLY_CONFIG?.assetBase || "", "") || "/";
+    const needsOrganization = /^\/(app|onboarding)(\/|\?|$)/.test(targetPath);
+    if (!needsOrganization && !/^\/(login|register)(\/|\?|$)/.test(targetPath)) {
+      log("redirectAfterAuth: next →", target);
+      window.location.replace(target);
+      return;
+    }
+
     try {
       const org = await getMyOrganization();
       if (org) {

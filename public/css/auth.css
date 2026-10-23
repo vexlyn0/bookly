@@ -186,3 +186,20 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* «Забыли пароль?» под полем пароля */
+.auth-form__forgot {
+  margin: calc(var(--space-2) * -1) 0 0;
+  text-align: right;
+  font-size: var(--text-sm);
+}
+
+.auth-form__forgot a {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.auth-form__forgot a:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}

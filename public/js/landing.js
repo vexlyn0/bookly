@@ -3,6 +3,11 @@
  */
 
 (() => {
+  if (/(^|&)type=recovery(&|$)/.test(window.location.hash.slice(1))) {
+    window.location.replace(`/reset-password${window.location.hash}`);
+    return;
+  }
+
   const header = document.getElementById("header");
   const burger = document.getElementById("burger");
   const nav = document.getElementById("nav");
