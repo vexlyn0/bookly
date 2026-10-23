@@ -1854,3 +1854,70 @@
 [hidden] {
   display: none !important;
 }
+
+/* Ссылка мастеру на Telegram-уведомления */
+.invite-steps {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-4);
+  padding-left: 1.25rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.invite-link {
+  width: 100%;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.invite-hint {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-xs);
+  color: #b45309;
+}
+
+.invite-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.invite-actions .btn {
+  text-decoration: none;
+}
+
+.invite-self {
+  display: block;
+  margin: var(--space-4) auto 0;
+  padding: 0;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.invite-self:hover {
+  color: var(--color-text);
+}
+
+@media (max-width: 480px) {
+  .invite-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.invite-body {
+  padding: var(--space-5) var(--space-6) var(--space-6);
+}
+
+.invite-text {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text);
+}

@@ -634,8 +634,9 @@
 
         <div class="modal__row">
           <label class="field">
-            <span class="field__label">Телефон</span>
+            <span class="field__label">Телефон (WhatsApp)</span>
             <input class="field__input" type="tel" name="phone" placeholder="+7 700 000 00 00">
+            <span class="field__hint">На этот номер удобно отправить ссылку для Telegram-уведомлений</span>
           </label>
 
           <label class="field">
@@ -680,6 +681,31 @@
       <div class="modal__footer">
         <button class="btn btn--ghost" type="button" data-close-staff-modal>Отмена</button>
         <button class="btn btn--primary modal__btn-danger" type="button" id="delete-staff-confirm">Удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка: ссылка мастеру на Telegram-уведомления -->
+  <div class="modal" id="telegram-invite-modal" aria-hidden="true" role="dialog" aria-labelledby="telegram-invite-title">
+    <div class="modal__dialog modal__dialog--sm">
+      <header class="modal__header">
+        <h2 class="modal__title" id="telegram-invite-title">Уведомления мастеру в Telegram</h2>
+        <button class="modal__close" type="button" data-close-staff-modal aria-label="Закрыть">×</button>
+      </header>
+      <div class="invite-body">
+      <p class="invite-text" id="telegram-invite-text"></p>
+      <ol class="invite-steps">
+        <li>Отправьте мастеру его личную ссылку.</li>
+        <li>Мастер открывает её у себя и нажимает <strong>Start</strong> в боте.</li>
+        <li>Дальше все его записи приходят ему в Telegram.</li>
+      </ol>
+      <input class="field__input invite-link" type="text" id="telegram-invite-link" readonly aria-label="Ссылка для мастера">
+      <p class="invite-hint" id="telegram-invite-hint" hidden></p>
+      <div class="invite-actions">
+        <a class="btn btn--primary" id="telegram-invite-whatsapp" href="#" target="_blank" rel="noopener">Отправить в WhatsApp</a>
+        <button class="btn btn--outline" type="button" id="telegram-invite-copy">Скопировать ссылку</button>
+      </div>
+      <button class="invite-self" type="button" id="telegram-invite-self">Это мой Telegram — подключить себя</button>
       </div>
     </div>
   </div>

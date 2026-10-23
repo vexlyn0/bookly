@@ -28,6 +28,13 @@ window.BooklyStaffUI = (() => {
     els.deleteModal = document.getElementById("delete-staff-modal");
     els.deleteName = document.getElementById("delete-staff-name");
     els.deleteConfirm = document.getElementById("delete-staff-confirm");
+    els.inviteModal = document.getElementById("telegram-invite-modal");
+    els.inviteText = document.getElementById("telegram-invite-text");
+    els.inviteLink = document.getElementById("telegram-invite-link");
+    els.inviteHint = document.getElementById("telegram-invite-hint");
+    els.inviteWhatsApp = document.getElementById("telegram-invite-whatsapp");
+    els.inviteCopy = document.getElementById("telegram-invite-copy");
+    els.inviteSelf = document.getElementById("telegram-invite-self");
   }
 
   function init(org) {
@@ -49,6 +56,14 @@ window.BooklyStaffUI = (() => {
     els.deleteModal?.addEventListener("click", (event) => {
       if (event.target === els.deleteModal) closeModals();
     });
+
+    els.inviteModal?.addEventListener("click", (event) => {
+      if (event.target === els.inviteModal) closeModals();
+    });
+    els.inviteCopy?.addEventListener("click", copyInviteLink);
+    els.inviteSelf?.addEventListener("click", connectSelf);
+    els.inviteWhatsApp?.addEventListener("click", () => refreshStaffOnReturn());
+    els.inviteLink?.addEventListener("focus", () => els.inviteLink.select());
 
     document.querySelectorAll("[data-close-staff-modal]").forEach((btn) => {
       btn.addEventListener("click", closeModals);
@@ -230,7 +245,7 @@ window.BooklyStaffUI = (() => {
       return `<button class="btn btn--ghost btn--sm" type="button" data-action="telegram" data-id="${item.id}" title="Отключить Telegram-уведомления">Отключить Telegram</button>`;
     }
     if (!getTelegramBotUsername()) return "";
-    return `<button class="btn btn--ghost btn--sm" type="button" data-action="telegram" data-id="${item.id}" title="Открыть бота и подключить уведомления о записях">Подключить Telegram</button>`;
+    return `<button class="btn btn--ghost btn--sm" type="button" data-action="telegram" data-id="${item.id}" title="Отправить мастеру ссылку на уведомления о записях">Подключить Telegram</button>`;
   }
 
   function pluralServices(count) {
@@ -304,13 +319,86 @@ window.BooklyStaffUI = (() => {
       return;
     }
 
-    window.open(
-      `https://t.me/${encodeURIComponent(botUsername)}?start=${encodeURIComponent(member.telegram_link_token)}`,
-      "_blank",
-      "noopener"
-    );
+    openInviteModal(member);
+  }
 
-    // После привязки в Telegram токен меняется — обновим список, когда вкладка вернётся в фокус.
+  let inviteMember = null;
+
+  function getInviteLink(member) {
+    return `https://t.me/${encodeURIComponent(getTelegramBotUsername())}?start=${encodeURIComponent(member.telegram_link_token)}`;
+  }
+
+  /** Номер для wa.me: только цифры, казахстанские 8XXXXXXXXXX → 7XXXXXXXXXX. */
+  function toWhatsAppNumber(phone) {
+    let digits = String(phone || "").replace(/\D/g, "");
+    if (digits.length === 11 && digits.startsWith("8")) digits = `7${digits.slice(1)}`;
+    if (digits.length === 10) digits = `7${digits}`;
+    return digits.length >= 11 && digits.length <= 15 ? digits : "";
+  }
+
+  function buildInviteMessage(member, link) {
+    const orgName = organization?.public_name || organization?.name || "Bookly";
+    return (
+      `Здравствуйте, ${member.name}! Подключите уведомления о ваших записях в «${orgName}». ` +
+      `Откройте ссылку и нажмите Start в Telegram-боте: ${link}`
+    );
+  }
+
+  function openInviteModal(member, { justCreated = false } = {}) {
+    if (!els.inviteModal) return;
+    inviteMember = member;
+
+    const link = getInviteLink(member);
+    const message = buildInviteMessage(member, link);
+    const waNumber = toWhatsAppNumber(member.phone);
+
+    if (els.inviteText) {
+      els.inviteText.textContent = justCreated
+        ? `Мастер «${member.name}» добавлен. Отправьте ему ссылку — и записи к нему будут приходить ему в Telegram.`
+        : `Записи к мастеру «${member.name}» будут приходить в тот Telegram, где нажмут Start по этой ссылке.`;
+    }
+    if (els.inviteLink) els.inviteLink.value = link;
+
+    if (els.inviteWhatsApp) {
+      els.inviteWhatsApp.href = waNumber
+        ? `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`
+        : `https://wa.me/?text=${encodeURIComponent(message)}`;
+      els.inviteWhatsApp.textContent = waNumber ? "Отправить в WhatsApp" : "Выбрать чат в WhatsApp";
+    }
+    if (els.inviteHint) {
+      els.inviteHint.hidden = Boolean(waNumber);
+      els.inviteHint.textContent = waNumber
+        ? ""
+        : "Телефон мастера не указан — WhatsApp предложит выбрать чат. Номер можно добавить в «Изменить».";
+    }
+    if (els.inviteCopy) els.inviteCopy.textContent = "Скопировать ссылку";
+
+    els.inviteModal.classList.add("is-open");
+    els.inviteModal.setAttribute("aria-hidden", "false");
+  }
+
+  async function copyInviteLink() {
+    if (!inviteMember || !els.inviteCopy) return;
+    const text = buildInviteMessage(inviteMember, getInviteLink(inviteMember));
+    try {
+      await navigator.clipboard.writeText(text);
+      els.inviteCopy.textContent = "Скопировано ✓";
+    } catch {
+      els.inviteLink?.focus();
+      els.inviteCopy.textContent = "Скопируйте вручную";
+    }
+    refreshStaffOnReturn();
+  }
+
+  function connectSelf() {
+    if (!inviteMember) return;
+    window.open(getInviteLink(inviteMember), "_blank", "noopener");
+    closeModals();
+    refreshStaffOnReturn();
+  }
+
+  /** После привязки в Telegram токен меняется — обновим список, когда вкладка вернётся в фокус. */
+  function refreshStaffOnReturn() {
     window.addEventListener("focus", () => loadStaff(), { once: true });
   }
 
@@ -422,6 +510,8 @@ window.BooklyStaffUI = (() => {
     els.formModal?.setAttribute("aria-hidden", "true");
     els.deleteModal?.classList.remove("is-open");
     els.deleteModal?.setAttribute("aria-hidden", "true");
+    els.inviteModal?.classList.remove("is-open");
+    els.inviteModal?.setAttribute("aria-hidden", "true");
     editingId = null;
     deleteTargetId = null;
     hideFormError();
@@ -454,6 +544,7 @@ window.BooklyStaffUI = (() => {
     }
 
     BooklyAuthUI.setButtonLoading(els.formSubmit, true, "Сохранение…", editingId ? "Сохранить" : "Добавить");
+    let newlyCreated = null;
 
     try {
       if (editingId) {
@@ -464,11 +555,16 @@ window.BooklyStaffUI = (() => {
       } else {
         const created = await BooklyStaff.create(organization.id, result.data);
         staffList = [...staffList, created].sort((a, b) => a.name.localeCompare(b.name, "ru"));
+        newlyCreated = created;
       }
 
       updateDashboardCount();
       renderList();
       closeModals();
+
+      if (newlyCreated && getTelegramBotUsername() && newlyCreated.telegram_link_token) {
+        openInviteModal(newlyCreated, { justCreated: true });
+      }
     } catch (error) {
       BooklyAuthErrors.logError("staff:save", error);
       showFormError(BooklySubscription.mapDbError(error) || error.message || "Не удалось сохранить сотрудника.");
