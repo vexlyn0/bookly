@@ -70,6 +70,8 @@ window.BooklyBookingsUI = (() => {
       btn.addEventListener("click", closeModals);
     });
 
+    document.addEventListener("bookly:blacklist-changed", renderList);
+
     const clientNotifyModal = document.getElementById("client-notify-modal");
     clientNotifyModal?.addEventListener("click", (e) => {
       if (e.target === clientNotifyModal) closeClientNotify();
@@ -198,6 +200,7 @@ window.BooklyBookingsUI = (() => {
         const status = BooklyBookingsConstants.getStatus(item.status);
         const serviceName = item.services?.name || "—";
         const staffName = item.staff?.name || "—";
+        const blocked = window.BooklyBlacklist?.isBlocked(item.client_phone);
 
         return `
           <article class="booking-card" data-id="${item.id}">
@@ -210,7 +213,7 @@ window.BooklyBookingsUI = (() => {
                 <span class="booking-card__badge ${status.badge}">${status.label}</span>
               </div>
               <div class="booking-card__meta">
-                <span>${escapeHtml(item.client_phone)}</span>
+                <span>${escapeHtml(item.client_phone)}${blocked ? ` <span class="booking-blocked">чёрный список</span>` : ""}</span>
                 <span class="booking-card__dot" aria-hidden="true">·</span>
                 <span>${escapeHtml(serviceName)}</span>
                 <span class="booking-card__dot" aria-hidden="true">·</span>
@@ -233,13 +236,18 @@ window.BooklyBookingsUI = (() => {
                   : ""
               }
               <button class="btn btn--ghost btn--sm booking-card__delete" type="button" data-action="delete" data-id="${item.id}">Удалить</button>
+              ${
+                blocked || !window.BooklyBlacklist
+                  ? ""
+                  : `<button class="btn btn--ghost btn--sm booking-card__block" type="button" data-action="block" data-id="${item.id}" title="Запретить онлайн-запись с этого номера">В чёрный список</button>`
+              }
             </div>
           </article>
         `;
       })
       .join("");
 
-    els.list.querySelectorAll("[data-action='edit'], [data-action='cancel'], [data-action='delete']").forEach((btn) => {
+    els.list.querySelectorAll("[data-action='edit'], [data-action='cancel'], [data-action='delete'], [data-action='block']").forEach((btn) => {
       btn.addEventListener("click", handleCardAction);
     });
 
@@ -266,6 +274,25 @@ window.BooklyBookingsUI = (() => {
 
     if (action === "delete") {
       openDeleteModal(booking);
+      return;
+    }
+
+    if (action === "block") {
+      await blockClient(booking);
+    }
+  }
+
+  async function blockClient(booking) {
+    const ok = confirm(
+      `Добавить ${booking.client_phone} (${booking.client_name}) в чёрный список?\n\n` +
+        "С этого номера нельзя будет записаться онлайн. Уже созданные записи останутся — отмените их, если нужно."
+    );
+    if (!ok) return;
+
+    try {
+      await BooklyBlacklist.add({ phone: booking.client_phone, clientName: booking.client_name });
+    } catch (error) {
+      alert(error.message || "Не удалось добавить номер в чёрный список.");
     }
   }
 

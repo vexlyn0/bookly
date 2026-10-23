@@ -89,6 +89,7 @@
   BooklyBookingsUI.init(organization);
   BooklyCalendarUI.init(organization);
   BooklyPublicSettingsUI.init(organization);
+  BooklyBlacklist.init(organization);
   BooklySubscriptionUI.init(organization);
 
   document.getElementById("dashboard-go-services")?.addEventListener("click", () => {

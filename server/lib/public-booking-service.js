@@ -12,6 +12,8 @@ const {
   timeToMinutes,
   minutesToTime,
   MAX_BOOKING_DAYS_AHEAD,
+  formatDateInTimezone,
+  getMinutesInTimezone,
 } = require("./slots");
 const { validatePublicBookingPayload, validationError } = require("./public-booking-validation");
 const { requireOrganizationOperational } = require("./subscription-service");
@@ -31,6 +33,66 @@ const PUBLIC_ORG_FIELDS = `
 `;
 
 const REFERENCE_PATTERN = /^BK-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
+
+/** Сколько предстоящих записей можно иметь на один номер при онлайн-записи. */
+const MAX_ACTIVE_BOOKINGS_PER_PHONE = 2;
+
+/** Номер в едином виде — та же логика, что public.phone_key() в базе. */
+function phoneKey(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("8")) return `7${digits.slice(1)}`;
+  if (digits.length === 10) return `7${digits}`;
+  return digits;
+}
+
+/**
+ * Номер в чёрном списке организации или уже есть 2 предстоящие записи — отказ.
+ * Причину блокировки клиенту не раскрываем.
+ */
+async function assertClientMayBook(supabase, organization, clientPhone) {
+  const key = phoneKey(clientPhone);
+  if (!key) return;
+
+  const today = formatDateInTimezone(new Date(), organization.timezone);
+  const nowMinutes = getMinutesInTimezone(new Date(), organization.timezone);
+
+  const [blacklistResult, bookingsResult] = await Promise.all([
+    supabase
+      .from("client_blacklist")
+      .select("id")
+      .eq("organization_id", organization.id)
+      .eq("phone_key", key)
+      .maybeSingle(),
+    supabase
+      .from("bookings")
+      .select("booking_date, end_time")
+      .eq("organization_id", organization.id)
+      .eq("client_phone_key", key)
+      .in("status", ["pending", "confirmed"])
+      .gte("booking_date", today),
+  ]);
+
+  if (assertSupabaseResult(blacklistResult, "client_blacklist")) {
+    throw appError(
+      "Онлайн-запись для этого номера недоступна. Свяжитесь с организацией по телефону",
+      "CLIENT_BLOCKED",
+      403
+    );
+  }
+
+  const upcoming = (assertSupabaseResult(bookingsResult, "bookings:phone") || []).filter(
+    (row) => row.booking_date > today || (timeToMinutes(row.end_time) ?? 0) > nowMinutes
+  );
+
+  if (upcoming.length >= MAX_ACTIVE_BOOKINGS_PER_PHONE) {
+    throw appError(
+      `На этот номер уже есть ${MAX_ACTIVE_BOOKINGS_PER_PHONE} предстоящие записи. ` +
+        "Чтобы записаться ещё, перенесите или отмените одну из них по ссылке из подтверждения — или позвоните в салон",
+      "TOO_MANY_ACTIVE_BOOKINGS",
+      409
+    );
+  }
+}
 
 function appError(message, code, status) {
   const error = new Error(message);
@@ -425,6 +487,8 @@ async function createPublicBooking(slug, body, { honeypotFilled = false } = {}) 
   if (staff.is_active !== true) throw appError("Сотрудник недоступен", "STAFF_INACTIVE", 400);
   if (!link) throw appError("Сотрудник не оказывает эту услугу", "STAFF_SERVICE_MISMATCH", 400);
 
+  await assertClientMayBook(supabase, organization, payload.client_phone);
+
   const { slots } = await getPublicSlots(slug, {
     serviceId: payload.service_id,
     staffId: payload.staff_id,
@@ -474,4 +538,7 @@ module.exports = {
   computeBookingEndTime,
   assertSupabaseResult,
   REFERENCE_PATTERN,
+  phoneKey,
+  assertClientMayBook,
+  MAX_ACTIVE_BOOKINGS_PER_PHONE,
 };

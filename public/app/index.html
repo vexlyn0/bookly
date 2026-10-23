@@ -325,6 +325,18 @@
                 <button class="btn btn--ghost btn--sm" type="button" id="public-booking-copy-btn">Копировать ссылку</button>
               </div>
             </div>
+
+            <div class="public-booking-link-card blacklist">
+              <h3 class="public-booking-link-card__title">Чёрный список</h3>
+              <p class="blacklist__text">С этих номеров нельзя записаться онлайн. Клиент увидит «свяжитесь с салоном по телефону».</p>
+              <form class="blacklist__form" id="blacklist-form" novalidate>
+                <input class="field__input" type="tel" id="blacklist-phone" placeholder="+7 700 000 00 00" maxlength="30" aria-label="Номер телефона">
+                <button class="btn btn--outline btn--sm" type="submit">Добавить</button>
+              </form>
+              <p class="alert alert--error blacklist__error" id="blacklist-error" role="alert" hidden></p>
+              <ul class="blacklist__list" id="blacklist-list"></ul>
+              <p class="blacklist__text blacklist__text--muted">Ещё защита: на один номер — не больше 2 предстоящих онлайн-записей.</p>
+            </div>
           </aside>
         </div>
       </section>
@@ -929,6 +941,7 @@
   <script src="/js/calendar/ui.js"></script>
   <script src="/js/public-settings/validation.js"></script>
   <script src="/js/public-settings/ui.js"></script>
+  <script src="/js/blacklist/ui.js"></script>
   <script src="/js/subscription/client.js"></script>
   <script src="/js/billing/client.js"></script>
   <script src="/js/subscription/ui.js"></script>
