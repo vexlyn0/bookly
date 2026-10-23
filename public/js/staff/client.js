@@ -167,6 +167,25 @@ window.BooklyStaff = (() => {
     return data;
   }
 
+  async function unlinkTelegram(staffId) {
+    log("unlinkTelegram:", staffId);
+    const supabase = await BooklyAuth.getClient();
+
+    const { data, error } = await supabase
+      .from("staff")
+      .update({ telegram_chat_id: null })
+      .eq("id", staffId)
+      .select("*, staff_services(count)")
+      .single();
+
+    if (error) {
+      log("unlinkTelegram error:", error.message);
+      throw error;
+    }
+
+    return data;
+  }
+
   function listItemWithCount(item, countOverride) {
     const count =
       typeof countOverride === "number" ? countOverride : getServiceCount(item);
@@ -187,6 +206,7 @@ window.BooklyStaff = (() => {
     update,
     remove,
     setActive,
+    unlinkTelegram,
     getServiceCount,
     countActive,
   };

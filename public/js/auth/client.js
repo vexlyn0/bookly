@@ -52,6 +52,10 @@ window.BooklyAuth = (() => {
         });
       }
 
+      window.BooklyConfig = {
+        telegramBotUsername: config.telegramBotUsername || "",
+      };
+
       client = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, {
         auth: {
           persistSession: true,

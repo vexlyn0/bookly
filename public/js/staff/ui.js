@@ -141,6 +141,7 @@ window.BooklyStaffUI = (() => {
               <div class="staff-card__header">
                 <h3 class="staff-card__name">${escapeHtml(item.name)}</h3>
                 <span class="staff-card__badge ${item.is_active ? "staff-card__badge--on" : "staff-card__badge--off"}">${statusLabel}</span>
+                ${item.telegram_chat_id ? `<span class="staff-card__badge staff-card__badge--telegram" title="Уведомления о новых записях приходят в Telegram">Telegram</span>` : ""}
               </div>
               ${item.position ? `<p class="staff-card__position">${escapeHtml(item.position)}</p>` : ""}
               ${item.description ? `<p class="staff-card__desc">${escapeHtml(item.description)}</p>` : ""}
@@ -157,6 +158,7 @@ window.BooklyStaffUI = (() => {
                 <input type="checkbox" class="toggle__input" data-action="toggle" data-id="${item.id}" ${item.is_active ? "checked" : ""}>
                 <span class="toggle__track"></span>
               </label>
+              ${telegramButton(item)}
               <button class="btn btn--ghost btn--sm" type="button" data-action="schedule" data-id="${item.id}">График</button>
               <button class="btn btn--ghost btn--sm" type="button" data-action="edit" data-id="${item.id}">Изменить</button>
               <button class="btn btn--ghost btn--sm staff-card__delete" type="button" data-action="delete" data-id="${item.id}">Удалить</button>
@@ -166,13 +168,21 @@ window.BooklyStaffUI = (() => {
       })
       .join("");
 
-    els.list.querySelectorAll("[data-action='edit'], [data-action='delete'], [data-action='schedule']").forEach((btn) => {
+    els.list.querySelectorAll("[data-action='edit'], [data-action='delete'], [data-action='schedule'], [data-action='telegram']").forEach((btn) => {
       btn.addEventListener("click", handleCardAction);
     });
 
     els.list.querySelectorAll("[data-action='toggle']").forEach((input) => {
       input.addEventListener("change", handleToggle);
     });
+  }
+
+  function telegramButton(item) {
+    if (item.telegram_chat_id) {
+      return `<button class="btn btn--ghost btn--sm" type="button" data-action="telegram" data-id="${item.id}" title="Отключить Telegram-уведомления">Отключить Telegram</button>`;
+    }
+    if (!getTelegramBotUsername()) return "";
+    return `<button class="btn btn--ghost btn--sm" type="button" data-action="telegram" data-id="${item.id}" title="Открыть бота и подключить уведомления о записях">Подключить Telegram</button>`;
   }
 
   function pluralServices(count) {
@@ -190,6 +200,11 @@ window.BooklyStaffUI = (() => {
     const member = staffList.find((item) => item.id === id);
     if (!member) return;
 
+    if (action === "telegram") {
+      await handleTelegram(member, event.currentTarget);
+      return;
+    }
+
     if (action === "edit") {
       await openForm(member);
       return;
@@ -203,6 +218,52 @@ window.BooklyStaffUI = (() => {
     if (action === "delete") {
       openDeleteModal(member);
     }
+  }
+
+  function getTelegramBotUsername() {
+    return String(window.BooklyConfig?.telegramBotUsername || "");
+  }
+
+  async function handleTelegram(member, button) {
+    if (member.telegram_chat_id) {
+      const confirmed = window.confirm(
+        `Отключить Telegram-уведомления для «${member.name}»?`
+      );
+      if (!confirmed) return;
+
+      try {
+        button.disabled = true;
+        const updated = await BooklyStaff.unlinkTelegram(member.id);
+        staffList = staffList.map((item) => (item.id === member.id ? updated : item));
+        renderList();
+      } catch (error) {
+        BooklyAuthErrors.logError("staff:telegram-unlink", error);
+        alert(error.message || "Не удалось отключить Telegram.");
+      } finally {
+        button.disabled = false;
+      }
+      return;
+    }
+
+    const botUsername = getTelegramBotUsername();
+    if (!botUsername) {
+      alert("Telegram-бот не настроен. Обратитесь в поддержку.");
+      return;
+    }
+
+    if (!member.telegram_link_token) {
+      alert("Ссылка привязки не найдена. Обновите страницу.");
+      return;
+    }
+
+    window.open(
+      `https://t.me/${encodeURIComponent(botUsername)}?start=${encodeURIComponent(member.telegram_link_token)}`,
+      "_blank",
+      "noopener"
+    );
+
+    // После привязки в Telegram токен меняется — обновим список, когда вкладка вернётся в фокус.
+    window.addEventListener("focus", () => loadStaff(), { once: true });
   }
 
   async function handleToggle(event) {

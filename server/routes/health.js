@@ -13,6 +13,10 @@ router.get("/", (req, res) => {
     ok: true,
     supabase_configured: Boolean(config.supabase.isConfigured),
     kaspi_configured: Boolean(config.kaspi.isConfigured),
+    telegram_configured: Boolean(config.telegram.isConfigured),
+    telegram_webhook_configured: Boolean(
+      config.telegram.isConfigured && config.telegram.webhookSecret
+    ),
   });
 });
 

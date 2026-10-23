@@ -13,6 +13,7 @@ const {
   getMissingKaspiEnvNames,
   REQUIRED_ENV_NAMES,
   OPTIONAL_KASPI_ENV_NAMES,
+  OPTIONAL_TELEGRAM_ENV_NAMES,
 } = require("../server/lib/env-resolve");
 
 const envPath = path.join(__dirname, "..", ".env");
@@ -55,6 +56,10 @@ reportRequired("SUPABASE_ANON_KEY", hasAnonKey());
 reportRequired("SUPABASE_SERVICE_ROLE_KEY", hasServiceKey());
 
 for (const name of OPTIONAL_KASPI_ENV_NAMES) {
+  reportOptional(name, isPresent(name));
+}
+
+for (const name of OPTIONAL_TELEGRAM_ENV_NAMES) {
   reportOptional(name, isPresent(name));
 }
 

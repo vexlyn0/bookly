@@ -7,6 +7,7 @@ const config = require("./server/config");
 config.assertRequiredEnvOrExit();
 
 const app = require("./server/app");
+const telegramService = require("./server/lib/telegram-service");
 
 const server = app.listen(config.port, "0.0.0.0", () => {
   console.log(`Bookly running at http://localhost:${config.port}`);
@@ -19,7 +20,9 @@ const server = app.listen(config.port, "0.0.0.0", () => {
   console.log(`Booking:    http://localhost:${config.port}/book/:slug`);
   console.log(`Supabase:   ${config.supabase.isConfigured ? "configured" : "not configured"}`);
   console.log(`Kaspi:      ${config.kaspi.isConfigured ? "configured" : "not configured"}`);
+  console.log(`Telegram:   ${config.telegram.isConfigured ? "configured" : "not configured"}`);
   console.log(`Запуск: npm run dev`);
+  telegramService.init();
 });
 
 server.on("error", (error) => {

@@ -60,6 +60,24 @@ function resolveKaspiConfig(env = process.env) {
 }
 
 /**
+ * Telegram включён, если задан TELEGRAM_BOT_TOKEN.
+ * Webhook дополнительно требует TELEGRAM_WEBHOOK_SECRET.
+ * @param {NodeJS.ProcessEnv} env
+ */
+function resolveTelegramConfig(env = process.env) {
+  const token = String(env.TELEGRAM_BOT_TOKEN || "").trim();
+  const webhookSecret = String(env.TELEGRAM_WEBHOOK_SECRET || "").trim();
+  const botUsername = String(env.TELEGRAM_BOT_USERNAME || "").trim().replace(/^@/, "");
+
+  return {
+    token,
+    webhookSecret,
+    botUsername,
+    isConfigured: Boolean(token),
+  };
+}
+
+/**
  * Имена обязательных production-переменных, которых не хватает.
  * Возвращает канонические имена (не алиасы).
  * @param {NodeJS.ProcessEnv} env
@@ -114,11 +132,18 @@ const OPTIONAL_KASPI_ENV_NAMES = [
   "KASPI_PAYMENT_PHONE",
   "KASPI_PAYMENT_INSTRUCTIONS",
 ];
+const OPTIONAL_TELEGRAM_ENV_NAMES = [
+  "TELEGRAM_BOT_TOKEN",
+  "TELEGRAM_WEBHOOK_SECRET",
+  "TELEGRAM_BOT_USERNAME",
+];
 
 module.exports = {
   normalizeSupabaseUrl,
   resolveSupabaseConfig,
   resolveKaspiConfig,
+  resolveTelegramConfig,
+  OPTIONAL_TELEGRAM_ENV_NAMES,
   getMissingRequiredEnvNames,
   getMissingKaspiEnvNames,
   REQUIRED_ENV_NAMES,

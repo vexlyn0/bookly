@@ -8,6 +8,7 @@ const dotenv = require("dotenv");
 const {
   resolveSupabaseConfig,
   resolveKaspiConfig,
+  resolveTelegramConfig,
   getMissingRequiredEnvNames,
 } = require("./lib/env-resolve");
 
@@ -28,6 +29,7 @@ if (fs.existsSync(ENV_PATH)) {
 
 const supabase = resolveSupabaseConfig(process.env);
 const kaspi = resolveKaspiConfig(process.env);
+const telegram = resolveTelegramConfig(process.env);
 
 const config = {
   rootDir: ROOT_DIR,
@@ -41,6 +43,13 @@ const config = {
     isPublicConfigured: supabase.isPublicConfigured,
     /** Полная серверная конфигурация (URL + anon + service role) */
     isConfigured: supabase.isConfigured,
+  },
+  telegram: {
+    /** Может быть дозаполнен через getMe при старте (telegram-service.init) */
+    botUsername: telegram.botUsername,
+    token: telegram.token,
+    webhookSecret: telegram.webhookSecret,
+    isConfigured: telegram.isConfigured,
   },
   kaspi: {
     recipient: kaspi.recipient,

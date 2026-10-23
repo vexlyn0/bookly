@@ -21,6 +21,7 @@ router.get("/", (req, res) => {
     ok: true,
     supabaseUrl: config.supabase.url,
     supabaseAnonKey: config.supabase.anonKey,
+    telegramBotUsername: config.telegram.isConfigured ? config.telegram.botUsername || null : null,
   });
 });
 

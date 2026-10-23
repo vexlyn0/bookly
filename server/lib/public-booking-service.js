@@ -15,6 +15,7 @@ const {
 } = require("./slots");
 const { validatePublicBookingPayload, validationError } = require("./public-booking-validation");
 const { requireOrganizationSubscriptionAccess } = require("./subscription-service");
+const telegramService = require("./telegram-service");
 
 const PUBLIC_ORG_FIELDS = `
   id,
@@ -341,14 +342,15 @@ async function insertPublicBooking(supabase, organization, payload, service, sta
     const { data, error } = await supabase
       .from("bookings")
       .insert(insertPayload)
-      .select("public_reference, status, booking_date, start_time, end_time")
+      .select("id, public_reference, status, booking_date, start_time, end_time")
       .single();
 
     if (!error && data?.public_reference) {
       if (!REFERENCE_PATTERN.test(data.public_reference)) {
         throw appError("Не удалось создать запись", "BOOKING_REFERENCE_GENERATION_FAILED", 500);
       }
-      return toPublicBookingResponse(data, service, staff);
+      // id остаётся на сервере (для уведомлений), клиенту уходит только response.
+      return { row: data, response: toPublicBookingResponse(data, service, staff) };
     }
 
     if (isOverlapError(error?.message, error?.code)) {
@@ -397,7 +399,7 @@ async function createPublicBooking(slug, body, { honeypotFilled = false } = {}) 
       .maybeSingle(),
     supabase
       .from("staff")
-      .select("id, name, is_active")
+      .select("id, name, is_active, telegram_chat_id")
       .eq("id", payload.staff_id)
       .eq("organization_id", organization.id)
       .maybeSingle(),
@@ -435,7 +437,25 @@ async function createPublicBooking(slug, body, { honeypotFilled = false } = {}) 
 
   const status = organization.booking_confirmation_mode === "manual" ? "pending" : "confirmed";
 
-  return insertPublicBooking(supabase, organization, payload, service, staff, status);
+  const { row, response } = await insertPublicBooking(
+    supabase,
+    organization,
+    payload,
+    service,
+    staff,
+    status
+  );
+
+  // Не ждём Telegram: уведомление не должно задерживать или ломать ответ клиенту.
+  void telegramService.notifyNewBooking({
+    organization,
+    service,
+    staff,
+    booking: row,
+    client: payload,
+  });
+
+  return response;
 }
 
 module.exports = {

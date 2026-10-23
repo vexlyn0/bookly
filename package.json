@@ -34,7 +34,10 @@
     "test:platform-admin": "node scripts/test-platform-admin.js",
     "admin:grant": "node scripts/grant-platform-admin.js",
     "validate:migration-009": "node scripts/validate-migration-009.js",
-    "validate:migration-010": "node scripts/validate-migration-010.js"
+    "validate:migration-010": "node scripts/validate-migration-010.js",
+    "db:staff-telegram": "node scripts/setup-staff-telegram.js",
+    "telegram:setup": "node scripts/telegram-setup.js",
+    "test:telegram-unit": "node scripts/test-telegram-service-unit.js"
   },
   "keywords": [
     "saas",
