@@ -57,10 +57,9 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
           Онлайн-запись
         </button>
-        <button class="sidebar__link" type="button" data-section="calendar" disabled>
+        <button class="sidebar__link" type="button" data-section="calendar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           Календарь
-          <span class="sidebar__badge">скоро</span>
         </button>
       </div>
 
@@ -311,6 +310,38 @@
               </div>
             </div>
           </aside>
+        </div>
+      </section>
+
+      <!-- Календарь -->
+      <section class="panel calendar-panel" id="calendar-section" data-section="calendar" hidden>
+        <div class="cal-toolbar">
+          <div class="cal-toolbar__nav">
+            <button class="btn btn--outline btn--sm" type="button" id="cal-prev" aria-label="Назад">‹</button>
+            <button class="btn btn--outline btn--sm" type="button" id="cal-today">Сегодня</button>
+            <button class="btn btn--outline btn--sm" type="button" id="cal-next" aria-label="Вперёд">›</button>
+            <h2 class="cal-toolbar__title" id="cal-title">—</h2>
+          </div>
+          <div class="cal-toolbar__actions">
+            <input class="field__input cal-toolbar__date" type="date" id="cal-date" aria-label="Выбрать дату">
+            <div class="cal-segmented" role="tablist" aria-label="Вид календаря">
+              <button type="button" role="tab" class="is-active" aria-selected="true" data-cal-view="day">День</button>
+              <button type="button" role="tab" aria-selected="false" data-cal-view="week">Неделя</button>
+            </div>
+            <select class="field__select cal-toolbar__staff" id="cal-staff" aria-label="Мастер" hidden></select>
+            <button class="btn btn--primary btn--sm" type="button" id="cal-add">+ Запись</button>
+          </div>
+        </div>
+
+        <p class="cal-empty" id="cal-empty" hidden></p>
+        <div class="cal-scroll" id="cal-grid"></div>
+
+        <div class="cal-legend" aria-label="Статусы">
+          <span><i class="cal-legend__dot cal-event--pending"></i>Ожидает</span>
+          <span><i class="cal-legend__dot cal-event--confirmed"></i>Подтверждена</span>
+          <span><i class="cal-legend__dot cal-event--completed"></i>Завершена</span>
+          <span><i class="cal-legend__dot cal-event--no_show"></i>Не пришёл</span>
+          <span class="cal-legend__hint">Нажмите на свободное время, чтобы добавить запись</span>
         </div>
       </section>
 
@@ -859,6 +890,7 @@
   <script src="/js/bookings/validation.js"></script>
   <script src="/js/bookings/client.js"></script>
   <script src="/js/bookings/ui.js"></script>
+  <script src="/js/calendar/ui.js"></script>
   <script src="/js/public-settings/validation.js"></script>
   <script src="/js/public-settings/ui.js"></script>
   <script src="/js/subscription/client.js"></script>

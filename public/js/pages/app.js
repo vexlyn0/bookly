@@ -87,6 +87,7 @@
   BooklyStaffUI.init(organization);
   BooklyScheduleUI.init(organization);
   BooklyBookingsUI.init(organization);
+  BooklyCalendarUI.init(organization);
   BooklyPublicSettingsUI.init(organization);
   BooklySubscriptionUI.init(organization);
 

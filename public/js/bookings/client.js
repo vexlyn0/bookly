@@ -29,6 +29,26 @@ window.BooklyBookings = (() => {
     return data || [];
   }
 
+  /** Записи организации за период [fromDate, toDate] включительно (для календаря). */
+  async function listRange(organizationId, fromDate, toDate) {
+    const supabase = await BooklyAuth.getClient();
+
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("id, staff_id, service_id, booking_date, start_time, end_time, status, source, client_name, client_phone, client_comment, services(name)")
+      .eq("organization_id", organizationId)
+      .gte("booking_date", fromDate)
+      .lte("booking_date", toDate)
+      .order("start_time", { ascending: true });
+
+    if (error) {
+      log("listRange error:", error.message);
+      throw error;
+    }
+
+    return data || [];
+  }
+
   async function listForStaffDate(staffId, bookingDate) {
     const supabase = await BooklyAuth.getClient();
 
@@ -208,6 +228,7 @@ window.BooklyBookings = (() => {
     update,
     isReschedule,
     setStatus,
+    listRange,
     remove,
     computeStats,
   };

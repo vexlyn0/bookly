@@ -11,6 +11,8 @@ window.BooklyBookingsUI = (() => {
   let cancelTargetId = null;
   let deleteTargetId = null;
   let staffSchedulesCache = new Map();
+  /** Предзаполнение из календаря: { staffId, date, startTime } */
+  let pendingPrefill = null;
 
   const els = {};
 
@@ -120,6 +122,11 @@ window.BooklyBookingsUI = (() => {
         els.empty.textContent = BooklyBookingsErrors.fromError(error);
       }
     }
+  }
+
+  /** Сообщает другим разделам (календарь), что записи изменились. */
+  function emitChange() {
+    document.dispatchEvent(new CustomEvent("bookly:bookings-changed"));
   }
 
   function updateDashboard() {
@@ -255,22 +262,24 @@ window.BooklyBookingsUI = (() => {
   }
 
   async function handleStatusChange(event) {
-    const id = event.currentTarget.dataset.id;
-    const status = event.currentTarget.value;
+    const select = event.currentTarget;
+    const id = select.dataset.id;
+    const status = select.value;
     const previous = bookings.find((item) => item.id === id)?.status;
 
     try {
-      event.currentTarget.disabled = true;
+      select.disabled = true;
       const updated = await BooklyBookings.setStatus(id, status);
       bookings = bookings.map((item) => (item.id === id ? updated : item));
       updateDashboard();
       renderList();
+      emitChange();
     } catch (error) {
-      event.currentTarget.value = previous;
+      select.value = previous;
       BooklyBookingsErrors.logError("status", error);
       alert(BooklyBookingsErrors.fromError(error));
     } finally {
-      event.currentTarget.disabled = false;
+      select.disabled = false;
     }
   }
 
@@ -503,16 +512,69 @@ window.BooklyBookingsUI = (() => {
   async function handleServiceChange() {
     const serviceId = els.form?.elements.namedItem("service_id").value;
     await populateStaffSelect(serviceId, "", { isEdit: false });
-    if (els.form?.elements.namedItem("staff_id")) {
-      els.form.elements.namedItem("staff_id").value = "";
+    const staffSelect = els.form?.elements.namedItem("staff_id");
+    if (staffSelect) {
+      const prefillStaff = pendingPrefill?.staffId;
+      const hasPrefillStaff =
+        prefillStaff && [...staffSelect.options].some((option) => option.value === prefillStaff);
+      staffSelect.value = hasPrefillStaff ? prefillStaff : "";
     }
     syncScheduleFieldsState();
     if (!isRescheduleBlocked()) {
       await refreshSlots();
+      applyPrefillTime();
     }
   }
 
+  function applyPrefillTime() {
+    const time = pendingPrefill?.startTime;
+    if (!time || !els.slotsSelect) return;
+    if ([...els.slotsSelect.options].some((option) => option.value === time)) {
+      els.slotsSelect.value = time;
+    } else if (els.slotsHint && els.slotsSelect.options.length > 1) {
+      els.slotsHint.textContent = `Время ${time} недоступно для этой услуги — выберите другое.`;
+    }
+  }
+
+  /**
+   * Новая запись из календаря: мастер, дата и время уже выбраны.
+   * Если мастер оказывает одну услугу — она тоже подставляется.
+   */
+  async function openCreate({ staffId = "", date = "", startTime = "" } = {}) {
+    await openForm(null);
+    pendingPrefill = { staffId, date, startTime };
+
+    if (date && els.form) els.form.elements.namedItem("booking_date").value = date;
+    if (!staffId) return;
+
+    try {
+      const serviceIds = await BooklyStaff.getServiceIds(staffId);
+      const serviceSelect = els.form?.elements.namedItem("service_id");
+      const available = serviceIds.filter((id) =>
+        [...(serviceSelect?.options || [])].some((option) => option.value === id)
+      );
+      if (serviceSelect && available.length === 1) {
+        serviceSelect.value = available[0];
+        await handleServiceChange();
+      } else if (els.slotsHint) {
+        els.slotsHint.textContent = "Выберите услугу — мастер и время подставятся.";
+      }
+    } catch (error) {
+      BooklyBookingsErrors.logError("prefill", error);
+    }
+  }
+
+  async function openEdit(bookingId) {
+    let booking = bookings.find((item) => item.id === bookingId);
+    if (!booking) {
+      bookings = await BooklyBookings.list(organization.id);
+      booking = bookings.find((item) => item.id === bookingId);
+    }
+    if (booking) await openForm(booking);
+  }
+
   async function openForm(booking = null) {
+    pendingPrefill = null;
     editingId = booking?.id || null;
     editingSnapshot = buildEditingSnapshot(booking);
     hideFormError();
@@ -588,6 +650,7 @@ window.BooklyBookingsUI = (() => {
     editingSnapshot = null;
     cancelTargetId = null;
     deleteTargetId = null;
+    pendingPrefill = null;
     hideFormError();
   }
 
@@ -655,6 +718,7 @@ window.BooklyBookingsUI = (() => {
       updateDashboard();
       renderList();
       closeModals();
+      emitChange();
     } catch (error) {
       BooklyBookingsErrors.logError("save", error);
       showFormError(
@@ -679,6 +743,7 @@ window.BooklyBookingsUI = (() => {
       updateDashboard();
       renderList();
       closeModals();
+      emitChange();
     } catch (error) {
       BooklyBookingsErrors.logError("cancel", error);
       alert(BooklyBookingsErrors.fromError(error));
@@ -697,6 +762,7 @@ window.BooklyBookingsUI = (() => {
       updateDashboard();
       renderList();
       closeModals();
+      emitChange();
     } catch (error) {
       BooklyBookingsErrors.logError("delete", error);
       alert(BooklyBookingsErrors.fromError(error));
@@ -725,5 +791,5 @@ window.BooklyBookingsUI = (() => {
       .replace(/"/g, "&quot;");
   }
 
-  return { init, refresh: loadBookings };
+  return { init, refresh: loadBookings, openCreate, openEdit };
 })();

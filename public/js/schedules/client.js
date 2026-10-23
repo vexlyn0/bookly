@@ -43,6 +43,23 @@ window.BooklySchedules = (() => {
     return sortByDay(data || []);
   }
 
+  /** Графики всех мастеров организации (для календаря). */
+  async function listForOrganization(organizationId) {
+    const supabase = await BooklyAuth.getClient();
+
+    const { data, error } = await supabase
+      .from("staff_schedules")
+      .select("*")
+      .eq("organization_id", organizationId);
+
+    if (error) {
+      log("listForOrganization error:", error.message);
+      throw error;
+    }
+
+    return data || [];
+  }
+
   async function ensureDefaults(organizationId, staffId) {
     const existing = await listForStaff(staffId);
     if (existing.length >= 7) {
@@ -120,6 +137,7 @@ window.BooklySchedules = (() => {
 
   return {
     listForStaff,
+    listForOrganization,
     ensureDefaults,
     save,
   };
