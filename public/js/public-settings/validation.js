@@ -57,6 +57,7 @@ window.BooklyPublicSettingsValidation = (() => {
         booking_confirmation_mode: mode,
         client_manage_cutoff_hours: cutoff,
         require_phone_verification: Boolean(payload.require_phone_verification),
+        brand_color: /^#[0-9a-f]{6}$/i.test(String(payload.brand_color || "")) ? payload.brand_color : "#534AB7",
       },
     };
   }

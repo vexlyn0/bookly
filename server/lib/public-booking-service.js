@@ -31,10 +31,73 @@ const PUBLIC_ORG_FIELDS = `
   timezone,
   public_booking_enabled,
   booking_confirmation_mode,
-  require_phone_verification
+  require_phone_verification,
+  brand_color
 `;
 
 const REFERENCE_PATTERN = /^BK-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
+
+const DEFAULT_BRAND_COLOR = "#534AB7";
+
+/** На сколько дней вперёд ищем «ближайшее свободное время» мастера. */
+const NEXT_AVAILABLE_DAYS = 14;
+
+function addDays(dateStr, days) {
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/**
+ * Рабочие дни и ближайшее свободное время каждого мастера для услуги.
+ * Ошибка расчёта не ломает список мастеров — просто без подсказки.
+ */
+async function attachAvailability(supabase, organization, durationMinutes, members) {
+  if (!members.length) return members;
+
+  const ids = members.map((member) => member.id);
+  const today = formatDateInTimezone(new Date(), organization.timezone);
+  const lastDate = addDays(today, NEXT_AVAILABLE_DAYS - 1);
+
+  const [schedulesResult, bookingsResult] = await Promise.all([
+    supabase.from("staff_schedules").select("*").eq("organization_id", organization.id).in("staff_id", ids),
+    supabase
+      .from("bookings")
+      .select("staff_id, booking_date, start_time, end_time, status")
+      .eq("organization_id", organization.id)
+      .in("staff_id", ids)
+      .in("status", ["pending", "confirmed"])
+      .gte("booking_date", today)
+      .lte("booking_date", lastDate),
+  ]);
+
+  if (schedulesResult.error || bookingsResult.error) {
+    logQueryError("staff:availability", schedulesResult.error || bookingsResult.error);
+    return members.map((member) => ({ ...member, work_days: null, next_available: null }));
+  }
+
+  const schedules = schedulesResult.data || [];
+  const bookings = bookingsResult.data || [];
+
+  return members.map((member) => {
+    const own = schedules.filter((row) => row.staff_id === member.id);
+    const workDays = own.filter((row) => row.is_working === true).map((row) => row.day_of_week);
+    let nextAvailable = null;
+
+    for (let offset = 0; offset < NEXT_AVAILABLE_DAYS && !nextAvailable; offset += 1) {
+      const date = addDays(today, offset);
+      const slots = computeSlots({
+        schedule: findScheduleForDate(own, date),
+        durationMinutes,
+        bookings: bookings.filter((row) => row.staff_id === member.id && row.booking_date === date),
+        dateStr: date,
+        timeZone: organization.timezone,
+      });
+      if (slots.length) nextAvailable = { date, start_time: slots[0].start_time };
+    }
+
+    return { ...member, work_days: workDays, next_available: nextAvailable };
+  });
+}
 
 /** Сколько предстоящих записей можно иметь на один номер при онлайн-записи. */
 const MAX_ACTIVE_BOOKINGS_PER_PHONE = 2;
@@ -228,6 +291,9 @@ function toPublicOrganization(organization) {
     address: organization.address || "",
     show_branding: organization.show_branding !== false,
     phone_verification_required: phoneVerification.isRequired(organization),
+    brand_color: /^#[0-9a-f]{6}$/i.test(String(organization.brand_color || ""))
+      ? organization.brand_color
+      : DEFAULT_BRAND_COLOR,
   };
 }
 
@@ -260,7 +326,7 @@ async function getPublicStaff(slug, serviceId) {
 
   const { data: service, error: serviceError } = await supabase
     .from("services")
-    .select("id, organization_id, is_active")
+    .select("id, organization_id, is_active, duration_minutes")
     .eq("id", serviceId)
     .eq("organization_id", organization.id)
     .maybeSingle();
@@ -277,7 +343,7 @@ async function getPublicStaff(slug, serviceId) {
 
   if (error) throw error;
 
-  return (data || [])
+  const members = (data || [])
     .map((row) => row.staff)
     .filter((member) => member && member.is_active === true)
     .map((member) => ({
@@ -286,6 +352,8 @@ async function getPublicStaff(slug, serviceId) {
       position: member.position || "",
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "ru"));
+
+  return attachAvailability(supabase, organization, service.duration_minutes, members);
 }
 
 async function getPublicSlots(slug, { serviceId, staffId, date }) {

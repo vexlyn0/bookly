@@ -2,9 +2,10 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Онлайн-запись — Bookly</title>
   <meta name="description" content="Онлайн-запись в Bookly">
+  <meta name="theme-color" content="#534AB7" id="pb-theme-color">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,40 +16,35 @@
   <link rel="stylesheet" href="/css/public-booking.css">
 </head>
 <body class="public-booking-page">
-  <header class="pb-header" id="pb-header" hidden>
-    <a href="/" class="pb-brand">
-      <span class="pb-brand__mark">B</span>
-      <span class="pb-brand__text">Bookly</span>
-    </a>
+  <div class="pb-loader pb-loader--page" id="pb-loader" aria-live="polite">
+    <div class="pb-loader__spinner" aria-hidden="true"></div>
+    <p>Загрузка…</p>
+  </div>
+
+  <div class="pb-error-screen" id="pb-error-screen" hidden>
+    <h1 class="pb-error-screen__title" id="pb-error-title">Страница недоступна</h1>
+    <p class="pb-error-screen__text" id="pb-error-text"></p>
+  </div>
+
+  <header class="pb-cover" id="pb-cover" hidden>
+    <div class="pb-cover__band" aria-hidden="true"></div>
+    <div class="pb-cover__inner">
+      <div class="pb-logo" id="pb-org-logo" aria-hidden="true">B</div>
+      <h1 class="pb-cover__title" id="pb-org-name">—</h1>
+      <p class="pb-cover__description" id="pb-org-description"></p>
+      <div class="pb-cover__meta" id="pb-org-meta"></div>
+    </div>
   </header>
 
-  <main class="pb-main" id="pb-app">
-    <div class="pb-loader" id="pb-loader" aria-live="polite">
-      <div class="pb-loader__spinner" aria-hidden="true"></div>
-      <p>Загрузка…</p>
-    </div>
-
-    <div class="pb-error-screen" id="pb-error-screen" hidden>
-      <h1 class="pb-error-screen__title" id="pb-error-title">Страница недоступна</h1>
-      <p class="pb-error-screen__text" id="pb-error-text"></p>
-    </div>
-
+  <main class="pb-main">
     <div class="pb-flow" id="pb-flow" hidden>
-      <section class="pb-hero" id="pb-hero">
-        <p class="pb-hero__eyebrow">Онлайн-запись</p>
-        <h1 class="pb-hero__title" id="pb-org-name">—</h1>
-        <p class="pb-hero__description" id="pb-org-description"></p>
-        <div class="pb-hero__meta" id="pb-org-meta"></div>
-      </section>
-
-      <nav class="pb-steps" id="pb-steps" aria-label="Шаги записи"></nav>
-
+      <div class="pb-progress" id="pb-steps"></div>
       <section class="pb-panel" id="pb-panel" aria-live="polite"></section>
     </div>
 
-    <section class="pb-success" id="pb-success" hidden>
+    <section class="pb-panel pb-success" id="pb-success" hidden>
       <div class="pb-success__icon" aria-hidden="true">✓</div>
-      <h2 class="pb-success__title">Запись создана</h2>
+      <h2 class="pb-success__title">Вы записаны!</h2>
       <p class="pb-success__status" id="pb-success-status"></p>
       <dl class="pb-success__details" id="pb-success-details"></dl>
       <div class="pb-manage-link" id="pb-manage-link" hidden>
@@ -59,7 +55,7 @@
           <button class="btn btn--ghost btn--sm" type="button" id="pb-manage-copy">Скопировать ссылку</button>
         </div>
       </div>
-      <button class="btn btn--primary" type="button" id="pb-success-restart">Создать ещё одну запись</button>
+      <button class="pb-btn pb-btn--ghost" type="button" id="pb-success-restart">Записаться ещё раз</button>
     </section>
   </main>
 

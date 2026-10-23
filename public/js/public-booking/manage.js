@@ -105,6 +105,9 @@
 
   function render() {
     const info = state.info;
+    if (/^#[0-9a-f]{6}$/i.test(info.organization.brand_color || "")) {
+      document.documentElement.style.setProperty("--brand", info.organization.brand_color);
+    }
     els.orgName.textContent = info.organization.name || "—";
     const meta = [];
     if (info.organization.phone) meta.push(`Телефон: ${info.organization.phone}`);

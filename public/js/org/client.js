@@ -42,6 +42,7 @@ window.BooklyOrg = (() => {
           booking_confirmation_mode,
           client_manage_cutoff_hours,
           require_phone_verification,
+          brand_color,
           created_at,
           updated_at
         )
@@ -157,6 +158,7 @@ window.BooklyOrg = (() => {
         booking_confirmation_mode: payload.booking_confirmation_mode,
         client_manage_cutoff_hours: payload.client_manage_cutoff_hours,
         require_phone_verification: payload.require_phone_verification,
+        brand_color: payload.brand_color,
       })
       .eq("id", organizationId)
       .select(`
@@ -173,6 +175,7 @@ window.BooklyOrg = (() => {
         booking_confirmation_mode,
         client_manage_cutoff_hours,
         require_phone_verification,
+        brand_color,
         created_at,
         updated_at
       `)

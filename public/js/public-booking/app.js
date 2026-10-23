@@ -4,8 +4,17 @@ window.PublicBookingApp = (() => {
   let submitting = false;
 
   function setState(patch) {
+    const stepChanged = patch.step && patch.step !== state.step;
     state = { ...state, ...patch };
     PublicBookingUI.renderPanel(state);
+    if (stepChanged) scrollToPanel();
+  }
+
+  function scrollToPanel() {
+    const top = PublicBookingUI.els.steps?.getBoundingClientRect().top ?? 0;
+    if (top < 0 || top > window.innerHeight * 0.6) {
+      window.scrollTo({ top: window.scrollY + top - 12, behavior: "smooth" });
+    }
   }
 
   function setSelection(patch) {
@@ -59,6 +68,9 @@ window.PublicBookingApp = (() => {
 
   function bindEvents() {
     PublicBookingUI.els.panel.addEventListener("click", handlePanelClick);
+    PublicBookingUI.els.panel.addEventListener("change", (event) => {
+      if (event.target.id === "pb-date-input" && event.target.value) selectDay(event.target.value);
+    });
     PublicBookingUI.els.successRestart?.addEventListener("click", restartFlow);
   }
 
@@ -76,21 +88,14 @@ window.PublicBookingApp = (() => {
 
     if (action === "select-staff") {
       const staffId = event.target.closest("[data-id]")?.dataset.id;
-      if (!staffId) return;
-      setSelection({ staffId, startTime: "", endTime: "" });
-      setState({ step: "date" });
+      if (staffId) await selectStaff(staffId);
       return;
     }
 
-    if (action === "continue-date") {
-      const input = document.getElementById("pb-date-input");
-      const bookingDate = input?.value || "";
-      if (!bookingDate) {
-        setState({ error: "Выберите дату." });
-        return;
-      }
-      setSelection({ bookingDate, startTime: "", endTime: "" });
-      await loadSlots();
+    if (action === "select-day") {
+      const button = event.target.closest("[data-date]");
+      if (!button || button.getAttribute("aria-disabled") === "true") return;
+      await selectDay(button.dataset.date);
       return;
     }
 
@@ -163,11 +168,10 @@ window.PublicBookingApp = (() => {
     setState({ loading: true, error: "" });
     try {
       const payload = await PublicBookingApi.getStaff(slug, state.selection.serviceId);
-      setState({
-        loading: false,
-        staff: payload.staff || [],
-        step: "staff",
-      });
+      const staff = payload.staff || [];
+      setState({ loading: false, staff, step: "staff" });
+      // Один мастер — выбирать нечего, сразу к дате и времени.
+      if (staff.length === 1) await selectStaff(staff[0].id);
     } catch (error) {
       setState({
         loading: false,
@@ -176,25 +180,36 @@ window.PublicBookingApp = (() => {
     }
   }
 
+  /** Мастер выбран: сразу открываем его ближайший свободный день. */
+  async function selectStaff(staffId) {
+    const member = state.staff.find((item) => item.id === staffId);
+    const bookingDate = member?.next_available?.date || PublicBookingState.getTodayString();
+    setSelection({ staffId, bookingDate, startTime: "", endTime: "" });
+    setState({ step: "time" });
+    await loadSlots();
+  }
+
+  async function selectDay(bookingDate) {
+    if (bookingDate === state.selection.bookingDate && state.slots.length) return;
+    setSelection({ bookingDate, startTime: "", endTime: "" });
+    await loadSlots();
+  }
+
   async function loadSlots() {
-    setState({ loading: true, error: "", slots: [] });
+    const requested = state.selection.bookingDate;
+    setState({ slotsLoading: true, error: "", slots: [] });
     try {
       const payload = await PublicBookingApi.getSlots(slug, {
         serviceId: state.selection.serviceId,
         staffId: state.selection.staffId,
-        date: state.selection.bookingDate,
+        date: requested,
       });
-      setState({
-        loading: false,
-        slots: payload.slots || [],
-        step: "time",
-      });
+      // Пока грузили, клиент выбрал другой день — этот ответ уже не нужен.
+      if (state.selection.bookingDate !== requested) return;
+      setState({ slotsLoading: false, slots: payload.slots || [] });
     } catch (error) {
-      setState({
-        loading: false,
-        error: error.message || PublicBookingErrors.MESSAGES.GENERIC,
-        step: "date",
-      });
+      if (state.selection.bookingDate !== requested) return;
+      setState({ slotsLoading: false, error: error.message || PublicBookingErrors.MESSAGES.GENERIC });
     }
   }
 
@@ -233,7 +248,7 @@ window.PublicBookingApp = (() => {
       setState({ error: error.message || PublicBookingErrors.MESSAGES.GENERIC, verification });
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = "Подтвердить запись";
+        submitBtn.textContent = "Записаться";
       }
     } finally {
       submitting = false;
@@ -319,7 +334,10 @@ window.PublicBookingApp = (() => {
     if (index <= 0) return;
     stopPolling();
     const verification = state.verification?.status === "verified" ? state.verification : null;
-    setState({ step: order[index - 1], error: "", verification });
+    let target = order[index - 1];
+    // Мастер один и выбран автоматически — шаг «Мастер» пропускаем и назад.
+    if (target === "staff" && state.staff.length === 1) target = "service";
+    setState({ step: target, error: "", verification });
   }
 
   function restartFlow() {

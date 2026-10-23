@@ -55,6 +55,12 @@ window.BooklyPublicSettingsUI = (() => {
     els.form.elements.namedItem("booking_confirmation_mode").value =
       organization.booking_confirmation_mode || "auto";
 
+    const brand = String(organization.brand_color || "#534AB7").toUpperCase();
+    const swatch = [...els.form.querySelectorAll('input[name="brand_color"]')].find(
+      (input) => input.value.toUpperCase() === brand
+    );
+    (swatch || els.form.querySelector('input[name="brand_color"]'))?.click();
+
     const verifyInput = els.form.elements.namedItem("require_phone_verification");
     if (verifyInput) verifyInput.checked = organization.require_phone_verification === true;
 
@@ -122,6 +128,7 @@ window.BooklyPublicSettingsUI = (() => {
       booking_confirmation_mode: form.elements.namedItem("booking_confirmation_mode").value,
       client_manage_cutoff_hours: form.elements.namedItem("client_manage_cutoff_hours")?.value ?? "2",
       require_phone_verification: Boolean(form.elements.namedItem("require_phone_verification")?.checked),
+      brand_color: form.querySelector('input[name="brand_color"]:checked')?.value || "#534AB7",
     };
 
     const result = BooklyPublicSettingsValidation.validate(payload);

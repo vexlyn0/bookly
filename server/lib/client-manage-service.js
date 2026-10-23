@@ -49,7 +49,7 @@ const BOOKING_SELECT = `
   staff(name)
 `;
 
-const ORG_SELECT = "id, slug, name, public_name, phone, address, timezone, client_manage_cutoff_hours";
+const ORG_SELECT = "id, slug, name, public_name, phone, address, timezone, client_manage_cutoff_hours, brand_color";
 
 function appError(message, code, status) {
   const error = new Error(message);
@@ -101,6 +101,7 @@ function toPublicView(booking, organization, now = new Date()) {
       name: organization.public_name || organization.name,
       phone: organization.phone || "",
       address: organization.address || "",
+      brand_color: organization.brand_color || "",
     },
     booking: {
       reference: booking.public_reference || "",
