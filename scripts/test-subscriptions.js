@@ -1,5 +1,7 @@
 /**
- * Тесты первого этапа системы подписок (миграция 010_subscriptions.sql).
+ * Тесты системы подписок (миграции 010 + 015 freemium).
+ * Модель 015: новая организация стартует на Free (status expired), пробный Pro —
+ * по кнопке (billing_start_pro_trial), работу блокирует только suspended.
  * Требует: миграция 010 применена, SUPABASE_URL, SUPABASE_ANON_KEY,
  *          SUPABASE_SERVICE_ROLE_KEY, TEST_EMAIL, TEST_PASSWORD
  * Опционально: DATABASE_URL — для проверки идемпотентности повторного запуска миграции.
@@ -189,19 +191,33 @@ async function main() {
     if (org1Error) fail(`create_organization (org1): ${org1Error.message}`);
     cleanup.orgIds.push(org1.id);
 
-    if (!org1.subscription || org1.subscription.status !== "trialing") {
-      fail(`Новая организация должна получить trialing, получено: ${org1.subscription?.status}`);
+    if (!org1.subscription || org1.subscription.status !== "expired" || org1.subscription.plan_code !== "free") {
+      fail(`Новая организация должна стартовать на Free, получено: ${org1.subscription?.status}`);
     }
-    ok("3. Новая организация получает статус trialing");
+    ok("3. Новая организация стартует на Free без автоматического trial");
 
-    const tDays = daysBetween(org1.subscription.trial_ends_at, new Date().toISOString());
+    const { error: trialStartError } = await admin.rpc("billing_start_pro_trial", {
+      p_user_id: trialUser.id,
+    });
+    if (trialStartError) fail(`billing_start_pro_trial: ${trialStartError.message}`);
+
+    const { data: trialSub, error: trialSubError } = await admin
+      .from("organization_subscriptions")
+      .select("status, trial_ends_at")
+      .eq("organization_id", org1.id)
+      .single();
+    if (trialSubError) fail(trialSubError.message);
+    if (trialSub.status !== "trialing") {
+      fail(`4. Пробный Pro по кнопке должен дать trialing, получено: ${trialSub.status}`);
+    }
+    const tDays = daysBetween(trialSub.trial_ends_at, new Date().toISOString());
     if (tDays < 13.9 || tDays > 14.1) {
-      fail(`Trial должен длиться 14 дней, получено ~${tDays.toFixed(2)}`);
+      fail(`Пробный Pro должен длиться 14 дней, получено ~${tDays.toFixed(2)}`);
     }
-    ok("4. Trial длится 14 дней");
+    ok("4. Пробный Pro по кнопке длится 14 дней");
 
-    // Освобождаем membership/subscription org1, чтобы повторно вызвать
-    // create_organization тем же user_id (trial claim при этом остаётся).
+    // Освобождаем membership/subscription org1, чтобы создать вторую организацию
+    // тем же user_id (trial claim при этом остаётся).
     await admin.from("organization_subscriptions").delete().eq("organization_id", org1.id);
     await admin.from("organization_members").delete().eq("organization_id", org1.id);
 
@@ -210,19 +226,17 @@ async function main() {
       p_business_type: "other",
       p_timezone: "Asia/Almaty",
     });
-    if (org2Error) {
-      if (String(org2Error.message).toLowerCase().includes("unique")) {
-        fail("5b. Повторный create_organization не должен падать unique violation на trial claim");
-      }
-      fail(`create_organization (org2): ${org2Error.message}`);
-    }
+    if (org2Error) fail(`create_organization (org2): ${org2Error.message}`);
     cleanup.orgIds.push(org2.id);
 
-    if (org2.subscription?.status !== "expired") {
-      fail(`Второй trial для того же user_id не должен выдаваться, получено: ${org2.subscription?.status}`);
+    const { error: secondTrialError } = await admin.rpc("billing_start_pro_trial", {
+      p_user_id: trialUser.id,
+    });
+    if (!secondTrialError || !String(secondTrialError.message).includes("TRIAL_ALREADY_USED")) {
+      fail("5. Второй пробный Pro для того же user_id должен отклоняться (TRIAL_ALREADY_USED)");
     }
-    ok("5. Один user_id не получает второй trial (organization_subscriptions.status = expired)");
-    ok("5b. Повторный create_organization не падает unique violation (атомарный ON CONFLICT)");
+    ok("5. Один user_id получает пробный Pro только один раз (TRIAL_ALREADY_USED)");
+    ok("5b. Повторный create_organization тем же user_id работает");
 
     // -------------------------------------------------------------------
     // 8-14, 21. Доступ по статусам подписки (эфемерная тестовая организация)
@@ -246,7 +260,7 @@ async function main() {
       .update({ slug: accessSlug, public_booking_enabled: true, booking_confirmation_mode: "auto" })
       .eq("id", accessOrgId);
 
-    // Фикстуры создаются пока доступ ещё есть (trialing).
+    // Фикстуры: на Free (без Pro) запись в бизнес-таблицы разрешена.
     const { data: accessService, error: accessServiceError } = await admin
       .from("services")
       .insert({
@@ -368,76 +382,31 @@ async function main() {
     if (!readableServices?.some((s) => s.id === accessService.id)) fail("14. Данные организации должны читаться при expired");
     ok("14. Данные организации читаются даже при отсутствии доступа");
 
-    // 15. INSERT service при expired запрещён
-    const { error: insertBlockedError } = await accessClient
+    // 15-17. Free (expired, без Pro): работа разрешена — блокирует только suspended (015)
+    const { data: freeInsert, error: freeInsertError } = await accessClient
       .from("services")
-      .insert({ organization_id: accessOrgId, name: "Should Fail", price: 0, duration_minutes: 30 });
-    if (!insertBlockedError || !String(insertBlockedError.message).includes("SUBSCRIPTION_REQUIRED")) {
-      fail("15. INSERT service при expired должен быть запрещён с SUBSCRIPTION_REQUIRED");
-    }
-    ok("15. INSERT service при expired запрещён (SUBSCRIPTION_REQUIRED)");
+      .insert({ organization_id: accessOrgId, name: "Allowed On Free", price: 0, duration_minutes: 30 })
+      .select("id")
+      .single();
+    if (freeInsertError) fail(`15. INSERT service на Free должен быть разрешён: ${freeInsertError.message}`);
+    cleanup.serviceIds.push(freeInsert.id);
+    ok("15. Free: INSERT service разрешён");
 
-    // 16. UPDATE staff при expired запрещён
-    const { error: updateBlockedError } = await accessClient
+    const { error: freeUpdateError } = await accessClient
       .from("staff")
-      .update({ position: "Should Fail" })
+      .update({ position: "Allowed On Free" })
       .eq("id", accessStaff.id);
-    if (!updateBlockedError || !String(updateBlockedError.message).includes("SUBSCRIPTION_REQUIRED")) {
-      fail("16. UPDATE staff при expired должен быть запрещён с SUBSCRIPTION_REQUIRED");
-    }
-    ok("16. UPDATE staff при expired запрещён (SUBSCRIPTION_REQUIRED)");
+    if (freeUpdateError) fail(`16. UPDATE staff на Free должен быть разрешён: ${freeUpdateError.message}`);
+    ok("16. Free: UPDATE staff разрешён");
 
-    // 17. Создание booking при expired запрещено
-    const bookingDate = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString().slice(0, 10);
-    const { error: bookingBlockedError } = await accessClient.from("bookings").insert({
-      organization_id: accessOrgId,
-      service_id: accessService.id,
-      staff_id: accessStaff.id,
-      client_name: "Should Fail",
-      client_phone: "+77000000000",
-      booking_date: bookingDate,
-      start_time: "10:00",
-      end_time: "10:30",
-      status: "confirmed",
-      source: "manual",
-    });
-    if (!bookingBlockedError || !String(bookingBlockedError.message).includes("SUBSCRIPTION_REQUIRED")) {
-      fail("17. Создание booking при expired должно быть запрещено с SUBSCRIPTION_REQUIRED");
-    }
-    ok("17. Создание booking при expired запрещено (SUBSCRIPTION_REQUIRED)");
-
-    // 17a. Ключевая проверка аудита: expired блокирует INSERT booking даже
-    // через service_role (admin-клиент, RLS не действует — но DB-триггер должен
-    // сработать одинаково для любой роли).
-    const { error: adminBookingBlockedError } = await admin.from("bookings").insert({
-      organization_id: accessOrgId,
-      service_id: accessService.id,
-      staff_id: accessStaff.id,
-      client_name: "Should Fail (service_role)",
-      client_phone: "+77000000001",
-      booking_date: bookingDate,
-      start_time: "11:00",
-      end_time: "11:30",
-      status: "confirmed",
-      source: "manual",
-    });
-    if (!adminBookingBlockedError || !String(adminBookingBlockedError.message).includes("SUBSCRIPTION_REQUIRED")) {
-      fail("17a. INSERT booking при expired должен быть запрещён даже для service_role (SUBSCRIPTION_REQUIRED)");
-    }
-    ok("17a. expired блокирует INSERT booking через service_role (нет bypass)");
-
-    // 17b. expired блокирует INSERT service через service_role (DB-trigger,
-    // а не только RLS/приложение).
-    const { error: adminServiceBlockedError } = await admin.from("services").insert({
-      organization_id: accessOrgId,
-      name: "Should Fail (service_role insert)",
-      price: 0,
-      duration_minutes: 30,
-    });
-    if (!adminServiceBlockedError || !String(adminServiceBlockedError.message).includes("SUBSCRIPTION_REQUIRED")) {
-      fail("17b. INSERT service при expired должен быть запрещён даже для service_role (SUBSCRIPTION_REQUIRED)");
-    }
-    ok("17b. DB-триггер также блокирует прямой service_role INSERT (services)");
+    const { data: adminFreeInsert, error: adminFreeInsertError } = await admin
+      .from("services")
+      .insert({ organization_id: accessOrgId, name: "Allowed On Free (service_role)", price: 0, duration_minutes: 30 })
+      .select("id")
+      .single();
+    if (adminFreeInsertError) fail(`17. INSERT через service_role на Free должен быть разрешён: ${adminFreeInsertError.message}`);
+    cleanup.serviceIds.push(adminFreeInsert.id);
+    ok("17. Free: INSERT через service_role разрешён");
 
     // 17c. suspended блокирует UPDATE через service_role.
     await setAccessSubscription({ status: "suspended" });
@@ -495,14 +464,15 @@ async function main() {
     // Возвращаем в expired для последующих проверок публичного API (18-19).
     await setAccessSubscription({ status: "expired" });
 
-    // 18. Публичная запись при expired → 402 SUBSCRIPTION_REQUIRED
-    const publicExpiredRes = await request(app).get(`/api/public/organizations/${accessSlug}/services`);
-    if (publicExpiredRes.status !== 402 || publicExpiredRes.body.code !== "SUBSCRIPTION_REQUIRED") {
-      fail(
-        `18. Публичная запись при expired должна вернуть 402 SUBSCRIPTION_REQUIRED, получено ${publicExpiredRes.status} ${publicExpiredRes.body.code}`
-      );
+    // 18. Публичная запись на Free работает (не 402), с подписью Bookly
+    const publicFreeRes = await request(app).get(`/api/public/organizations/${accessSlug}`);
+    if (publicFreeRes.status !== 200) {
+      fail(`18. Публичная запись на Free должна работать, получено ${publicFreeRes.status} ${publicFreeRes.body.code}`);
     }
-    ok("18. Публичная запись при expired → 402 SUBSCRIPTION_REQUIRED");
+    if (publicFreeRes.body.organization?.show_branding !== true) {
+      fail("18. На Free страница записи должна показывать подпись Bookly");
+    }
+    ok("18. Публичная запись на Free работает, show_branding = true");
 
     // 19. Публичная запись при suspended → 403 ORGANIZATION_SUSPENDED
     await setAccessSubscription({ status: "suspended" });
@@ -629,9 +599,10 @@ async function main() {
       p_timezone: "Asia/Almaty",
     });
     if (deletionOrgError) fail(`create_organization (deletionOrg): ${deletionOrgError.message}`);
-    if (deletionOrg.subscription?.status !== "trialing") {
-      fail("23. Новая организация для теста удаления должна получить trialing");
-    }
+    const { error: deletionTrialError } = await admin.rpc("billing_start_pro_trial", {
+      p_user_id: deletionUser.id,
+    });
+    if (deletionTrialError) fail(`23. billing_start_pro_trial: ${deletionTrialError.message}`);
 
     const { data: claimBefore, error: claimBeforeError } = await admin
       .from("subscription_trial_claims")
@@ -672,8 +643,11 @@ async function main() {
     if (deletionOrg2Error) fail(`create_organization (deletionOrg2): ${deletionOrg2Error.message}`);
     cleanup.orgIds.push(deletionOrg2.id);
     cleanup.ephemeralUserIds.push(deletionUser.id);
-    if (deletionOrg2.subscription?.status !== "expired") {
-      fail(`25. После удаления организации тот же user_id не должен получать второй trial, получено: ${deletionOrg2.subscription?.status}`);
+    const { error: deletionSecondTrialError } = await admin.rpc("billing_start_pro_trial", {
+      p_user_id: deletionUser.id,
+    });
+    if (!deletionSecondTrialError || !String(deletionSecondTrialError.message).includes("TRIAL_ALREADY_USED")) {
+      fail("25. После удаления организации тот же user_id не должен получать второй пробный Pro");
     }
     ok("25. Тот же user_id после удаления организации не получает второй trial");
 

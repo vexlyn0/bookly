@@ -66,15 +66,15 @@
 
       <div class="sidebar__section">
         <p class="sidebar__section-title">Управление</p>
-        <button class="sidebar__link" type="button" data-section="clients" disabled>
+        <button class="sidebar__link" type="button" data-section="clients">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
           Клиенты
-          <span class="sidebar__badge">скоро</span>
+          <span class="sidebar__badge sidebar__badge--pro">Pro</span>
         </button>
-        <button class="sidebar__link" type="button" data-section="analytics" disabled>
+        <button class="sidebar__link" type="button" data-section="analytics">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
           Аналитика
-          <span class="sidebar__badge">скоро</span>
+          <span class="sidebar__badge sidebar__badge--pro">Pro</span>
         </button>
         <button class="sidebar__link" type="button" data-section="notifications" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -122,12 +122,12 @@
         <h1 class="topbar__title" id="page-title">Обзор</h1>
       </div>
       <div class="topbar__actions">
-        <span class="badge badge--muted" id="plan-badge">Starter</span>
+        <button class="badge badge--muted plan-badge" type="button" id="plan-badge">Free</button>
       </div>
     </header>
 
     <div class="subscription-banner" id="subscription-banner" role="alert" hidden>
-      <span class="subscription-banner__text" id="subscription-banner-text">Подписка закончилась. Продлите доступ, чтобы продолжить работу</span>
+      <span class="subscription-banner__text" id="subscription-banner-text"></span>
       <button class="subscription-banner__link" type="button" id="subscription-banner-link">Тариф и оплата</button>
     </div>
 
@@ -201,6 +201,7 @@
             <option value="active">Только активные</option>
             <option value="inactive">Только неактивные</option>
           </select>
+          <span class="staff-limit" id="staff-limit" hidden></span>
           <button class="btn btn--primary" type="button" id="staff-add-btn">Добавить сотрудника</button>
         </div>
 
@@ -313,20 +314,101 @@
         </div>
       </section>
 
+      <!-- Клиенты (Pro) -->
+      <section class="panel pro-feature" id="clients-section" data-section="clients" hidden>
+        <div class="pro-feature__intro">
+          <span class="pro-feature__tag">Pro · скоро</span>
+          <h2 class="pro-feature__title">База клиентов: кому пора прийти снова</h2>
+          <p class="pro-feature__text">
+            Каждый, кто записался с телефоном, попадает в базу сам — без таблиц и ручного ввода.
+            Bookly покажет, кто давно не приходил, и подготовит приглашение в WhatsApp со ссылкой на запись.
+          </p>
+          <ul class="pro-feature__list">
+            <li><strong>Собирается сама</strong> — из онлайн-записей и записей, созданных в кабинете.</li>
+            <li><strong>Кому пора пригласить</strong> — вы задаёте срок после визита, Bookly напоминает.</li>
+            <li><strong>Приглашение в один клик</strong> — готовый текст с именем, услугой и ссылкой.</li>
+            <li><strong>Карточка клиента</strong> — история визитов, сумма, любимый мастер, заметки.</li>
+          </ul>
+          <div class="pro-feature__actions">
+            <button class="btn btn--primary" type="button" data-open-section="subscription">Узнать о Pro</button>
+          </div>
+        </div>
+
+        <div class="pro-feature__demo" aria-label="Пример интерфейса">
+          <p class="pro-feature__demo-label">Пример · данные условные</p>
+          <div class="demo-clients">
+            <div class="demo-clients__row">
+              <div><strong>Ерлан</strong><span>Был 64 дня назад · Мужская стрижка · 7 визитов</span></div>
+              <span class="demo-pill demo-pill--danger">Давно не был</span>
+            </div>
+            <div class="demo-clients__row">
+              <div><strong>Дана</strong><span>Была 33 дня назад · Маникюр · 3 визита</span></div>
+              <span class="demo-pill demo-pill--warn">Пора пригласить</span>
+            </div>
+            <div class="demo-clients__row">
+              <div><strong>Мадина</strong><span>Была 31 день назад · Брови · 2 визита</span></div>
+              <span class="demo-pill demo-pill--warn">Пора пригласить</span>
+            </div>
+            <div class="demo-clients__row">
+              <div><strong>Алия</strong><span>Запись 28 окт, 15:00 · Окрашивание</span></div>
+              <span class="demo-pill demo-pill--ok">Записана</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Аналитика (Pro) -->
+      <section class="panel pro-feature" id="analytics-section" data-section="analytics" hidden>
+        <div class="pro-feature__intro">
+          <span class="pro-feature__tag">Pro · скоро</span>
+          <h2 class="pro-feature__title">Аналитика: как работает ваш салон</h2>
+          <p class="pro-feature__text">
+            Сколько людей открыли страницу записи и сколько записались, откуда пришли клиенты,
+            какие часы пустуют и сколько приносит каждый мастер.
+          </p>
+          <ul class="pro-feature__list">
+            <li><strong>Заходы и конверсия</strong> — сколько посетителей стали записями.</li>
+            <li><strong>Откуда клиенты</strong> — Instagram, WhatsApp, 2ГИС, Telegram.</li>
+            <li><strong>Загрузка по часам</strong> — когда пусто и где поставить акцию.</li>
+            <li><strong>По мастерам</strong> — записи, выручка и загрузка каждого мастера.</li>
+          </ul>
+          <div class="pro-feature__actions">
+            <button class="btn btn--primary" type="button" data-open-section="subscription">Узнать о Pro</button>
+          </div>
+        </div>
+
+        <div class="pro-feature__demo" aria-label="Пример интерфейса">
+          <p class="pro-feature__demo-label">Пример · данные условные</p>
+          <div class="demo-stats">
+            <div><span>Записей за 7 дней</span><strong>46</strong><em>+28%</em></div>
+            <div><span>Посетителей</span><strong>312</strong></div>
+            <div><span>Конверсия</span><strong>15%</strong></div>
+          </div>
+          <div class="demo-bars" aria-hidden="true">
+            <span style="--h:40%"></span><span style="--h:65%"></span><span style="--h:55%"></span><span style="--h:80%"></span><span style="--h:95%"></span><span style="--h:100%"></span><span style="--h:30%"></span>
+          </div>
+          <div class="demo-masters">
+            <div><span>Айгерим</span><strong>18 записей · 214 000 ₸</strong></div>
+            <div><span>Данияр</span><strong>15 записей · 156 000 ₸</strong></div>
+            <div><span>Алина</span><strong>13 записей · 131 000 ₸</strong></div>
+          </div>
+        </div>
+      </section>
+
       <!-- Тариф и оплата -->
       <section class="panel subscription-panel" id="subscription-section" data-section="subscription" hidden>
         <header class="panel__header">
           <div>
             <h2 class="panel__title">Тариф и оплата</h2>
-            <p class="panel__subtitle">Текущий тариф, статус подписки и доступ к онлайн-записи.</p>
+            <p class="panel__subtitle">Bookly бесплатен навсегда. Pro — для команд и расширенных функций.</p>
           </div>
         </header>
 
         <div class="subscription-card">
           <div class="subscription-card__head">
             <div>
-              <h3 class="subscription-card__plan" id="subscription-plan-name">Bookly Pro</h3>
-              <p class="subscription-card__price" id="subscription-plan-price">6 990 ₸ / месяц</p>
+              <p class="subscription-card__eyebrow">Ваш тариф</p>
+              <h3 class="subscription-card__plan" id="subscription-plan-name">Free</h3>
             </div>
             <span class="badge" id="subscription-status-badge">—</span>
           </div>
@@ -353,10 +435,46 @@
           </p>
         </div>
 
+        <div class="plan-compare">
+          <article class="plan-card" id="plan-card-free">
+            <header class="plan-card__head">
+              <h3 class="plan-card__name">Free</h3>
+              <p class="plan-card__price">0 ₸ <span>навсегда</span></p>
+            </header>
+            <ul class="plan-card__list">
+              <li>Онлайн-запись по ссылке, без регистрации клиента</li>
+              <li>Услуги, графики мастеров, записи без лимита</li>
+              <li>До 5 активных мастеров</li>
+              <li>Уведомления мастерам в Telegram</li>
+              <li>Подпись «Запись через Bookly» на странице записи</li>
+            </ul>
+          </article>
+
+          <article class="plan-card plan-card--pro" id="plan-card-pro">
+            <header class="plan-card__head">
+              <h3 class="plan-card__name">Pro</h3>
+              <p class="plan-card__price" id="subscription-plan-price">6 990 ₸ <span>/ месяц</span></p>
+            </header>
+            <ul class="plan-card__list">
+              <li><strong>Всё из Free</strong></li>
+              <li>Мастеров без лимита</li>
+              <li>Без подписи Bookly на странице записи</li>
+              <li class="plan-card__soon">Напоминания клиентам в Telegram <span class="plan-card__tag">скоро</span></li>
+              <li class="plan-card__soon">Предоплата через Kaspi <span class="plan-card__tag">скоро</span></li>
+              <li class="plan-card__soon">База клиентов и аналитика <span class="plan-card__tag">скоро</span></li>
+            </ul>
+            <div class="plan-card__actions">
+              <button class="btn btn--primary" type="button" id="pro-trial-btn" hidden>Попробовать Pro 14 дней бесплатно</button>
+              <button class="btn btn--outline" type="button" id="pro-upgrade-btn">Подключить Pro</button>
+            </div>
+            <p class="plan-card__message" id="pro-trial-message" hidden></p>
+          </article>
+        </div>
+
         <div class="kaspi-payment" id="kaspi-payment-block">
           <header class="kaspi-payment__head">
-            <h3 class="kaspi-payment__title">Оплата через Kaspi</h3>
-            <p class="kaspi-payment__subtitle">Переведите точную сумму и отправьте заявку на проверку.</p>
+            <h3 class="kaspi-payment__title">Оплата Pro через Kaspi</h3>
+            <p class="kaspi-payment__subtitle">Переведите точную сумму и отправьте заявку — мы проверим перевод и включим Pro.</p>
           </header>
 
           <dl class="kaspi-payment__details">

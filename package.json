@@ -37,7 +37,10 @@
     "validate:migration-010": "node scripts/validate-migration-010.js",
     "db:staff-telegram": "node scripts/setup-staff-telegram.js",
     "telegram:setup": "node scripts/telegram-setup.js",
-    "test:telegram-unit": "node scripts/test-telegram-service-unit.js"
+    "test:telegram-unit": "node scripts/test-telegram-service-unit.js",
+    "db:freemium": "node scripts/setup-freemium.js",
+    "test:migrations": "node scripts/test-migrations.mjs",
+    "test:plan-unit": "node scripts/test-plan-unit.js"
   },
   "keywords": [
     "saas",
@@ -58,5 +61,8 @@
     "express-rate-limit": "^7.5.1",
     "pg": "^8.22.0",
     "supertest": "^7.2.2"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
   }
 }

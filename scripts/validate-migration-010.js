@@ -144,7 +144,9 @@ async function main() {
       select pg_get_functiondef('public.create_organization(text, public.organization_business_type, text)'::regprocedure) as def
     `);
     const createOrgSrc = String(createOrgDef[0]?.def || "");
-    if (!/on conflict \(user_id\) do nothing/i.test(createOrgSrc)) {
+    // После 015 (freemium) create_organization не выдаёт trial: claim создаётся только
+    // в billing_start_pro_trial. Если claim в функции есть — он обязан быть атомарным.
+    if (/subscription_trial_claims/i.test(createOrgSrc) && !/on conflict \(user_id\) do nothing/i.test(createOrgSrc)) {
       fail("create_organization должна использовать атомарный INSERT claim ON CONFLICT (user_id) DO NOTHING");
     }
     if (!/SUBSCRIPTION_PLAN_NOT_FOUND/i.test(createOrgSrc)) {
@@ -223,13 +225,14 @@ async function main() {
     if (/auth\.role\(\)/.test(triggerSrc) || /'service_role'/.test(triggerSrc)) {
       fail("enforce_subscription_access() не должна содержать bypass по service_role — триггер обязан блокировать любую роль");
     }
-    if (!/get_subscription_access_internal/.test(triggerSrc)) {
-      fail("enforce_subscription_access() должна использовать get_subscription_access_internal (не пользовательскую RPC)");
+    // 015 (freemium): триггер блокирует только приостановленные организации.
+    if (!/ORGANIZATION_SUSPENDED/.test(triggerSrc)) {
+      fail("enforce_subscription_access() должна блокировать приостановленные организации (ORGANIZATION_SUSPENDED)");
     }
     if (!/ORGANIZATION_ID_IMMUTABLE/.test(triggerSrc)) {
       fail("enforce_subscription_access() должна запрещать изменение organization_id при UPDATE");
     }
-    ok("enforce_subscription_access(): нет bypass по service_role, используется внутренняя функция, organization_id неизменяем");
+    ok("enforce_subscription_access(): нет bypass по service_role, блокирует suspended, organization_id неизменяем");
 
     const { rows: triggerRows } = await client.query(`
       select c.relname as table_name, t.tgname

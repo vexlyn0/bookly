@@ -8,6 +8,8 @@ window.BooklyAppShell = (() => {
     staff: { title: "Сотрудники", subtitle: "Сотрудники" },
     bookings: { title: "Записи", subtitle: "Записи" },
     "public-booking": { title: "Онлайн-запись", subtitle: "Онлайн-запись" },
+    clients: { title: "Клиенты", subtitle: "Клиенты" },
+    analytics: { title: "Аналитика", subtitle: "Аналитика" },
     subscription: { title: "Тариф и оплата", subtitle: "Тариф и оплата" },
   };
 
@@ -42,7 +44,16 @@ window.BooklyAppShell = (() => {
         closeSidebar();
       });
     });
+
+    document.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-open-section]");
+      if (trigger) open(trigger.dataset.openSection);
+    });
   }
 
-  return { init };
+  function open(section) {
+    document.querySelector(`.sidebar__link[data-section="${section}"]`)?.click();
+  }
+
+  return { init, open };
 })();

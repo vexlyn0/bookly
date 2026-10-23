@@ -72,6 +72,16 @@
     hideLoader();
   }
 
+  // Если Pro закончился, мастера сверх лимита Free ставятся на паузу до загрузки списков.
+  const pausedStaff = await BooklySubscription.syncPlanLimits(organization.id);
+  if (pausedStaff > 0) {
+    alert(
+      `Pro закончился, и вы вернулись на Free (до 5 активных мастеров). ` +
+        `${pausedStaff} мастер(ов) поставлено на паузу — записи сохранены. ` +
+        `Выбрать, кто из мастеров активен, можно в разделе «Сотрудники».`
+    );
+  }
+
   BooklyAppShell.init();
   BooklyServicesUI.init(organization);
   BooklyStaffUI.init(organization);

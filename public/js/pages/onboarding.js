@@ -45,7 +45,7 @@
     const nameInput = form.elements.namedItem("name");
     const name = String(nameInput.value || "").trim();
     const businessType = String(form.elements.namedItem("businessType").value || "");
-    const timezone = String(form.elements.namedItem("timezone").value || "Europe/Moscow");
+    const timezone = String(form.elements.namedItem("timezone").value || "Asia/Almaty");
 
     const nameError = BooklyAuthUI.validateRequired(name, "Название компании");
     if (name.length > 0 && name.length < 2) {

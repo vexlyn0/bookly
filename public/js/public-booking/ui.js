@@ -16,6 +16,8 @@ window.PublicBookingUI = (() => {
     els.successStatus = document.getElementById("pb-success-status");
     els.successDetails = document.getElementById("pb-success-details");
     els.successRestart = document.getElementById("pb-success-restart");
+    els.header = document.getElementById("pb-header");
+    els.powered = document.getElementById("pb-powered");
   }
 
   function escapeHtml(value) {
@@ -93,6 +95,11 @@ window.PublicBookingUI = (() => {
     if (organization.phone) meta.push(`Телефон: ${organization.phone}`);
     if (organization.address) meta.push(`Адрес: ${organization.address}`);
     els.heroMeta.innerHTML = meta.map((item) => `<span>${escapeHtml(item)}</span>`).join("");
+
+    // Free: подпись Bookly в шапке и внизу страницы; Pro — без брендинга Bookly.
+    const showBranding = organization.show_branding !== false;
+    if (els.header) els.header.hidden = !showBranding;
+    if (els.powered) els.powered.hidden = !showBranding;
   }
 
   function renderSteps(state) {

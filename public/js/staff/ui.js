@@ -17,6 +17,7 @@ window.BooklyStaffUI = (() => {
     els.search = document.getElementById("staff-search");
     els.filter = document.getElementById("staff-filter");
     els.addBtn = document.getElementById("staff-add-btn");
+    els.limit = document.getElementById("staff-limit");
     els.activeCount = document.getElementById("dashboard-active-staff");
     els.formModal = document.getElementById("staff-modal");
     els.form = document.getElementById("staff-form");
@@ -34,7 +35,8 @@ window.BooklyStaffUI = (() => {
     cacheElements();
     if (!els.section) return;
 
-    els.addBtn?.addEventListener("click", () => openForm());
+    els.addBtn?.addEventListener("click", handleAddClick);
+    BooklySubscription.onEntitlementsChange(renderLimit);
     els.search?.addEventListener("input", renderList);
     els.filter?.addEventListener("change", renderList);
     els.form?.addEventListener("submit", handleFormSubmit);
@@ -91,6 +93,52 @@ window.BooklyStaffUI = (() => {
     if (els.activeCount) {
       els.activeCount.textContent = String(BooklyStaff.countActive(staffList));
     }
+    renderLimit();
+  }
+
+  /** Лимит активных мастеров на Free (null — без лимита, Pro). */
+  function getStaffLimit() {
+    const plan = BooklySubscription.getEntitlements();
+    if (!plan || plan.is_pro) return null;
+    return plan.staff_limit;
+  }
+
+  function isAtStaffLimit() {
+    const limit = getStaffLimit();
+    return limit != null && BooklyStaff.countActive(staffList) >= limit;
+  }
+
+  function renderLimit() {
+    if (!els.limit) return;
+    const limit = getStaffLimit();
+    if (limit == null) {
+      els.limit.hidden = true;
+      return;
+    }
+    const active = BooklyStaff.countActive(staffList);
+    els.limit.hidden = false;
+    els.limit.textContent = `Активных мастеров: ${active} из ${limit} на Free`;
+    els.limit.classList.toggle("staff-limit--full", active >= limit);
+  }
+
+  function offerPro(message) {
+    const goToPlans = window.confirm(`${message}\n\nОткрыть «Тариф и оплата»?`);
+    if (goToPlans) BooklyAppShell.open("subscription");
+  }
+
+  function handleAddClick() {
+    if (isAtStaffLimit()) {
+      offerPro(
+        `На тарифе Free можно держать до ${getStaffLimit()} активных мастеров. ` +
+          "Отключите одного из мастеров или подключите Pro — без лимита."
+      );
+      return;
+    }
+    openForm();
+  }
+
+  function isStaffLimitError(error) {
+    return String(error?.message || "").includes("STAFF_LIMIT_REACHED");
   }
 
   function getFilteredStaff() {
@@ -267,24 +315,31 @@ window.BooklyStaffUI = (() => {
   }
 
   async function handleToggle(event) {
-    const id = event.currentTarget.dataset.id;
+    const input = event.currentTarget;
+    const id = input.dataset.id;
     const member = staffList.find((item) => item.id === id);
     if (!member) return;
 
-    const nextValue = event.currentTarget.checked;
+    const nextValue = input.checked;
 
     try {
-      event.currentTarget.disabled = true;
+      input.disabled = true;
       const updated = await BooklyStaff.setActive(id, nextValue);
       staffList = staffList.map((item) => (item.id === id ? updated : item));
       updateDashboardCount();
       renderList();
     } catch (error) {
-      event.currentTarget.checked = !nextValue;
+      input.checked = !nextValue;
       BooklyAuthErrors.logError("staff:toggle", error);
-      alert(BooklySubscription.mapDbError(error) || error.message || "Не удалось изменить статус сотрудника.");
+      const message =
+        BooklySubscription.mapDbError(error) || error.message || "Не удалось изменить статус сотрудника.";
+      if (isStaffLimitError(error)) {
+        offerPro(message);
+      } else {
+        alert(message);
+      }
     } finally {
-      event.currentTarget.disabled = false;
+      input.disabled = false;
     }
   }
 

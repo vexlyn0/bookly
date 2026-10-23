@@ -3,10 +3,21 @@
  */
 
 const { getSupabaseAdmin } = require("./supabase-admin");
-const { getOrganizationSubscriptionAccess, appError } = require("./subscription-service");
+const {
+  getOrganizationSubscriptionAccess,
+  getOrganizationEntitlements,
+  appError,
+} = require("./subscription-service");
 const config = require("../config");
 
 const OWNER_REQUIRED_MESSAGE = "Управлять оплатой может только владелец организации";
+
+/**
+ * Кнопка «Попробовать Pro 14 дней» включается, когда появятся настоящие
+ * Pro-функции (напоминания клиентам, предоплата, клиенты, аналитика) —
+ * иначе пользователь потратит единственный пробный период впустую.
+ */
+const PRO_TRIAL_ENABLED = false;
 
 function mapRpcError(error) {
   const message = String(error?.message || "");
@@ -27,6 +38,15 @@ function mapRpcError(error) {
     return appError("Не удалось выполнить запрос", "INTERNAL_ERROR", 500);
   }
 
+  if (message.includes("TRIAL_ALREADY_USED")) {
+    return appError("Пробный период уже был использован", "TRIAL_ALREADY_USED", 409);
+  }
+  if (message.includes("ALREADY_PRO")) {
+    return appError("Pro уже подключён", "ALREADY_PRO", 409);
+  }
+  if (message.includes("ORGANIZATION_SUSPENDED")) {
+    return appError("Организация приостановлена", "ORGANIZATION_SUSPENDED", 403);
+  }
   if (message.includes("OWNER_REQUIRED")) {
     return appError(OWNER_REQUIRED_MESSAGE, "OWNER_REQUIRED", 403);
   }
@@ -217,8 +237,11 @@ async function getLatestRelevantRequest(organizationId) {
 async function getPaymentInfo(userId) {
   const organizationId = await requireOwnerOrganizationId(userId);
   const plan = await getActiveProPlan();
-  const subscription = await getOrganizationSubscriptionAccess(organizationId);
-  const latestRequest = await getLatestRelevantRequest(organizationId);
+  const [subscription, entitlements, latestRequest] = await Promise.all([
+    getOrganizationSubscriptionAccess(organizationId),
+    getOrganizationEntitlements(organizationId),
+    getLatestRelevantRequest(organizationId),
+  ]);
 
   return {
     plan: {
@@ -227,11 +250,39 @@ async function getPaymentInfo(userId) {
       price_amount: plan.price_amount,
       currency: plan.currency,
       billing_interval: plan.billing_interval,
+      trial_days: plan.trial_days,
     },
     kaspi: getKaspiPaymentInfo(plan, 1),
     subscription,
+    entitlements,
+    trial_enabled: PRO_TRIAL_ENABLED && entitlements.trial_available,
     latest_request: latestRequest,
   };
+}
+
+async function startProTrial(userId) {
+  if (!PRO_TRIAL_ENABLED) {
+    throw appError(
+      "Пробный период станет доступен вместе с первыми Pro-функциями",
+      "TRIAL_NOT_AVAILABLE",
+      403
+    );
+  }
+
+  await requireOwnerOrganizationId(userId);
+
+  const { error } = await getSupabaseAdmin().rpc("billing_start_pro_trial", {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    const mapped = mapRpcError(error);
+    if (mapped) throw mapped;
+    console.error("[billing] start trial failed", error.code || "unknown");
+    throw appError("Не удалось запустить пробный период", "INTERNAL_ERROR", 500);
+  }
+
+  return getPaymentInfo(userId);
 }
 
 async function listPaymentRequests(userId) {
@@ -333,6 +384,8 @@ module.exports = {
   listPaymentRequests,
   createPaymentRequest,
   cancelPaymentRequest,
+  startProTrial,
+  PRO_TRIAL_ENABLED,
   getKaspiPaymentInfo,
   getActiveProPlan,
   requireOwnerOrganizationId,

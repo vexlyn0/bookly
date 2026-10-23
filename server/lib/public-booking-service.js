@@ -14,7 +14,7 @@ const {
   MAX_BOOKING_DAYS_AHEAD,
 } = require("./slots");
 const { validatePublicBookingPayload, validationError } = require("./public-booking-validation");
-const { requireOrganizationSubscriptionAccess } = require("./subscription-service");
+const { requireOrganizationOperational } = require("./subscription-service");
 const telegramService = require("./telegram-service");
 
 const PUBLIC_ORG_FIELDS = `
@@ -144,9 +144,10 @@ async function requirePublicOrganization(slug) {
     throw appError("Организация не найдена", "ORGANIZATION_NOT_FOUND", 404);
   }
 
-  // Платформенный гейт (подписка) проверяется раньше настройки public_booking_enabled:
-  // без активной подписки онлайн-запись недоступна независимо от бизнес-настроек.
-  await requireOrganizationSubscriptionAccess(organization.id);
+  // Онлайн-запись работает на любом тарифе (Free / Pro), блокирует только приостановка
+  // организации. Проверяется раньше бизнес-настройки public_booking_enabled.
+  const entitlements = await requireOrganizationOperational(organization.id);
+  organization.show_branding = entitlements.show_branding;
 
   if (organization.public_booking_enabled !== true) {
     throw appError("Онлайн-запись временно недоступна", "PUBLIC_BOOKING_DISABLED", 403);
@@ -161,6 +162,7 @@ function toPublicOrganization(organization) {
     description: organization.description || "",
     phone: organization.phone || "",
     address: organization.address || "",
+    show_branding: organization.show_branding !== false,
   };
 }
 

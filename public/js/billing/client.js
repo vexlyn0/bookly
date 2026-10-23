@@ -54,8 +54,13 @@ window.BooklyBilling = (() => {
     });
   }
 
+  function startTrial() {
+    return request("/api/billing/start-trial", { method: "POST", body: "{}" });
+  }
+
   return {
     getPaymentInfo,
+    startTrial,
     listPaymentRequests,
     createPaymentRequest,
     cancelPaymentRequest,

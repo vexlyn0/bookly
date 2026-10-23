@@ -11,8 +11,10 @@ window.BooklySubscription = (() => {
   };
 
   const DB_ERROR_MESSAGES = {
+    STAFF_LIMIT_REACHED:
+      "На тарифе Free можно держать до 5 активных мастеров. Отключите одного из мастеров или перейдите на Pro.",
     SUBSCRIPTION_REQUIRED:
-      "Подписка закончилась. Продлите доступ в разделе «Тариф и оплата», чтобы продолжить работу.",
+      "Действие недоступно на текущем тарифе. Подробнее — в разделе «Тариф и оплата».",
     ORGANIZATION_SUSPENDED: "Организация приостановлена. Обратитесь в поддержку.",
     FORBIDDEN: "Нет доступа к этой организации.",
   };
@@ -105,6 +107,91 @@ window.BooklySubscription = (() => {
     return null;
   }
 
+  // ---------------------------------------------------------------------------
+  // Тариф и лимиты (Free / Pro) — общий снимок для всех разделов кабинета
+  // ---------------------------------------------------------------------------
+
+  let entitlements = null;
+  let entitlementsPromise = null;
+  const listeners = new Set();
+
+  function normalizeEntitlements(row) {
+    const isPro = row?.is_pro === true;
+    return {
+      plan_code: isPro ? "pro" : "free",
+      is_pro: isPro,
+      is_trial: row?.is_trial === true,
+      is_suspended: row?.is_suspended === true,
+      status: row?.status || null,
+      trial_ends_at: row?.trial_ends_at || null,
+      current_period_end: row?.current_period_end || null,
+      grace_period_ends_at: row?.grace_period_ends_at || null,
+      days_remaining: row?.days_remaining == null ? null : Number(row.days_remaining),
+      staff_limit: row?.staff_limit == null ? null : Number(row.staff_limit),
+      active_staff_count: Number(row?.active_staff_count) || 0,
+      trial_available: row?.trial_available === true,
+      show_branding: row?.show_branding !== false,
+    };
+  }
+
+  async function loadEntitlements(organizationId, { force = false } = {}) {
+    if (entitlements && !force) return entitlements;
+    if (entitlementsPromise && !force) return entitlementsPromise;
+
+    entitlementsPromise = (async () => {
+      const supabase = await BooklyAuth.getClient();
+      const { data, error } = await supabase.rpc("get_organization_entitlements", {
+        p_organization_id: organizationId,
+      });
+      if (error) {
+        log("loadEntitlements: error", error.message, error.code);
+        throw error;
+      }
+      entitlements = normalizeEntitlements(Array.isArray(data) ? data[0] : data);
+      listeners.forEach((listener) => listener(entitlements));
+      return entitlements;
+    })();
+
+    try {
+      return await entitlementsPromise;
+    } finally {
+      entitlementsPromise = null;
+    }
+  }
+
+  function getEntitlements() {
+    return entitlements;
+  }
+
+  function onEntitlementsChange(listener) {
+    listeners.add(listener);
+    if (entitlements) listener(entitlements);
+    return () => listeners.delete(listener);
+  }
+
+  /**
+   * После окончания Pro ставит на паузу мастеров сверх лимита Free.
+   * Возвращает число мастеров, поставленных на паузу.
+   */
+  async function syncPlanLimits(organizationId) {
+    const supabase = await BooklyAuth.getClient();
+    const { data, error } = await supabase.rpc("sync_organization_plan_limits", {
+      p_organization_id: organizationId,
+    });
+    if (error) {
+      log("syncPlanLimits: error", error.message, error.code);
+      return 0;
+    }
+    return Number(data) || 0;
+  }
+
+  function planLabel(value) {
+    if (!value) return "—";
+    if (value.is_suspended) return "Приостановлен";
+    if (value.is_trial) return "Пробный Pro";
+    return value.is_pro ? "Pro" : "Free";
+  }
+
   function statusLabel(status) {
     return STATUS_LABELS[status] || "—";
   }
@@ -172,6 +259,11 @@ window.BooklySubscription = (() => {
 
   return {
     getAccess,
+    loadEntitlements,
+    getEntitlements,
+    onEntitlementsChange,
+    syncPlanLimits,
+    planLabel,
     sanitizeAccess,
     mapDbError,
     statusLabel,

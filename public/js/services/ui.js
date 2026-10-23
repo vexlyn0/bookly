@@ -171,24 +171,25 @@ window.BooklyServicesUI = (() => {
   }
 
   async function handleToggle(event) {
-    const id = event.currentTarget.dataset.id;
+    const input = event.currentTarget;
+    const id = input.dataset.id;
     const service = services.find((item) => item.id === id);
     if (!service) return;
 
-    const nextValue = event.currentTarget.checked;
+    const nextValue = input.checked;
 
     try {
-      event.currentTarget.disabled = true;
+      input.disabled = true;
       const updated = await BooklyServices.setActive(id, nextValue);
       services = services.map((item) => (item.id === id ? updated : item));
       updateDashboardCount();
       renderList();
     } catch (error) {
-      event.currentTarget.checked = !nextValue;
+      input.checked = !nextValue;
       BooklyAuthErrors.logError("services:toggle", error);
       alert(BooklySubscription.mapDbError(error) || error.message || "Не удалось изменить статус услуги.");
     } finally {
-      event.currentTarget.disabled = false;
+      input.disabled = false;
     }
   }
 

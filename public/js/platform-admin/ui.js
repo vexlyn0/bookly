@@ -26,9 +26,9 @@ window.BooklyPlatformAdminUI = (() => {
 
   function statusBadge(status) {
     const labels = {
-      trialing: "Пробный",
-      active: "Активна",
-      expired: "Закончилась",
+      trialing: "Пробный Pro",
+      active: "Pro",
+      expired: "Free",
       suspended: "Приостановлена",
       pending: "Ожидает",
       approved: "Подтверждена",
@@ -43,9 +43,9 @@ window.BooklyPlatformAdminUI = (() => {
     return `
       <div class="platform-admin__stats">
         <article class="platform-admin__stat"><p class="platform-admin__stat-label">Организаций</p><p class="platform-admin__stat-value">${overview.organizations_total}</p></article>
-        <article class="platform-admin__stat"><p class="platform-admin__stat-label">Пробный период</p><p class="platform-admin__stat-value">${s.trialing || 0}</p></article>
-        <article class="platform-admin__stat"><p class="platform-admin__stat-label">Активные</p><p class="platform-admin__stat-value">${s.active || 0}</p></article>
-        <article class="platform-admin__stat"><p class="platform-admin__stat-label">Истекли</p><p class="platform-admin__stat-value">${s.expired || 0}</p></article>
+        <article class="platform-admin__stat"><p class="platform-admin__stat-label">Пробный Pro</p><p class="platform-admin__stat-value">${s.trialing || 0}</p></article>
+        <article class="platform-admin__stat"><p class="platform-admin__stat-label">Pro</p><p class="platform-admin__stat-value">${s.active || 0}</p></article>
+        <article class="platform-admin__stat"><p class="platform-admin__stat-label">Free</p><p class="platform-admin__stat-value">${s.expired || 0}</p></article>
         <article class="platform-admin__stat"><p class="platform-admin__stat-label">Приостановлены</p><p class="platform-admin__stat-value">${s.suspended || 0}</p></article>
         <article class="platform-admin__stat"><p class="platform-admin__stat-label">Ожидают оплаты</p><p class="platform-admin__stat-value">${overview.pending_payment_requests}</p></article>
         <article class="platform-admin__stat"><p class="platform-admin__stat-label">Подтверждено</p><p class="platform-admin__stat-value">${formatMoney(overview.approved_payments_total_amount)}</p></article>
@@ -157,9 +157,9 @@ window.BooklyPlatformAdminUI = (() => {
         <input class="field__input" type="search" id="org-search" placeholder="Поиск по названию или slug">
         <select class="field__select" id="org-status-filter">
           <option value="">Все статусы</option>
-          <option value="trialing">Пробный</option>
-          <option value="active">Активна</option>
-          <option value="expired">Закончилась</option>
+          <option value="trialing">Пробный Pro</option>
+          <option value="active">Pro</option>
+          <option value="expired">Free</option>
           <option value="suspended">Приостановлена</option>
         </select>
         <button class="btn btn--outline" type="button" id="org-refresh">Обновить</button>

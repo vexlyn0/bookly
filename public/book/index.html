@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="/css/public-booking.css">
 </head>
 <body class="public-booking-page">
-  <header class="pb-header">
+  <header class="pb-header" id="pb-header" hidden>
     <a href="/" class="pb-brand">
       <span class="pb-brand__mark">B</span>
       <span class="pb-brand__text">Bookly</span>
@@ -54,6 +54,10 @@
       <button class="btn btn--primary" type="button" id="pb-success-restart">Создать ещё одну запись</button>
     </section>
   </main>
+
+  <footer class="pb-powered" id="pb-powered" hidden>
+    Онлайн-запись через <a href="/?utm_source=booking_page" target="_blank" rel="noopener">Bookly</a> — создайте свою бесплатно
+  </footer>
 
   <script src="/js/public-booking/errors.js"></script>
   <script src="/js/public-booking/api.js"></script>

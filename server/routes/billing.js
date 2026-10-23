@@ -48,6 +48,15 @@ router.post("/payment-requests", requireAuth, paymentRequestCreateLimiter, async
   }
 });
 
+router.post("/start-trial", requireAuth, paymentRequestCreateLimiter, async (req, res) => {
+  try {
+    const info = await billingService.startProTrial(req.user.id);
+    return res.json({ ok: true, ...info });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
 router.post("/payment-requests/:id/cancel", requireAuth, async (req, res) => {
   try {
     const requestRow = await billingService.cancelPaymentRequest(req.user.id, req.params.id);
