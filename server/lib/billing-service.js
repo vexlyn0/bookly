@@ -13,11 +13,10 @@ const config = require("../config");
 const OWNER_REQUIRED_MESSAGE = "Управлять оплатой может только владелец организации";
 
 /**
- * Кнопка «Попробовать Pro 14 дней» включается, когда появятся настоящие
- * Pro-функции (напоминания клиентам, предоплата, клиенты, аналитика) —
- * иначе пользователь потратит единственный пробный период впустую.
+ * Кнопка «Попробовать Pro 14 дней». Включена с появлением первой настоящей
+ * Pro-функции — напоминаний клиентам в Telegram.
  */
-const PRO_TRIAL_ENABLED = false;
+const PRO_TRIAL_ENABLED = true;
 
 function mapRpcError(error) {
   const message = String(error?.message || "");
