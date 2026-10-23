@@ -9,6 +9,7 @@ const publicBookingRoutes = require("./public-booking");
 const billingRoutes = require("./billing");
 const platformAdminRoutes = require("./platform-admin");
 const telegramRoutes = require("./telegram");
+const bookingsRoutes = require("./bookings");
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use("/api/public", publicBookingRoutes);
 router.use("/api/billing", billingRoutes);
 router.use("/api/admin", platformAdminRoutes);
 router.use("/api/telegram", telegramRoutes);
+router.use("/api/bookings", bookingsRoutes);
 
 module.exports = router;

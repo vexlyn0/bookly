@@ -70,6 +70,14 @@ window.BooklyBookingsUI = (() => {
       btn.addEventListener("click", closeModals);
     });
 
+    const clientNotifyModal = document.getElementById("client-notify-modal");
+    clientNotifyModal?.addEventListener("click", (e) => {
+      if (e.target === clientNotifyModal) closeClientNotify();
+    });
+    document.querySelectorAll("[data-close-client-notify]").forEach((btn) => {
+      btn.addEventListener("click", closeClientNotify);
+    });
+
     const serviceSelect = els.form?.elements.namedItem("service_id");
     const staffSelect = els.form?.elements.namedItem("staff_id");
     const dateInput = els.form?.elements.namedItem("booking_date");
@@ -265,7 +273,8 @@ window.BooklyBookingsUI = (() => {
     const select = event.currentTarget;
     const id = select.dataset.id;
     const status = select.value;
-    const previous = bookings.find((item) => item.id === id)?.status;
+    const before = bookings.find((item) => item.id === id);
+    const previous = before?.status;
 
     try {
       select.disabled = true;
@@ -274,6 +283,7 @@ window.BooklyBookingsUI = (() => {
       updateDashboard();
       renderList();
       emitChange();
+      afterBookingChange(before, updated);
     } catch (error) {
       select.value = previous;
       BooklyBookingsErrors.logError("status", error);
@@ -704,12 +714,16 @@ window.BooklyBookingsUI = (() => {
     BooklyAuthUI.setButtonLoading(els.formSubmit, true, "Сохранение…", editingId ? "Сохранить" : "Добавить");
 
     try {
+      let before = null;
+      let saved = null;
+
       if (editingId) {
-        const updated = await BooklyBookings.update(editingId, result.data, editingSnapshot);
-        bookings = bookings.map((item) => (item.id === editingId ? updated : item));
+        before = bookings.find((item) => item.id === editingId) || null;
+        saved = await BooklyBookings.update(editingId, result.data, editingSnapshot);
+        bookings = bookings.map((item) => (item.id === editingId ? saved : item));
       } else {
-        const created = await BooklyBookings.create(organization.id, result.data);
-        bookings = [...bookings, created].sort((a, b) => {
+        saved = await BooklyBookings.create(organization.id, result.data);
+        bookings = [...bookings, saved].sort((a, b) => {
           const d = a.booking_date.localeCompare(b.booking_date);
           return d !== 0 ? d : String(a.start_time).localeCompare(String(b.start_time));
         });
@@ -719,6 +733,7 @@ window.BooklyBookingsUI = (() => {
       renderList();
       closeModals();
       emitChange();
+      afterBookingChange(before, saved);
     } catch (error) {
       BooklyBookingsErrors.logError("save", error);
       showFormError(
@@ -738,12 +753,14 @@ window.BooklyBookingsUI = (() => {
     BooklyAuthUI.setButtonLoading(els.cancelConfirm, true, "Отмена…", "Отменить запись");
 
     try {
+      const before = bookings.find((item) => item.id === cancelTargetId) || null;
       const updated = await BooklyBookings.setStatus(cancelTargetId, "canceled");
       bookings = bookings.map((item) => (item.id === cancelTargetId ? updated : item));
       updateDashboard();
       renderList();
       closeModals();
       emitChange();
+      afterBookingChange(before, updated);
     } catch (error) {
       BooklyBookingsErrors.logError("cancel", error);
       alert(BooklyBookingsErrors.fromError(error));
@@ -757,18 +774,143 @@ window.BooklyBookingsUI = (() => {
     BooklyAuthUI.setButtonLoading(els.deleteConfirm, true, "Удаление…", "Удалить");
 
     try {
+      const before = bookings.find((item) => item.id === deleteTargetId) || null;
       await BooklyBookings.remove(deleteTargetId);
       bookings = bookings.filter((item) => item.id !== deleteTargetId);
       updateDashboard();
       renderList();
       closeModals();
       emitChange();
+      afterBookingChange(before, null);
     } catch (error) {
       BooklyBookingsErrors.logError("delete", error);
       alert(BooklyBookingsErrors.fromError(error));
     } finally {
       BooklyAuthUI.setButtonLoading(els.deleteConfirm, false, "Удаление…", "Удалить");
     }
+  }
+
+  const ACTIVE_STATUSES = ["pending", "confirmed"];
+
+  /**
+   * После сохранения: уведомление мастеру в Telegram (через сервер)
+   * и предложение написать клиенту в WhatsApp при переносе / отмене.
+   */
+  function afterBookingChange(before, after) {
+    if (!before && after) {
+      BooklyBookings.notifyChange("created", after.id);
+    } else if (before && after) {
+      BooklyBookings.notifyChange("updated", after.id, BooklyBookings.toNotifySnapshot(before));
+    } else if (before) {
+      BooklyBookings.notifyChange("deleted", before.id, BooklyBookings.toNotifySnapshot(before));
+    }
+
+    const kind = getClientChangeKind(before, after);
+    if (kind) openClientNotify(kind, before, after);
+  }
+
+  function getClientChangeKind(before, after) {
+    if (!before || !ACTIVE_STATUSES.includes(before.status)) return null;
+
+    const today = BooklyBookingsSlots.formatDateLocal(new Date());
+
+    if (!after || after.status === "canceled") {
+      return before.booking_date >= today ? "canceled" : null;
+    }
+
+    if (!ACTIVE_STATUSES.includes(after.status) || after.booking_date < today) return null;
+
+    const moved =
+      before.staff_id !== after.staff_id ||
+      before.booking_date !== after.booking_date ||
+      BooklyBookingsSlots.formatTimeForInput(before.start_time) !==
+        BooklyBookingsSlots.formatTimeForInput(after.start_time);
+
+    return moved ? "rescheduled" : null;
+  }
+
+  /** Номер для wa.me: только цифры, казахстанские 8XXXXXXXXXX → 7XXXXXXXXXX. */
+  function toWhatsAppNumber(phone) {
+    let digits = String(phone || "").replace(/\D/g, "");
+    if (digits.length === 11 && digits.startsWith("8")) digits = `7${digits.slice(1)}`;
+    if (digits.length === 10) digits = `7${digits}`;
+    return digits.length >= 11 && digits.length <= 15 ? digits : "";
+  }
+
+  function formatDateLong(dateStr) {
+    const [y, m, d] = String(dateStr).split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("ru-RU", {
+      weekday: "short",
+      day: "numeric",
+      month: "long",
+    });
+  }
+
+  function buildClientMessage(kind, before, after) {
+    const orgName = organization?.public_name || organization?.name || "";
+    const booking = kind === "canceled" ? before : after;
+    const name = String(booking.client_name || "").trim();
+    const greeting = name ? `Здравствуйте, ${name}!` : "Здравствуйте!";
+    const when = `${formatDateLong(booking.booking_date)} в ${BooklyBookingsSlots.formatTimeForInput(booking.start_time)}`;
+    const service = booking.services?.name || "";
+
+    if (kind === "rescheduled") {
+      const staffName = booking.staff?.name || "";
+      return (
+        `${greeting} Ваша запись в «${orgName}» перенесена на ${when}` +
+        `${service ? ` — ${service}` : ""}${staffName ? `, мастер ${staffName}` : ""}. ` +
+        "Если время не подходит, ответьте на это сообщение."
+      );
+    }
+
+    const bookUrl = organization?.slug ? `${window.location.origin}/book/${organization.slug}` : "";
+    return (
+      `${greeting} Ваша запись в «${orgName}» на ${when}${service ? ` (${service})` : ""} отменена. ` +
+      (bookUrl
+        ? `Записаться на другое время: ${bookUrl}`
+        : "Чтобы записаться на другое время, ответьте на это сообщение.")
+    );
+  }
+
+  function describeStaffNotice(staffId) {
+    const member = staffMembers.find((item) => item.id === staffId);
+    if (!member) return "";
+    return member.telegram_chat_id
+      ? `Мастер ${member.name} получит уведомление в Telegram.`
+      : `Мастер ${member.name} не подключён к Telegram — предупредите его сами.`;
+  }
+
+  function openClientNotify(kind, before, after) {
+    const modal = document.getElementById("client-notify-modal");
+    if (!modal) return;
+
+    const booking = kind === "canceled" ? before : after;
+    const message = buildClientMessage(kind, before, after);
+    const waNumber = toWhatsAppNumber(booking.client_phone);
+
+    document.getElementById("client-notify-title").textContent =
+      kind === "canceled" ? "Запись отменена" : "Запись перенесена";
+    document.getElementById("client-notify-staff").textContent = describeStaffNotice(
+      kind === "canceled" ? before.staff_id : after.staff_id
+    );
+    document.getElementById("client-notify-preview").textContent = message;
+
+    const hint = document.getElementById("client-notify-hint");
+    hint.hidden = Boolean(waNumber);
+    hint.textContent = waNumber ? "" : "Телефон клиента не указан — WhatsApp предложит выбрать чат.";
+
+    const link = document.getElementById("client-notify-whatsapp");
+    link.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+    link.onclick = () => setTimeout(closeClientNotify, 0);
+
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeClientNotify() {
+    const modal = document.getElementById("client-notify-modal");
+    modal?.classList.remove("is-open");
+    modal?.setAttribute("aria-hidden", "true");
   }
 
   function showFormError(message) {

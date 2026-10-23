@@ -866,6 +866,26 @@
     </div>
   </div>
 
+  <!-- Модалка: сообщить клиенту о переносе / отмене -->
+  <div class="modal" id="client-notify-modal" aria-hidden="true" role="dialog" aria-labelledby="client-notify-title">
+    <div class="modal__dialog modal__dialog--sm">
+      <header class="modal__header">
+        <h2 class="modal__title" id="client-notify-title">Сообщить клиенту?</h2>
+        <button class="modal__close" type="button" data-close-client-notify aria-label="Закрыть">×</button>
+      </header>
+      <div class="invite-body">
+        <p class="invite-text" id="client-notify-staff"></p>
+        <p class="invite-text">Сообщите клиенту — текст уже готов:</p>
+        <p class="client-notify-preview" id="client-notify-preview"></p>
+        <p class="invite-hint" id="client-notify-hint" hidden></p>
+        <div class="invite-actions">
+          <a class="btn btn--primary" id="client-notify-whatsapp" href="#" target="_blank" rel="noopener">Отправить в WhatsApp</a>
+          <button class="btn btn--outline" type="button" data-close-client-notify>Не нужно</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="/js/config.js"></script>
   <script src="/js/api.js"></script>

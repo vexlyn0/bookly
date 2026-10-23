@@ -206,6 +206,44 @@ window.BooklyBookings = (() => {
     return { todayCount, upcomingCount };
   }
 
+  /** Снимок записи для уведомления мастера (состояние «до изменения»). */
+  function toNotifySnapshot(booking) {
+    if (!booking) return null;
+    return {
+      staff_id: booking.staff_id,
+      booking_date: booking.booking_date,
+      start_time: booking.start_time,
+      end_time: booking.end_time,
+      status: booking.status,
+      client_name: booking.client_name,
+      client_phone: booking.client_phone,
+      service_name: booking.services?.name || "",
+    };
+  }
+
+  /**
+   * Просит сервер уведомить мастера в Telegram. Не блокирует интерфейс и не бросает:
+   * запись уже сохранена, уведомление — дополнительное действие.
+   */
+  async function notifyChange(event, bookingId, previous = null) {
+    try {
+      const supabase = await BooklyAuth.getClient();
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token || !bookingId) return;
+
+      const response = await fetch(booklyApiUrl("/api/bookings/notify"), {
+        method: "POST",
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ event, booking_id: bookingId, previous }),
+      });
+      if (!response.ok) log("notify failed:", response.status);
+    } catch (error) {
+      log("notify error:", error?.message);
+    }
+  }
+
   function isReschedule(snapshot, payload) {
     if (!snapshot) return true;
 
@@ -231,5 +269,7 @@ window.BooklyBookings = (() => {
     listRange,
     remove,
     computeStats,
+    toNotifySnapshot,
+    notifyChange,
   };
 })();

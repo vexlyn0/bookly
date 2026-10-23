@@ -207,29 +207,89 @@ function formatDate(dateStr) {
  * @param {string} [view.clientComment]
  * @param {string} [view.reference]
  * @param {string} view.status
+ * @param {object} [options]
+ * @param {string} [options.title]       заголовок (HTML), по умолчанию «Новая запись»
+ * @param {string} [options.before]      прежние дата/время при переносе (текст)
+ * @param {boolean} [options.showStatus] показывать строку статуса
  */
-function formatBookingMessage(view) {
-  const lines = [
-    `🔔 <b>Новая запись</b> · ${escapeHtml(view.organizationName)}`,
-    "",
+function formatBookingMessage(view, { title = "🔔 <b>Новая запись</b>", before = "", showStatus = true } = {}) {
+  const lines = [`${title} · ${escapeHtml(view.organizationName)}`, ""];
+
+  if (before) lines.push(`Было: <s>${escapeHtml(before)}</s>`);
+
+  lines.push(
     `📅 <b>${escapeHtml(formatDate(view.bookingDate))}, ${escapeHtml(
       formatTimeForInput(view.startTime)
     )}–${escapeHtml(formatTimeForInput(view.endTime))}</b>`,
     `💼 ${escapeHtml(view.serviceName)}`,
     `👤 Мастер: ${escapeHtml(view.staffName)}`,
     "",
-    `🙋 ${escapeHtml(view.clientName)}`,
-  ];
+    `🙋 ${escapeHtml(view.clientName)}`
+  );
 
   if (view.clientPhone) lines.push(`📞 ${escapeHtml(view.clientPhone)}`);
   if (view.clientEmail) lines.push(`✉️ ${escapeHtml(view.clientEmail)}`);
   if (view.clientComment) lines.push(`💬 <i>${escapeHtml(view.clientComment)}</i>`);
 
-  lines.push("");
+  if (view.reference || showStatus) lines.push("");
   if (view.reference) lines.push(`🔖 ${escapeHtml(view.reference)}`);
-  lines.push(`Статус: ${STATUS_LABELS[view.status] || escapeHtml(view.status)}`);
+  if (showStatus) lines.push(`Статус: ${STATUS_LABELS[view.status] || escapeHtml(view.status)}`);
 
   return lines.join("\n");
+}
+
+const ACTIVE_STATUSES = new Set(["pending", "confirmed"]);
+
+/**
+ * Кому и что сообщить после изменения записи в кабинете.
+ *
+ * @param {object} input
+ * @param {"created"|"updated"|"deleted"} input.event
+ * @param {object|null} input.booking   запись после изменения (нет для deleted)
+ * @param {object|null} input.previous  запись до изменения (нет для created)
+ * @returns {{ staffId: string, kind: "new"|"rescheduled"|"canceled"|"reassigned"|"deleted" }[]}
+ */
+function planBookingChangeNotifications({ event, booking, previous }) {
+  if (event === "created") {
+    return booking && ACTIVE_STATUSES.has(booking.status)
+      ? [{ staffId: booking.staff_id, kind: "new" }]
+      : [];
+  }
+
+  if (event === "deleted") {
+    return previous && ACTIVE_STATUSES.has(previous.status)
+      ? [{ staffId: previous.staff_id, kind: "deleted" }]
+      : [];
+  }
+
+  if (event !== "updated" || !booking || !previous) return [];
+
+  const wasActive = ACTIVE_STATUSES.has(previous.status);
+  const isActive = ACTIVE_STATUSES.has(booking.status);
+
+  if (wasActive && booking.status === "canceled") {
+    return [{ staffId: previous.staff_id, kind: "canceled" }];
+  }
+
+  // Отменённую запись вернули — для мастера это новая запись.
+  if (!wasActive && isActive) {
+    return [{ staffId: booking.staff_id, kind: "new" }];
+  }
+
+  if (!wasActive || !isActive) return [];
+
+  if (previous.staff_id !== booking.staff_id) {
+    return [
+      { staffId: previous.staff_id, kind: "reassigned" },
+      { staffId: booking.staff_id, kind: "new" },
+    ];
+  }
+
+  const timeChanged =
+    String(previous.booking_date) !== String(booking.booking_date) ||
+    formatTimeForInput(previous.start_time) !== formatTimeForInput(booking.start_time);
+
+  return timeChanged ? [{ staffId: booking.staff_id, kind: "rescheduled" }] : [];
 }
 
 function bookingKeyboard(bookingId, status) {
@@ -303,11 +363,25 @@ async function notifyNewBooking({ organization, service, staff, booking, client 
       status: booking.status,
     });
 
-    await sendMessage(staff.telegram_chat_id, text, {
+    await sendToStaff(staff, text, {
       reply_markup: bookingKeyboard(booking.id, booking.status),
     });
   } catch (error) {
     logTelegramError("notifyNewBooking", error);
+  }
+}
+
+/**
+ * Отправляет сообщение привязанному сотруднику. Возвращает true при успехе, никогда не бросает.
+ */
+async function sendToStaff(staff, text, extra = {}) {
+  if (!isEnabled() || !staff?.telegram_chat_id) return false;
+
+  try {
+    await sendMessage(staff.telegram_chat_id, text, extra);
+    return true;
+  } catch (error) {
+    logTelegramError("sendToStaff", error);
 
     // Пользователь заблокировал бота / удалил чат — отвязываем, чтобы не слать впустую.
     if (error?.code === 403 && staff?.id) {
@@ -321,6 +395,7 @@ async function notifyNewBooking({ organization, service, staff, booking, client 
         // ignore
       }
     }
+    return false;
   }
 }
 
@@ -372,7 +447,7 @@ async function linkStaff(chatId, token) {
   const orgName = staff.organizations?.public_name || staff.organizations?.name || "Bookly";
   return [
     `✅ Готово, ${escapeHtml(staff.name)}!`,
-    `Уведомления о новых записях в «${escapeHtml(orgName)}» будут приходить сюда.`,
+    `Уведомления о записях (новые, переносы, отмены) в «${escapeHtml(orgName)}» будут приходить сюда.`,
     "",
     "/stop — отключить уведомления",
   ].join("\n");
@@ -514,7 +589,10 @@ module.exports = {
   verifyWebhookSecret,
   callApi,
   notifyNewBooking,
+  sendToStaff,
   handleUpdate,
+  planBookingChangeNotifications,
+  viewFromBookingRow,
   // для тестов
   escapeHtml,
   formatDate,

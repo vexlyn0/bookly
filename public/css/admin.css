@@ -2257,3 +2257,15 @@
     margin-left: 0;
   }
 }
+
+/* Сообщить клиенту о переносе / отмене */
+.client-notify-preview {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md, 10px);
+  background: #dcf8c6;
+  color: #111b21;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+}
