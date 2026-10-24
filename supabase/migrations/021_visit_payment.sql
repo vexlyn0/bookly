@@ -79,8 +79,8 @@ create trigger bookings_set_price
   before insert or update on public.bookings
   for each row execute function public.bookings_set_price();
 
+-- Без внешнего ключа: иначе между bookings и staff две связи и embed staff(...) ломается (см. 022)
 alter table public.staff
-  add column if not exists pending_amount_booking_id uuid
-  references public.bookings(id) on delete set null;
+  add column if not exists pending_amount_booking_id uuid;
 
 commit;
