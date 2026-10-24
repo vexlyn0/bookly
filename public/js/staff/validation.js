@@ -33,6 +33,7 @@ window.BooklyStaffValidation = (() => {
       data: {
         name,
         position: position || null,
+        photo_url: /^https:\/\//.test(String(payload.photo_url || "")) ? payload.photo_url : null,
         phone: phone || null,
         email: emailRaw || null,
         description: description || null,

@@ -12,6 +12,9 @@ window.BooklyPublicSettingsValidation = (() => {
     const phone = String(payload.phone || "").trim();
     const address = String(payload.address || "").trim();
     const mode = String(payload.booking_confirmation_mode || "auto");
+    const instagram = String(payload.instagram || "").trim();
+    const whatsapp = String(payload.whatsapp || "").trim();
+    const gisUrl = String(payload.gis_url || "").trim();
 
     if (publicName.length < 2) {
       errors.public_name = "Публичное название должно содержать минимум 2 символа.";
@@ -31,6 +34,18 @@ window.BooklyPublicSettingsValidation = (() => {
 
     if (address.length > 200) {
       errors.address = "Адрес слишком длинный.";
+    }
+
+    if (instagram.length > 100) {
+      errors.instagram = "Слишком длинно — укажите @ник или ссылку.";
+    }
+
+    if (whatsapp && (whatsapp.replace(/\D/g, "").length < 10 || whatsapp.length > 30)) {
+      errors.whatsapp = "Укажите номер WhatsApp полностью.";
+    }
+
+    if (gisUrl && (!/^https:\/\//i.test(gisUrl) || gisUrl.length > 500)) {
+      errors.gis_url = "Вставьте ссылку из 2ГИС целиком — она начинается с https://";
     }
 
     if (!["auto", "manual"].includes(mode)) {
@@ -58,6 +73,9 @@ window.BooklyPublicSettingsValidation = (() => {
         client_manage_cutoff_hours: cutoff,
         require_phone_verification: Boolean(payload.require_phone_verification),
         brand_color: /^#[0-9a-f]{6}$/i.test(String(payload.brand_color || "")) ? payload.brand_color : "#534AB7",
+        instagram: instagram || null,
+        whatsapp: whatsapp || null,
+        gis_url: gisUrl || null,
       },
     };
   }

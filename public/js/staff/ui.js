@@ -47,6 +47,7 @@ window.BooklyStaffUI = (() => {
     els.search?.addEventListener("input", renderList);
     els.filter?.addEventListener("change", renderList);
     els.form?.addEventListener("submit", handleFormSubmit);
+    BooklyMedia.bindPhotoField(els.form?.querySelector("[data-photo-field]"), "staff", () => organization.id);
     els.deleteConfirm?.addEventListener("click", handleDeleteConfirm);
 
     els.formModal?.addEventListener("click", (event) => {
@@ -491,6 +492,7 @@ window.BooklyStaffUI = (() => {
     } else if (els.form) {
       els.form.elements.namedItem("is_active").checked = true;
     }
+    BooklyMedia.setPhotoField(els.form?.querySelector("[data-photo-field]"), member?.photo_url || "");
 
     els.formModal?.classList.add("is-open");
     els.formModal?.setAttribute("aria-hidden", "false");
@@ -526,6 +528,7 @@ window.BooklyStaffUI = (() => {
     const payload = {
       name: form.elements.namedItem("name").value,
       position: form.elements.namedItem("position").value,
+      photo_url: form.elements.namedItem("photo_url").value,
       phone: form.elements.namedItem("phone").value,
       email: form.elements.namedItem("email").value,
       description: form.elements.namedItem("description").value,

@@ -37,6 +37,7 @@ window.BooklyServicesUI = (() => {
     els.filter?.addEventListener("change", renderList);
 
     els.form?.addEventListener("submit", handleFormSubmit);
+    BooklyMedia.bindPhotoField(els.form?.querySelector("[data-photo-field]"), "service", () => organization.id);
 
     document.querySelectorAll("[data-close-modal]").forEach((btn) => {
       btn.addEventListener("click", closeModals);
@@ -213,9 +214,18 @@ window.BooklyServicesUI = (() => {
       els.form.elements.namedItem("duration_minutes").value = service.duration_minutes ?? 60;
       els.form.elements.namedItem("category").value = service.category || "";
       els.form.elements.namedItem("is_active").checked = service.is_active !== false;
+      els.form.elements.namedItem("is_popular").checked = service.is_popular === true;
     } else if (els.form) {
       els.form.elements.namedItem("duration_minutes").value = 60;
       els.form.elements.namedItem("is_active").checked = true;
+    }
+    BooklyMedia.setPhotoField(els.form?.querySelector("[data-photo-field]"), service?.photo_url || "");
+
+    // Подсказки категорий — из уже существующих услуг
+    const datalist = document.getElementById("service-categories");
+    if (datalist) {
+      const categories = [...new Set(services.map((item) => String(item.category || "").trim()).filter(Boolean))];
+      datalist.innerHTML = categories.map((c) => `<option value="${escapeHtml(c)}"></option>`).join("");
     }
 
     els.formModal?.classList.add("is-open");
@@ -254,6 +264,8 @@ window.BooklyServicesUI = (() => {
       duration_minutes: form.elements.namedItem("duration_minutes").value,
       category: form.elements.namedItem("category").value,
       is_active: form.elements.namedItem("is_active").checked,
+      is_popular: form.elements.namedItem("is_popular").checked,
+      photo_url: form.elements.namedItem("photo_url").value,
     };
 
     const result = BooklyServicesValidation.validate(payload);

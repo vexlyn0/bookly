@@ -36,8 +36,10 @@ window.BooklyServicesValidation = (() => {
         description: description || null,
         price: Number.isFinite(price) ? Math.round(price) : 0,
         duration_minutes: Number.isFinite(duration) ? duration : MIN_DURATION,
-        category: category || null,
+        category: category ? category.slice(0, 40) : null,
         is_active: payload.is_active !== false,
+        is_popular: payload.is_popular === true,
+        photo_url: /^https:\/\//.test(String(payload.photo_url || "")) ? payload.photo_url : null,
       },
     };
   }

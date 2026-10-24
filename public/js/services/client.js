@@ -43,6 +43,8 @@ window.BooklyServices = (() => {
           duration_minutes: payload.duration_minutes,
           category: payload.category,
           is_active: payload.is_active,
+          is_popular: payload.is_popular,
+          photo_url: payload.photo_url,
         },
       ])
       .select()
@@ -69,6 +71,8 @@ window.BooklyServices = (() => {
         duration_minutes: payload.duration_minutes,
         category: payload.category,
         is_active: payload.is_active,
+        is_popular: payload.is_popular,
+        photo_url: payload.photo_url,
       })
       .eq("id", serviceId)
       .select()

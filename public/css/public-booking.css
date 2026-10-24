@@ -1146,3 +1146,306 @@ a.pb-chip:hover {
   background: var(--brand, #534ab7);
   color: #fff;
 }
+
+/* ===========================================================================
+ * Профиль салона: фото, «открыто», контакты, часы, «Наши работы», маршрут
+ * ========================================================================= */
+
+.pb-cover__band.has-photo {
+  height: 180px;
+  background-color: var(--brand);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.pb-logo.has-photo {
+  overflow: hidden;
+  padding: 0;
+  background: var(--pb-card);
+}
+
+.pb-logo img,
+.pb-avatar img,
+.pb-service__photo img,
+.pb-works__item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pb-chip--status {
+  color: var(--pb-muted);
+}
+
+.pb-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a1a1aa;
+}
+
+.pb-chip--status.is-open {
+  color: #166534;
+  background: #ecfdf3;
+}
+
+.pb-chip--status.is-open .pb-dot {
+  background: #22c55e;
+}
+
+.pb-contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pb-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid var(--pb-line);
+  border-radius: 12px;
+  background: var(--pb-card);
+  color: var(--pb-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pb-contact:hover {
+  border-color: var(--brand-border);
+  background: var(--brand-softer);
+  color: var(--brand-strong);
+}
+
+.pb-contact svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* Категории услуг */
+.pb-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 4px -4px 8px;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pb-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.pb-tab {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--pb-line);
+  border-radius: 999px;
+  background: var(--pb-card);
+  color: var(--pb-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pb-tab.is-active {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+}
+
+.pb-group-title {
+  margin: 18px 0 2px;
+  color: var(--pb-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pb-service__photo {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--pb-bg);
+}
+
+.pb-service__body {
+  flex: 1;
+}
+
+.pb-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #9a5b00;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: 2px;
+}
+
+.pb-avatar.has-photo {
+  overflow: hidden;
+  background: var(--pb-bg);
+}
+
+/* Боковой блок: работы, часы, маршрут */
+.pb-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 16px 24px;
+}
+
+.pb-info__card {
+  padding: 18px 20px;
+  border: 1px solid var(--pb-line);
+  border-radius: var(--pb-radius);
+  background: var(--pb-card);
+}
+
+.pb-info__title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pb-info__text {
+  margin: 0 0 12px;
+  color: var(--pb-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pb-info__route {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.pb-works {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.pb-works__item {
+  aspect-ratio: 1;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--pb-bg);
+  cursor: zoom-in;
+}
+
+.pb-hours {
+  margin: 0;
+}
+
+.pb-hours__row {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--pb-line);
+  font-size: 14px;
+}
+
+.pb-hours__row:last-child {
+  border-bottom: 0;
+}
+
+.pb-hours__row dt {
+  color: var(--pb-muted);
+}
+
+.pb-hours__row dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-hours__row.is-today dt,
+.pb-hours__row.is-today dd {
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+/* Фото на весь экран */
+.pb-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 16px 24px;
+  background: rgba(0, 0, 0, 0.88);
+}
+
+.pb-lightbox__img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
+.pb-lightbox__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Компьютер: запись слева, салон справа */
+@media (min-width: 980px) {
+  .pb-cover__inner {
+    max-width: 1004px;
+  }
+
+  .pb-body {
+    display: grid;
+    grid-template-columns: minmax(0, 640px) 340px;
+    justify-content: center;
+    align-items: start;
+    gap: 24px;
+    padding: 16px 16px 40px;
+  }
+
+  .pb-body .pb-main {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pb-info {
+    position: sticky;
+    top: 16px;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pb-cover__band.has-photo {
+    height: 240px;
+  }
+}

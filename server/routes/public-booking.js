@@ -6,6 +6,7 @@ const { Router } = require("express");
 const {
   requirePublicOrganization,
   toPublicOrganization,
+  getPublicProfile,
   getPublicServices,
   getPublicStaff,
   getPublicSlots,
@@ -66,7 +67,7 @@ router.get("/organizations/:slug", async (req, res) => {
     const organization = await requirePublicOrganization(req.params.slug);
     return res.json({
       ok: true,
-      organization: toPublicOrganization(organization),
+      organization: { ...toPublicOrganization(organization), ...(await getPublicProfile(organization)) },
     });
   } catch (error) {
     return sendError(res, error);

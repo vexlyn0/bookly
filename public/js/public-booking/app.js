@@ -154,6 +154,13 @@ window.PublicBookingApp = (() => {
       return;
     }
 
+    if (action === "select-category") {
+      // «Все» — "__all"; «Другое» (услуги без категории) — пустая строка
+      const category = event.target.closest("[data-category]")?.dataset.category ?? "__all";
+      setState({ serviceCategory: category === "__all" ? null : category });
+      return;
+    }
+
     if (action === "select-next") {
       const staffId = event.target.closest("[data-id]")?.dataset.id;
       if (staffId) pickNearest(staffId);

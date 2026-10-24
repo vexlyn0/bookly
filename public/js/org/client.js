@@ -43,6 +43,11 @@ window.BooklyOrg = (() => {
           client_manage_cutoff_hours,
           require_phone_verification,
           brand_color,
+          instagram,
+          whatsapp,
+          gis_url,
+          logo_url,
+          cover_url,
           created_at,
           updated_at
         )
@@ -168,6 +173,9 @@ window.BooklyOrg = (() => {
         client_manage_cutoff_hours: payload.client_manage_cutoff_hours,
         require_phone_verification: payload.require_phone_verification,
         brand_color: payload.brand_color,
+        instagram: payload.instagram,
+        whatsapp: payload.whatsapp,
+        gis_url: payload.gis_url,
       })
       .eq("id", organizationId)
       .select(`
@@ -185,6 +193,11 @@ window.BooklyOrg = (() => {
         client_manage_cutoff_hours,
         require_phone_verification,
         brand_color,
+        instagram,
+        whatsapp,
+        gis_url,
+        logo_url,
+        cover_url,
         created_at,
         updated_at
       `)

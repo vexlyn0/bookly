@@ -3648,3 +3648,184 @@
 .an-awaiting .kpi-card__sub {
   color: #854f0b;
 }
+
+/* ========== Фото: поле в форме (услуга, мастер) ========== */
+
+.field__optional {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-normal, 400);
+}
+
+.photo-field__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.photo-field__preview {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  color: var(--color-text-muted);
+  font-size: 22px;
+}
+
+.photo-field--round .photo-field__preview {
+  border-radius: 50%;
+}
+
+.photo-field__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-field__pick {
+  cursor: pointer;
+}
+
+.photo-field.is-loading .photo-field__pick {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ========== Фото на странице записи (настройки) ========== */
+
+.profile-media {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.profile-media__title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+
+.profile-media__hint {
+  margin: var(--space-1) 0 var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.profile-media__row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.profile-media__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.profile-media__logo {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  overflow: hidden;
+  border-radius: 22px;
+  color: #fff;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.profile-media__cover {
+  display: grid;
+  place-items: center;
+  height: 120px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.profile-media__cover span {
+  padding: 0 var(--space-4);
+}
+
+.profile-media__logo img,
+.profile-media__cover img,
+.profile-media__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-media__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.profile-media__pick {
+  cursor: pointer;
+}
+
+.profile-media__pick.is-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.profile-media__count {
+  margin-left: var(--space-2);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-normal, 400);
+}
+
+.profile-media__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-2);
+}
+
+.profile-media__photo,
+.profile-media__add {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+}
+
+.profile-media__add {
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--color-border-strong);
+}
+
+.profile-media__remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.profile-media__message {
+  margin-top: var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .profile-media__row {
+    grid-template-columns: 1fr;
+  }
+}

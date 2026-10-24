@@ -91,6 +91,7 @@ window.BooklyStaff = (() => {
           organization_id: organizationId,
           name: payload.name,
           position: payload.position,
+          photo_url: payload.photo_url,
           phone: payload.phone,
           email: payload.email,
           description: payload.description,
@@ -118,6 +119,7 @@ window.BooklyStaff = (() => {
       .update({
         name: payload.name,
         position: payload.position,
+        photo_url: payload.photo_url,
         phone: payload.phone,
         email: payload.email,
         description: payload.description,

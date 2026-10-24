@@ -30,13 +30,15 @@
   <header class="pb-cover" id="pb-cover" hidden>
     <div class="pb-cover__band" aria-hidden="true"></div>
     <div class="pb-cover__inner">
-      <div class="pb-logo" id="pb-org-logo" aria-hidden="true">B</div>
+      <div class="pb-logo" id="pb-org-logo" aria-hidden="true">J</div>
       <h1 class="pb-cover__title" id="pb-org-name">—</h1>
       <p class="pb-cover__description" id="pb-org-description"></p>
       <div class="pb-cover__meta" id="pb-org-meta"></div>
+      <div class="pb-contacts" id="pb-org-contacts" hidden></div>
     </div>
   </header>
 
+  <div class="pb-body">
   <main class="pb-main">
     <div class="pb-flow" id="pb-flow" hidden>
       <div class="pb-progress" id="pb-steps"></div>
@@ -59,6 +61,14 @@
       <button class="pb-btn pb-btn--ghost" type="button" id="pb-success-restart" data-i18n="book_again">Записаться ещё раз</button>
     </section>
   </main>
+
+  <aside class="pb-info" id="pb-info" hidden></aside>
+  </div>
+
+  <div class="pb-lightbox" id="pb-lightbox" hidden>
+    <button class="pb-lightbox__close" type="button" data-i18n="close" aria-label="Закрыть">Закрыть</button>
+    <img class="pb-lightbox__img" id="pb-lightbox-img" alt="">
+  </div>
 
   <footer class="pb-powered" id="pb-powered" data-i18n-html="powered" hidden>
     Онлайн-запись через <a href="/?utm_source=booking_page" target="_blank" rel="noopener">Jazyl</a> — создайте свою бесплатно

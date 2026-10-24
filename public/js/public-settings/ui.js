@@ -27,6 +27,7 @@ window.BooklyPublicSettingsUI = (() => {
     els.form.elements.namedItem("slug")?.addEventListener("input", updatePublicLink);
     els.openBtn?.addEventListener("click", openPublicPage);
     els.copyBtn?.addEventListener("click", copyPublicLink);
+    window.BooklyProfileMediaUI?.init(organization);
   }
 
   function getPublicUrl(slug = organization?.slug) {
@@ -50,6 +51,9 @@ window.BooklyPublicSettingsUI = (() => {
     els.form.elements.namedItem("description").value = organization.description || "";
     els.form.elements.namedItem("phone").value = organization.phone || "";
     els.form.elements.namedItem("address").value = organization.address || "";
+    els.form.elements.namedItem("instagram").value = organization.instagram || "";
+    els.form.elements.namedItem("whatsapp").value = organization.whatsapp || "";
+    els.form.elements.namedItem("gis_url").value = organization.gis_url || "";
     els.form.elements.namedItem("public_booking_enabled").checked =
       organization.public_booking_enabled === true;
     els.form.elements.namedItem("booking_confirmation_mode").value =
@@ -124,6 +128,9 @@ window.BooklyPublicSettingsUI = (() => {
       description: form.elements.namedItem("description").value,
       phone: form.elements.namedItem("phone").value,
       address: form.elements.namedItem("address").value,
+      instagram: form.elements.namedItem("instagram").value,
+      whatsapp: form.elements.namedItem("whatsapp").value,
+      gis_url: form.elements.namedItem("gis_url").value,
       public_booking_enabled: form.elements.namedItem("public_booking_enabled").checked,
       booking_confirmation_mode: form.elements.namedItem("booking_confirmation_mode").value,
       client_manage_cutoff_hours: form.elements.namedItem("client_manage_cutoff_hours")?.value ?? "2",

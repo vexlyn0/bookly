@@ -174,27 +174,178 @@ window.PublicBookingUI = (() => {
     document.getElementById("pb-theme-color")?.setAttribute("content", brand);
 
     els.cover.hidden = false;
-    els.logo.textContent = initials(organization.name).slice(0, 1);
+    const band = els.cover.querySelector(".pb-cover__band");
+    if (band) {
+      band.classList.toggle("has-photo", Boolean(organization.cover_url));
+      band.style.backgroundImage = organization.cover_url ? `url("${organization.cover_url.replace(/"/g, "%22")}")` : "";
+    }
+    els.logo.classList.toggle("has-photo", Boolean(organization.logo_url));
+    els.logo.innerHTML = organization.logo_url
+      ? `<img src="${escapeHtml(organization.logo_url)}" alt="">`
+      : escapeHtml(initials(organization.name).slice(0, 1));
     els.heroName.textContent = organization.name || "—";
     els.heroDescription.textContent = organization.description || "";
     els.heroDescription.hidden = !organization.description;
     document.title = t("page_title", { org: organization.name });
 
     const meta = [];
-    if (organization.address) {
-      meta.push(`<span class="pb-chip"><span aria-hidden="true">📍</span>${escapeHtml(organization.address)}</span>`);
-    }
-    if (organization.phone) {
-      const tel = organization.phone.replace(/[^\d+]/g, "");
+    const status = statusText(organization.status);
+    if (status) {
       meta.push(
-        `<a class="pb-chip" href="tel:${escapeHtml(tel)}"><span aria-hidden="true">📞</span>${escapeHtml(organization.phone)}</a>`
+        `<span class="pb-chip pb-chip--status${organization.status.open_now ? " is-open" : ""}"><span class="pb-dot" aria-hidden="true"></span>${escapeHtml(status)}</span>`
+      );
+    }
+    if (organization.address) {
+      meta.push(
+        `<a class="pb-chip" href="${escapeHtml(routeUrl(organization))}" target="_blank" rel="noopener"><span aria-hidden="true">📍</span>${escapeHtml(organization.address)}</a>`
       );
     }
     els.heroMeta.innerHTML = meta.join("");
 
-    // Free: подпись Bookly внизу страницы; Pro — без брендинга Bookly.
+    const contacts = [];
+    const instagram = instagramUrl(organization.instagram);
+    if (instagram) {
+      contacts.push(`<a class="pb-contact" href="${escapeHtml(instagram)}" target="_blank" rel="noopener">${ICONS.instagram}<span>Instagram</span></a>`);
+    }
+    const whatsapp = whatsappUrl(organization.whatsapp);
+    if (whatsapp) {
+      contacts.push(`<a class="pb-contact" href="${escapeHtml(whatsapp)}" target="_blank" rel="noopener">${ICONS.whatsapp}<span>WhatsApp</span></a>`);
+    }
+    if (organization.phone) {
+      const tel = organization.phone.replace(/[^\d+]/g, "");
+      contacts.push(`<a class="pb-contact" href="tel:${escapeHtml(tel)}">${ICONS.phone}<span>${escapeHtml(t("call_short"))}</span></a>`);
+    }
+    const contactsBox = document.getElementById("pb-org-contacts");
+    if (contactsBox) {
+      contactsBox.innerHTML = contacts.join("");
+      contactsBox.hidden = !contacts.length;
+    }
+
+    renderInfo(organization);
+
+    // Free: подпись Jazyl внизу страницы; Pro — без брендинга Jazyl.
     if (els.powered) els.powered.hidden = organization.show_branding === false;
   }
+
+  // ---------------------------------------------------------------------------
+  // Профиль салона: «открыто», контакты, часы, «Наши работы», маршрут
+  // ---------------------------------------------------------------------------
+
+  const ICONS = {
+    instagram:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>',
+    whatsapp:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.5-2-1-1 1c-1.2-.5-2.4-1.7-3-3l1-1-1-2z" stroke-width="1.5"/></svg>',
+    phone:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></svg>',
+  };
+
+  function instagramUrl(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (/^https:\/\//i.test(raw)) return raw;
+    const nick = raw.replace(/^@/, "").replace(/^(?:https?:\/\/)?(?:www\.)?instagram\.com\//i, "").replace(/[/?#].*$/, "");
+    return /^[a-z0-9._]{1,30}$/i.test(nick) ? `https://instagram.com/${nick}` : "";
+  }
+
+  function whatsappUrl(value) {
+    let digits = String(value || "").replace(/\D/g, "");
+    if (digits.length === 11 && digits.startsWith("8")) digits = `7${digits.slice(1)}`;
+    if (digits.length === 10) digits = `7${digits}`;
+    return digits.length >= 11 ? `https://wa.me/${digits}` : "";
+  }
+
+  function routeUrl(organization) {
+    if (/^https:\/\//i.test(organization.gis_url || "")) return organization.gis_url;
+    return `https://2gis.kz/search/${encodeURIComponent(organization.address || "")}`;
+  }
+
+  /** «Открыто до 20:00» / «Откроется завтра в 10:00» / «Сейчас закрыто». */
+  function statusText(status) {
+    if (!status) return "";
+    if (status.open_now) return t("open_until", { time: status.closes_at });
+    if (!status.opens_at) return t("closed_now");
+    const today = PublicBookingState.getTodayString();
+    let when;
+    if (status.opens_date === today) when = t("when_today", { time: status.opens_at });
+    else if (status.opens_date === PublicBookingState.addDays(today, 1)) when = t("when_tomorrow", { time: status.opens_at });
+    else when = t("when_day", { day: t("weekdays_acc").split(",")[parseDate(status.opens_date).getDay()], time: status.opens_at });
+    return t("opens_at", { when });
+  }
+
+  function renderInfo(organization) {
+    const box = document.getElementById("pb-info");
+    if (!box) return;
+    const parts = [];
+
+    const photos = Array.isArray(organization.portfolio) ? organization.portfolio : [];
+    if (photos.length) {
+      parts.push(`
+        <section class="pb-info__card">
+          <h2 class="pb-info__title">${escapeHtml(t("works_title"))}</h2>
+          <div class="pb-works">
+            ${photos
+              .map(
+                (url) =>
+                  `<button type="button" class="pb-works__item" data-photo="${escapeHtml(url)}"><img src="${escapeHtml(url)}" alt="" loading="lazy"></button>`
+              )
+              .join("")}
+          </div>
+        </section>`);
+    }
+
+    const hours = Array.isArray(organization.hours) ? organization.hours : [];
+    if (hours.some(Boolean)) {
+      const names = t("weekdays_mon").split(",");
+      const todayIndex = (new Date().getDay() + 6) % 7;
+      parts.push(`
+        <section class="pb-info__card">
+          <h2 class="pb-info__title">${escapeHtml(t("hours_title"))}</h2>
+          <dl class="pb-hours">
+            ${hours
+              .map(
+                (day, i) => `
+              <div class="pb-hours__row${i === todayIndex ? " is-today" : ""}">
+                <dt>${escapeHtml(names[i])}</dt>
+                <dd>${day ? `${escapeHtml(day.open)}–${escapeHtml(day.close)}` : escapeHtml(t("hours_off"))}</dd>
+              </div>`
+              )
+              .join("")}
+          </dl>
+        </section>`);
+    }
+
+    if (organization.address) {
+      parts.push(`
+        <section class="pb-info__card">
+          <h2 class="pb-info__title">${escapeHtml(t("route_title"))}</h2>
+          <p class="pb-info__text">${escapeHtml(organization.address)}</p>
+          <a class="pb-btn pb-btn--ghost pb-info__route" href="${escapeHtml(routeUrl(organization))}" target="_blank" rel="noopener">${escapeHtml(t("route_btn"))} →</a>
+        </section>`);
+    }
+
+    box.innerHTML = parts.join("");
+    box.hidden = !parts.length;
+  }
+
+  // Просмотр фото «Наши работы» на весь экран
+  document.addEventListener("click", (event) => {
+    const lightbox = document.getElementById("pb-lightbox");
+    if (!lightbox) return;
+    const photo = event.target.closest("[data-photo]");
+    if (photo) {
+      document.getElementById("pb-lightbox-img").src = photo.dataset.photo;
+      lightbox.hidden = false;
+      return;
+    }
+    if (!lightbox.hidden && (event.target === lightbox || event.target.closest(".pb-lightbox__close"))) {
+      lightbox.hidden = true;
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    const lightbox = document.getElementById("pb-lightbox");
+    if (event.key === "Escape" && lightbox && !lightbox.hidden) lightbox.hidden = true;
+  });
 
   function renderProgress(state) {
     const steps = PublicBookingState.STEPS;
@@ -244,25 +395,63 @@ window.PublicBookingUI = (() => {
       return `<div class="pb-empty">${t("no_services")}</div>`;
     }
 
+    // Категории: вкладки «Все · Стрижки · …», если категорий хотя бы две.
+    const categories = [...new Set(state.services.map((s) => s.category || ""))];
+    const named = categories.filter(Boolean);
+    const useCategories = named.length >= 2 || (named.length === 1 && categories.length === 2);
+    const active = useCategories && categories.includes(state.serviceCategory) ? state.serviceCategory : null;
+
+    const tabs = useCategories
+      ? `<div class="pb-tabs" role="tablist">
+          <button type="button" role="tab" class="pb-tab${active === null ? " is-active" : ""}" data-action="select-category" data-category="__all">${escapeHtml(t("all_services"))}</button>
+          ${categories
+            .map(
+              (c) =>
+                `<button type="button" role="tab" class="pb-tab${active === c ? " is-active" : ""}" data-action="select-category" data-category="${escapeHtml(c)}">${escapeHtml(c || t("other_services"))}</button>`
+            )
+            .join("")}
+        </div>`
+      : "";
+
+    const list = (services) =>
+      `<div class="pb-list">${services.map((service) => renderServiceItem(state, service)).join("")}</div>`;
+
+    let body;
+    if (!useCategories) {
+      body = list(state.services);
+    } else if (active !== null) {
+      body = list(state.services.filter((s) => (s.category || "") === active));
+    } else {
+      // «Все» — группами по категориям, без категории — в конце
+      const ordered = [...named, ...(categories.includes("") ? [""] : [])];
+      body = ordered
+        .map(
+          (c) => `
+          <p class="pb-group-title">${escapeHtml(c || t("other_services"))}</p>
+          ${list(state.services.filter((s) => (s.category || "") === c))}`
+        )
+        .join("");
+    }
+
     return `
       <h2 class="pb-panel__title">${t("choose_service")}</h2>
-      <div class="pb-list">
-        ${state.services
-          .map((service) => {
-            const price = formatPrice(service.price, service.currency);
-            return `
-              <button class="pb-service ${state.selection.serviceId === service.id ? "is-selected" : ""}" type="button" data-action="select-service" data-id="${service.id}">
-                <span class="pb-service__body">
-                  <span class="pb-service__name">${escapeHtml(service.name)}</span>
-                  ${service.description ? `<span class="pb-service__text">${escapeHtml(service.description)}</span>` : ""}
-                  <span class="pb-service__meta">${escapeHtml(formatDuration(service.duration_minutes))}</span>
-                </span>
-                <span class="pb-price">${price ? escapeHtml(price) : t("choose")}</span>
-              </button>`;
-          })
-          .join("")}
-      </div>
+      ${tabs}
+      ${body}
     `;
+  }
+
+  function renderServiceItem(state, service) {
+    const price = formatPrice(service.price, service.currency);
+    return `
+      <button class="pb-service ${state.selection.serviceId === service.id ? "is-selected" : ""}" type="button" data-action="select-service" data-id="${service.id}">
+        ${service.photo_url ? `<span class="pb-service__photo"><img src="${escapeHtml(service.photo_url)}" alt="" loading="lazy"></span>` : ""}
+        <span class="pb-service__body">
+          <span class="pb-service__name">${escapeHtml(service.name)}${service.is_popular ? ` <span class="pb-badge">${escapeHtml(t("popular"))}</span>` : ""}</span>
+          ${service.description ? `<span class="pb-service__text">${escapeHtml(service.description)}</span>` : ""}
+          <span class="pb-service__meta">${escapeHtml(formatDuration(service.duration_minutes))}</span>
+        </span>
+        <span class="pb-price">${price ? escapeHtml(price) : t("choose")}</span>
+      </button>`;
   }
 
   function renderStaffStep(state) {
@@ -303,7 +492,9 @@ window.PublicBookingUI = (() => {
               : t("no_windows");
             return `
               <button class="pb-master ${state.selection.staffId === member.id ? "is-selected" : ""} ${next ? "" : "is-busy"}" type="button" data-action="select-staff" data-id="${member.id}">
-                <span class="pb-avatar">${escapeHtml(initials(member.name))}</span>
+                <span class="pb-avatar${member.photo_url ? " has-photo" : ""}">${
+                  member.photo_url ? `<img src="${escapeHtml(member.photo_url)}" alt="" loading="lazy">` : escapeHtml(initials(member.name))
+                }</span>
                 <span class="pb-master__name">${escapeHtml(member.name)}</span>
                 ${member.position ? `<span class="pb-master__position">${escapeHtml(member.position)}</span>` : ""}
                 <span class="pb-master__next" ${next ? `data-action="select-next" data-id="${member.id}" title="${escapeHtml(t("book_this_time"))}"` : ""}>${next ? "⚡ " : ""}${escapeHtml(nextText)}</span>

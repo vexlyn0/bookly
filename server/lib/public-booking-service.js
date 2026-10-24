@@ -19,6 +19,7 @@ const { validatePublicBookingPayload, validationError } = require("./public-book
 const { requireOrganizationOperational } = require("./subscription-service");
 const telegramService = require("./telegram-service");
 const phoneVerification = require("./phone-verification-service");
+const { computeOrgHours } = require("./org-hours");
 
 const PUBLIC_ORG_FIELDS = `
   id,
@@ -32,7 +33,12 @@ const PUBLIC_ORG_FIELDS = `
   public_booking_enabled,
   booking_confirmation_mode,
   require_phone_verification,
-  brand_color
+  brand_color,
+  instagram,
+  whatsapp,
+  gis_url,
+  logo_url,
+  cover_url
 `;
 
 const REFERENCE_PATTERN = /^BK-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
@@ -304,7 +310,57 @@ function toPublicOrganization(organization) {
     brand_color: /^#[0-9a-f]{6}$/i.test(String(organization.brand_color || ""))
       ? organization.brand_color
       : DEFAULT_BRAND_COLOR,
+    instagram: organization.instagram || "",
+    whatsapp: organization.whatsapp || "",
+    gis_url: organization.gis_url || "",
+    logo_url: organization.logo_url || "",
+    cover_url: organization.cover_url || "",
   };
+}
+
+/**
+ * Профиль для страницы записи: часы работы, «открыто сейчас», «Наши работы».
+ * Ошибка здесь не ломает страницу — просто без этих блоков.
+ */
+async function getPublicProfile(organization) {
+  const supabase = getSupabaseAdmin();
+  const today = formatDateInTimezone(new Date(), organization.timezone);
+  const weekLater = addDays(today, 7);
+
+  try {
+    const [staffResult, schedulesResult, timeOffResult, portfolioResult] = await Promise.all([
+      supabase.from("staff").select("id").eq("organization_id", organization.id).eq("is_active", true),
+      supabase.from("staff_schedules").select("*").eq("organization_id", organization.id),
+      supabase
+        .from("staff_time_off")
+        .select("staff_id, kind, date_from, date_to, start_time, end_time, note, created_at")
+        .eq("organization_id", organization.id)
+        .lte("date_from", weekLater)
+        .gte("date_to", today),
+      supabase
+        .from("portfolio_photos")
+        .select("url")
+        .eq("organization_id", organization.id)
+        .order("created_at", { ascending: false })
+        .limit(24),
+    ]);
+
+    const failed = [staffResult, schedulesResult, timeOffResult, portfolioResult].find((r) => r.error);
+    if (failed) throw failed.error;
+
+    const { hours, status } = computeOrgHours({
+      staffIds: (staffResult.data || []).map((row) => row.id),
+      schedules: schedulesResult.data || [],
+      timeOff: timeOffResult.data || [],
+      today,
+      nowMinutes: getMinutesInTimezone(new Date(), organization.timezone),
+    });
+
+    return { hours, status, portfolio: (portfolioResult.data || []).map((row) => row.url) };
+  } catch (error) {
+    logQueryError("organization:profile", error);
+    return { hours: [], status: null, portfolio: [] };
+  }
 }
 
 async function getPublicServices(slug) {
@@ -313,7 +369,7 @@ async function getPublicServices(slug) {
 
   const { data, error } = await supabase
     .from("services")
-    .select("id, name, description, duration_minutes, price")
+    .select("id, name, description, duration_minutes, price, category, photo_url, is_popular")
     .eq("organization_id", organization.id)
     .eq("is_active", true)
     .order("name", { ascending: true });
@@ -327,6 +383,9 @@ async function getPublicServices(slug) {
     duration_minutes: service.duration_minutes,
     price: service.price,
     currency: "KZT",
+    category: String(service.category || "").trim(),
+    photo_url: service.photo_url || "",
+    is_popular: service.is_popular === true,
   }));
 }
 
@@ -347,7 +406,7 @@ async function getPublicStaff(slug, serviceId) {
 
   const { data, error } = await supabase
     .from("staff_services")
-    .select("staff_id, staff(id, name, position, is_active)")
+    .select("staff_id, staff(id, name, position, is_active, photo_url)")
     .eq("organization_id", organization.id)
     .eq("service_id", serviceId);
 
@@ -360,6 +419,7 @@ async function getPublicStaff(slug, serviceId) {
       id: member.id,
       name: member.name,
       position: member.position || "",
+      photo_url: member.photo_url || "",
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "ru"));
 
@@ -662,6 +722,7 @@ module.exports = {
   getOrganizationBySlug,
   requirePublicOrganization,
   toPublicOrganization,
+  getPublicProfile,
   getPublicServices,
   getPublicStaff,
   getPublicSlots,

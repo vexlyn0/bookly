@@ -308,6 +308,23 @@
                 </label>
               </div>
 
+              <div class="modal__row">
+                <label class="field">
+                  <span class="field__label">Instagram</span>
+                  <input class="field__input" type="text" name="instagram" maxlength="100" placeholder="@salon.almaty">
+                </label>
+                <label class="field">
+                  <span class="field__label">WhatsApp</span>
+                  <input class="field__input" type="tel" name="whatsapp" maxlength="30" placeholder="+7 701 000 00 00">
+                </label>
+              </div>
+
+              <label class="field">
+                <span class="field__label">Ссылка на салон в 2ГИС</span>
+                <input class="field__input" type="url" name="gis_url" maxlength="500" placeholder="https://2gis.kz/almaty/firm/…">
+                <span class="field__hint">Откройте салон в 2ГИС → «Поделиться» → «Скопировать ссылку». Клиент нажмёт на адрес и построит маршрут.</span>
+              </label>
+
               <label class="field field--checkbox">
                 <input type="checkbox" name="public_booking_enabled" checked>
                 <span>Включить онлайн-запись</span>
@@ -388,6 +405,8 @@
                 <button class="btn btn--primary" type="submit" id="public-booking-form-submit">Сохранить</button>
               </div>
             </form>
+
+            <section class="profile-media" id="profile-media" aria-label="Фото на странице записи"></section>
           </div>
 
           <aside class="public-booking-layout__aside">
@@ -767,7 +786,28 @@
 
         <label class="field">
           <span class="field__label">Категория</span>
-          <input class="field__input" type="text" name="category" placeholder="Например, Стрижки">
+          <input class="field__input" type="text" name="category" maxlength="40" list="service-categories" placeholder="Например, Стрижки">
+          <datalist id="service-categories"></datalist>
+          <span class="field__hint">На странице записи услуги будут сгруппированы по категориям.</span>
+        </label>
+
+        <div class="field photo-field" data-photo-field="service">
+          <span class="field__label">Фото услуги <span class="field__optional">— необязательно</span></span>
+          <div class="photo-field__row">
+            <div class="photo-field__preview"><span aria-hidden="true">+</span></div>
+            <label class="btn btn--outline btn--sm photo-field__pick">
+              <span class="photo-field__pick-text">Выбрать фото</span>
+              <input type="file" accept="image/*" hidden>
+            </label>
+            <button type="button" class="btn btn--ghost btn--sm" data-photo-clear hidden>Убрать</button>
+          </div>
+          <input type="hidden" name="photo_url">
+          <span class="field__error photo-field__error" hidden></span>
+        </div>
+
+        <label class="field field--checkbox">
+          <input type="checkbox" name="is_popular">
+          <span>Метка «Популярное» на странице записи</span>
         </label>
 
         <label class="field field--checkbox">
@@ -818,6 +858,20 @@
           <span class="field__label">Должность</span>
           <input class="field__input" type="text" name="position" placeholder="Например, Мастер маникюра">
         </label>
+
+        <div class="field photo-field photo-field--round" data-photo-field="staff">
+          <span class="field__label">Фото мастера <span class="field__optional">— необязательно</span></span>
+          <div class="photo-field__row">
+            <div class="photo-field__preview"><span aria-hidden="true">+</span></div>
+            <label class="btn btn--outline btn--sm photo-field__pick">
+              <span class="photo-field__pick-text">Выбрать фото</span>
+              <input type="file" accept="image/*" hidden>
+            </label>
+            <button type="button" class="btn btn--ghost btn--sm" data-photo-clear hidden>Убрать</button>
+          </div>
+          <input type="hidden" name="photo_url">
+          <span class="field__error photo-field__error" hidden></span>
+        </div>
 
         <div class="modal__row">
           <label class="field">
@@ -1066,6 +1120,7 @@
   <script src="/js/auth/client.js"></script>
   <script src="/js/org/constants.js"></script>
   <script src="/js/org/client.js"></script>
+  <script src="/js/media/client.js"></script>
   <script src="/js/services/validation.js"></script>
   <script src="/js/services/client.js"></script>
   <script src="/js/services/ui.js"></script>
@@ -1087,6 +1142,7 @@
   <script src="/js/insights/compute.js"></script>
   <script src="/js/insights/ui.js"></script>
   <script src="/js/public-settings/validation.js"></script>
+  <script src="/js/profile-media/ui.js"></script>
   <script src="/js/public-settings/ui.js"></script>
   <script src="/js/blacklist/ui.js"></script>
   <script src="/js/subscription/client.js"></script>
