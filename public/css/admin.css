@@ -2628,6 +2628,16 @@
   background: rgba(226, 75, 74, 0.14);
 }
 
+/* «На сайт Jazyl» — обычная ссылка, не красная как «Выйти» */
+.sidebar__site {
+  text-decoration: none;
+}
+
+.app .sidebar__site:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .app .topbar {
   background: rgba(246, 246, 248, 0.85);
 }

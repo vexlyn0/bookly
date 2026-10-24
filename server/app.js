@@ -7,6 +7,7 @@ const express = require("express");
 const cors = require("cors");
 const config = require("./config");
 const routes = require("./routes");
+const siteRoutes = require("./routes/site");
 
 const app = express();
 
@@ -15,7 +16,10 @@ app.use(express.json({ limit: "32kb" }));
 
 app.use(routes);
 
-app.use(express.static(config.publicDir));
+// Страницы сайта (главная с общим меню, разделы) — до статики, чтобы «/» собирался с шапкой.
+app.use(siteRoutes);
+
+app.use(express.static(config.publicDir, { index: false }));
 
 app.get("/login", (req, res) => {
   res.sendFile(path.join(config.publicDir, "login.html"));

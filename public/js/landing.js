@@ -37,7 +37,8 @@
       burger.setAttribute("aria-expanded", String(isOpen));
     });
 
-    nav.querySelectorAll(".nav__link").forEach((link) => {
+    // Пункт с выпадающим списком (.nav__trigger) меню не закрывает — он раскрывает список.
+    nav.querySelectorAll(".nav__link:not(.nav__trigger), .nav__item").forEach((link) => {
       link.addEventListener("click", () => {
         nav.classList.remove("is-open");
         burger.classList.remove("is-open");
