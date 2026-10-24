@@ -49,6 +49,7 @@
     "test:admin-manage-unit": "node scripts/test-admin-manage-unit.js",
     "test:slots-unit": "node scripts/test-slots-unit.js",
     "test:org-hours-unit": "node scripts/test-org-hours-unit.js",
+    "test:prepay-unit": "node scripts/test-prepay-unit.js",
     "db:freemium": "node scripts/setup-freemium.js",
     "test:migrations": "node scripts/test-migrations.mjs",
     "test:plan-unit": "node scripts/test-plan-unit.js"

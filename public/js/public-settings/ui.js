@@ -54,6 +54,11 @@ window.BooklyPublicSettingsUI = (() => {
     els.form.elements.namedItem("instagram").value = organization.instagram || "";
     els.form.elements.namedItem("whatsapp").value = organization.whatsapp || "";
     els.form.elements.namedItem("gis_url").value = organization.gis_url || "";
+    els.form.elements.namedItem("kaspi_phone").value = organization.kaspi_phone || "";
+    els.form.elements.namedItem("kaspi_name").value = organization.kaspi_name || "";
+    els.form.elements.namedItem("kaspi_link").value = organization.kaspi_link || "";
+    els.form.elements.namedItem("prepay_hold_minutes").value = String(organization.prepay_hold_minutes || 30);
+    els.form.elements.namedItem("prepay_note").value = organization.prepay_note || "";
     els.form.elements.namedItem("public_booking_enabled").checked =
       organization.public_booking_enabled === true;
     els.form.elements.namedItem("booking_confirmation_mode").value =
@@ -131,6 +136,11 @@ window.BooklyPublicSettingsUI = (() => {
       instagram: form.elements.namedItem("instagram").value,
       whatsapp: form.elements.namedItem("whatsapp").value,
       gis_url: form.elements.namedItem("gis_url").value,
+      kaspi_phone: form.elements.namedItem("kaspi_phone").value,
+      kaspi_name: form.elements.namedItem("kaspi_name").value,
+      kaspi_link: form.elements.namedItem("kaspi_link").value,
+      prepay_hold_minutes: form.elements.namedItem("prepay_hold_minutes").value,
+      prepay_note: form.elements.namedItem("prepay_note").value,
       public_booking_enabled: form.elements.namedItem("public_booking_enabled").checked,
       booking_confirmation_mode: form.elements.namedItem("booking_confirmation_mode").value,
       client_manage_cutoff_hours: form.elements.namedItem("client_manage_cutoff_hours")?.value ?? "2",

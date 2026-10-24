@@ -221,6 +221,7 @@ window.BooklyBookingsUI = (() => {
                 <span class="booking-card__dot" aria-hidden="true">·</span>
                 <span>${BooklyBookingsConstants.getSourceLabel(item.source)}</span>
               </div>
+              ${renderPrepay(item)}
             </div>
             <div class="booking-card__actions">
               <select class="field__select booking-card__status" data-action="status" data-id="${item.id}" aria-label="Статус">
@@ -247,7 +248,7 @@ window.BooklyBookingsUI = (() => {
       })
       .join("");
 
-    els.list.querySelectorAll("[data-action='edit'], [data-action='cancel'], [data-action='delete'], [data-action='block']").forEach((btn) => {
+    els.list.querySelectorAll("[data-action='edit'], [data-action='cancel'], [data-action='delete'], [data-action='block'], [data-action='prepay-ok'], [data-action='prepay-no']").forEach((btn) => {
       btn.addEventListener("click", handleCardAction);
     });
 
@@ -279,6 +280,67 @@ window.BooklyBookingsUI = (() => {
 
     if (action === "block") {
       await blockClient(booking);
+      return;
+    }
+
+    if (action === "prepay-ok" || action === "prepay-no") {
+      await settlePrepay(booking, action === "prepay-ok", event.currentTarget);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Предоплата Kaspi
+  // ---------------------------------------------------------------------------
+
+  function formatMoney(value) {
+    return `${Math.round(Number(value) || 0).toLocaleString("ru-RU")} ₸`;
+  }
+
+  /** Строка о предоплате в карточке записи + кнопки, пока оплата не подтверждена. */
+  function renderPrepay(item) {
+    if (!item.prepay_status) return "";
+    const amount = formatMoney(item.prepay_amount);
+    const waiting = item.status === "pending" && ["awaiting", "claimed"].includes(item.prepay_status);
+    const deadline = item.prepay_deadline
+      ? new Date(item.prepay_deadline).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })
+      : "";
+    const text = {
+      awaiting: `💳 Ждёт предоплату ${amount}${deadline ? ` — до ${deadline}, потом отменится сама` : ""}`,
+      claimed: `💳 Клиент отметил оплату ${amount} — проверьте Kaspi`,
+      paid: `💳 Предоплата ${amount} получена`,
+      rejected: `💳 Оплата ${amount} не найдена — запись отменена`,
+      expired: `💳 Не оплачено вовремя — запись отменена`,
+    }[item.prepay_status];
+
+    return `
+      <div class="booking-prepay booking-prepay--${item.prepay_status}">
+        <span>${escapeHtml(text || "")}</span>
+        ${
+          waiting
+            ? `<span class="booking-prepay__actions">
+                <button class="btn btn--primary btn--sm" type="button" data-action="prepay-ok" data-id="${item.id}">Деньги пришли</button>
+                <button class="btn btn--ghost btn--sm" type="button" data-action="prepay-no" data-id="${item.id}">Не пришли</button>
+              </span>`
+            : ""
+        }
+      </div>`;
+  }
+
+  async function settlePrepay(booking, paid, button) {
+    const question = paid
+      ? `Подтвердить, что ${formatMoney(booking.prepay_amount)} от ${booking.client_name} пришли на Kaspi? Запись станет подтверждённой.`
+      : `Оплата от ${booking.client_name} не пришла? Запись будет отменена, клиент получит сообщение.`;
+    if (!confirm(question)) return;
+
+    if (button) button.disabled = true;
+    try {
+      const result = await BooklyBookings.settlePrepay(booking.id, paid);
+      if (!result.changed) alert("Эту оплату уже обработали — например, мастер в Telegram.");
+      await loadBookings();
+      emitChange();
+    } catch (error) {
+      alert(error.message || "Не удалось сохранить.");
+      if (button) button.disabled = false;
     }
   }
 

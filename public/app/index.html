@@ -393,6 +393,49 @@
                 <span class="field__hint">Цвет обложки, кнопок и выбранного времени на вашей странице онлайн-записи.</span>
               </div>
 
+              <fieldset class="prepay-settings">
+                <legend class="prepay-settings__title">Предоплата через Kaspi</legend>
+                <div class="prepay-settings__notice">
+                  <p><b>Важно: оплату подтверждаете вы вручную.</b> У Kaspi нет открытого подключения для небольших бизнесов, поэтому Jazyl не видит переводы сам.</p>
+                  <ol>
+                    <li>Укажите номер Kaspi ниже и включите предоплату у нужных услуг (раздел «Услуги»).</li>
+                    <li>Клиент записывается, видит сумму и ваш номер, переводит и нажимает «Я оплатил».</li>
+                    <li>Мастеру в Telegram приходит «Проверьте Kaspi». Откройте Kaspi, найдите перевод и нажмите <b>«Деньги пришли»</b> или <b>«Не пришли»</b>. То же можно сделать в разделе «Записи».</li>
+                    <li>Не нажал клиент «Я оплатил» за выбранное время — запись отменится сама, время освободится.</li>
+                  </ol>
+                  <p>Возвраты Jazyl не делает — при отмене вы возвращаете деньги сами в Kaspi, по своим правилам.</p>
+                </div>
+                <div class="modal__row">
+                  <label class="field">
+                    <span class="field__label">Номер Kaspi</span>
+                    <input class="field__input" type="tel" name="kaspi_phone" maxlength="30" placeholder="+7 701 000 00 00">
+                  </label>
+                  <label class="field">
+                    <span class="field__label">Имя получателя</span>
+                    <input class="field__input" type="text" name="kaspi_name" maxlength="60" placeholder="Айгерим Б.">
+                    <span class="field__hint">Как в Kaspi — клиент проверит, что переводит правильно.</span>
+                  </label>
+                </div>
+                <div class="modal__row">
+                  <label class="field">
+                    <span class="field__label">Сколько ждать оплату</span>
+                    <select class="field__select" name="prepay_hold_minutes">
+                      <option value="15">15 минут</option>
+                      <option value="30">30 минут</option>
+                      <option value="60">1 час</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span class="field__label">Ссылка Kaspi QR / Kaspi Pay <span class="field__optional">— если есть</span></span>
+                    <input class="field__input" type="url" name="kaspi_link" maxlength="500" placeholder="https://pay.kaspi.kz/…">
+                  </label>
+                </div>
+                <label class="field">
+                  <span class="field__label">Условия предоплаты <span class="field__optional">— клиент увидит до оплаты</span></span>
+                  <textarea class="field__textarea" name="prepay_note" rows="2" maxlength="300" placeholder="При отмене позже чем за 24 часа предоплата не возвращается."></textarea>
+                </label>
+              </fieldset>
+
               <label class="field field--checkbox">
                 <input type="checkbox" name="require_phone_verification">
                 <span>Подтверждение номера через Telegram — защита от фейковых записей. Клиент нажимает «Поделиться номером» в нашем боте (бесплатно), и бот присылает ему подтверждение записи. Без Telegram записаться онлайн будет нельзя — только по звонку.</span>
@@ -652,6 +695,7 @@
               <li>Услуги, графики мастеров, записи без лимита</li>
               <li>До 5 активных мастеров</li>
               <li>Уведомления мастерам в Telegram</li>
+              <li>Предоплата через Kaspi</li>
               <li>Подпись «Запись через Jazyl» на странице записи</li>
             </ul>
           </article>
@@ -666,8 +710,7 @@
               <li>Мастеров без лимита</li>
               <li>Без подписи Jazyl на странице записи</li>
               <li>Напоминания клиентам в Telegram за сутки и за 2 часа — с кнопками «Приду» и «Отменить»</li>
-              <li class="plan-card__soon">Предоплата через Kaspi <span class="plan-card__tag">скоро</span></li>
-              <li class="plan-card__soon">База клиентов и аналитика <span class="plan-card__tag">скоро</span></li>
+              <li>База клиентов и аналитика</li>
             </ul>
             <div class="plan-card__actions">
               <button class="btn btn--primary" type="button" id="pro-trial-btn" hidden>Попробовать Pro 14 дней бесплатно</button>
@@ -803,6 +846,19 @@
           </div>
           <input type="hidden" name="photo_url">
           <span class="field__error photo-field__error" hidden></span>
+        </div>
+
+        <div class="field">
+          <span class="field__label">Предоплата через Kaspi</span>
+          <div class="modal__row prepay-service">
+            <select class="field__select" name="prepay_type" aria-label="Предоплата">
+              <option value="none">Без предоплаты</option>
+              <option value="fixed">Фиксированная сумма, ₸</option>
+              <option value="percent">Процент от цены</option>
+            </select>
+            <input class="field__input" type="number" name="prepay_value" min="1" step="1" placeholder="Сумма" aria-label="Размер предоплаты">
+          </div>
+          <span class="field__hint">Работает, если в «Онлайн-запись» указан номер Kaspi. Оплату подтверждаете вы вручную — подробнее там же.</span>
         </div>
 
         <label class="field field--checkbox">

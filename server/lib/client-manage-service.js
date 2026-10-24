@@ -23,6 +23,7 @@ const {
 } = require("./slots");
 const { requireOrganizationOperational } = require("./subscription-service");
 const { deliverChangeNotifications } = require("./booking-notify-service");
+const prepay = require("./prepay-service");
 
 const MAX_CLIENT_RESCHEDULES = 2;
 const TOKEN_PATTERN = /^[0-9a-f]{32}$/;
@@ -45,11 +46,15 @@ const BOOKING_SELECT = `
   client_comment,
   public_reference,
   client_reschedule_count,
+  prepay_amount,
+  prepay_status,
+  prepay_deadline,
   services(name, duration_minutes),
   staff(name)
 `;
 
-const ORG_SELECT = "id, slug, name, public_name, phone, address, timezone, client_manage_cutoff_hours, brand_color";
+const ORG_SELECT =
+  "id, slug, name, public_name, phone, address, timezone, client_manage_cutoff_hours, brand_color, kaspi_phone, kaspi_name, kaspi_link, prepay_hold_minutes, prepay_note";
 
 function appError(message, code, status) {
   const error = new Error(message);
@@ -119,6 +124,7 @@ function toPublicView(booking, organization, now = new Date()) {
     cutoff_hours: organization.client_manage_cutoff_hours,
     reschedules_left: Math.max(0, MAX_CLIENT_RESCHEDULES - (booking.client_reschedule_count || 0)),
     max_days_ahead: MAX_BOOKING_DAYS_AHEAD,
+    prepay: prepay.publicPrepayView(organization, booking),
   };
 }
 
@@ -283,6 +289,20 @@ async function cancelByToken(token) {
   return toPublicView(updated, organization);
 }
 
+/** Клиент нажал «Я оплатил». */
+async function claimPrepayByToken(token) {
+  const { booking, organization } = await loadByToken(token);
+  if (!booking.prepay_status) {
+    throw appError("Для этой записи предоплата не нужна", "PREPAY_NOT_REQUIRED", 400);
+  }
+  if (booking.prepay_status === "awaiting" && new Date(booking.prepay_deadline) < new Date()) {
+    throw appError("Время на оплату истекло — запись отменена. Запишитесь снова", "PREPAY_EXPIRED", 409);
+  }
+  await prepay.claim(booking);
+  const { booking: fresh } = await loadByToken(token);
+  return toPublicView(fresh, organization);
+}
+
 async function rescheduleByToken(token, body = {}) {
   const bookingDate = String(body.booking_date || "");
   const startTime = String(body.start_time || "");
@@ -335,6 +355,7 @@ async function rescheduleByToken(token, body = {}) {
 }
 
 module.exports = {
+  claimPrepayByToken,
   getManageInfo,
   getManageSlots,
   cancelByToken,

@@ -20,6 +20,7 @@ const { requireOrganizationOperational } = require("./subscription-service");
 const telegramService = require("./telegram-service");
 const phoneVerification = require("./phone-verification-service");
 const { computeOrgHours } = require("./org-hours");
+const prepay = require("./prepay-service");
 
 const PUBLIC_ORG_FIELDS = `
   id,
@@ -38,7 +39,12 @@ const PUBLIC_ORG_FIELDS = `
   whatsapp,
   gis_url,
   logo_url,
-  cover_url
+  cover_url,
+  kaspi_phone,
+  kaspi_name,
+  kaspi_link,
+  prepay_hold_minutes,
+  prepay_note
 `;
 
 const REFERENCE_PATTERN = /^BK-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
@@ -369,7 +375,7 @@ async function getPublicServices(slug) {
 
   const { data, error } = await supabase
     .from("services")
-    .select("id, name, description, duration_minutes, price, category, photo_url, is_popular")
+    .select("id, name, description, duration_minutes, price, category, photo_url, is_popular, prepay_type, prepay_value")
     .eq("organization_id", organization.id)
     .eq("is_active", true)
     .order("name", { ascending: true });
@@ -386,6 +392,7 @@ async function getPublicServices(slug) {
     category: String(service.category || "").trim(),
     photo_url: service.photo_url || "",
     is_popular: service.is_popular === true,
+    prepay_amount: prepay.isPrepayConfigured(organization) ? prepay.computePrepayAmount(service) : 0,
   }));
 }
 
@@ -609,7 +616,7 @@ async function createPublicBooking(slug, body, { honeypotFilled = false, baseUrl
   const [serviceResult, staffResult, linkResult] = await Promise.all([
     supabase
       .from("services")
-      .select("id, name, duration_minutes, is_active")
+      .select("id, name, duration_minutes, is_active, price, prepay_type, prepay_value")
       .eq("id", payload.service_id)
       .eq("organization_id", organization.id)
       .maybeSingle(),
@@ -662,7 +669,9 @@ async function createPublicBooking(slug, body, { honeypotFilled = false, baseUrl
     throw appError("Это время уже занято. Выберите другой слот", "BOOKING_TIME_CONFLICT", 409);
   }
 
-  const status = organization.booking_confirmation_mode === "manual" ? "pending" : "confirmed";
+  // Услуга с предоплатой: запись ждёт перевод на Kaspi и подтверждается после оплаты.
+  const prepayFields = prepay.prepayFieldsForNewBooking(organization, service);
+  const status = prepayFields || organization.booking_confirmation_mode === "manual" ? "pending" : "confirmed";
 
   const { row, response } = await insertPublicBooking(
     supabase,
@@ -671,10 +680,20 @@ async function createPublicBooking(slug, body, { honeypotFilled = false, baseUrl
     service,
     staff,
     status,
-    verification?.chat_id ? { client_telegram_chat_id: verification.chat_id } : {}
+    {
+      ...(verification?.chat_id ? { client_telegram_chat_id: verification.chat_id } : {}),
+      ...(prepayFields || {}),
+    }
   );
 
   if (verification) await phoneVerification.markUsed(verification.id);
+
+  if (prepayFields) {
+    // Мастер узнает о записи, когда клиент отметит оплату («Проверьте Kaspi»),
+    // клиент — когда салон подтвердит оплату. Неоплаченная отменится сама.
+    response.booking.prepay = prepay.publicPrepayView(organization, prepayFields);
+    return response;
+  }
 
   // Подтверждение записи в Telegram — всем чатам, привязанным к этому номеру.
   const clientChats = [...new Set([verification?.chat_id, ...trust.chatIds].filter(Boolean))];

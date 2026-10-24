@@ -105,20 +105,70 @@
     const notice = state.notice ? `<p class="alert alert--success pm-notice" role="status">${escapeHtml(state.notice)}</p>` : "";
     const error = state.error ? `<p class="alert alert--error pb-alert" role="alert">${escapeHtml(state.error)}</p>` : "";
 
+    prepayHandle?.destroy();
+    prepayHandle = null;
+
     if (state.mode === "reschedule") {
       els.panel.innerHTML = notice + renderReschedule() + error;
     } else if (state.mode === "cancel") {
       els.panel.innerHTML = renderCancel() + error;
+    } else if (prepayActive()) {
+      // Запись ждёт предоплату: сначала экран оплаты, ниже — детали записи
+      els.panel.innerHTML = `<div id="pm-prepay"></div>${renderSummary()}${renderActions()}` + error;
+      mountPrepay();
     } else {
       els.panel.innerHTML = notice + renderView() + error;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Предоплата Kaspi: закрыл страницу оплаты — вернулся по ссылке на запись
+  // ---------------------------------------------------------------------------
+
+  let prepayHandle = null;
+
+  function prepayActive() {
+    const p = state.info?.prepay;
+    return Boolean(p && state.info.booking.status === "pending" && ["awaiting", "claimed"].includes(p.status));
+  }
+
+  function mountPrepay() {
+    const b = state.info.booking;
+    prepayHandle = PublicBookingPrepay.mount(document.getElementById("pm-prepay"), {
+      token,
+      prepay: state.info.prepay,
+      summary: `${b.service_name} · ${formatDate(b.booking_date)}, ${b.start_time}`,
+      manageUrl: window.location.href,
+      restartUrl: state.info.organization.slug ? `/book/${encodeURIComponent(state.info.organization.slug)}` : "",
+      async onDone() {
+        try {
+          state.info = await request();
+        } catch {
+          // оставим как есть — экран оплаты уже показал результат
+        }
+        render();
+      },
+    });
+  }
+
+  /** Пока ждём оплату — только «Отменить запись» (перенос — после оплаты). */
+  function renderActions() {
+    return state.info.can_cancel
+      ? `<div class="pm-actions"><button class="btn btn--outline pm-danger" type="button" data-action="cancel">${t("cancel_booking")}</button></div>`
+      : "";
+  }
+
+  function statusLabel() {
+    const b = state.info.booking;
+    if (prepayActive()) return t(`status_prepay_${state.info.prepay.status}`);
+    return t(`status_${b.status}`);
   }
 
   function renderSummary() {
     const b = state.info.booking;
     return `
       <div class="pb-summary">
-        <div class="pb-summary__row"><span class="pb-summary__label">${t("status")}</span><span class="pm-status pm-status--${escapeHtml(b.status)}">${escapeHtml(t(`status_${b.status}`))}</span></div>
+        <div class="pb-summary__row"><span class="pb-summary__label">${t("status")}</span><span class="pm-status pm-status--${escapeHtml(b.status)}">${escapeHtml(statusLabel())}</span></div>
         <div class="pb-summary__row"><span class="pb-summary__label">${t("date")}</span><span>${escapeHtml(formatDate(b.booking_date))}</span></div>
         <div class="pb-summary__row"><span class="pb-summary__label">${t("time")}</span><span>${escapeHtml(b.start_time)} – ${escapeHtml(b.end_time)}</span></div>
         <div class="pb-summary__row"><span class="pb-summary__label">${t("service")}</span><span>${escapeHtml(b.service_name)}</span></div>

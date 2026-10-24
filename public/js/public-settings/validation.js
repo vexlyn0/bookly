@@ -15,6 +15,11 @@ window.BooklyPublicSettingsValidation = (() => {
     const instagram = String(payload.instagram || "").trim();
     const whatsapp = String(payload.whatsapp || "").trim();
     const gisUrl = String(payload.gis_url || "").trim();
+    const kaspiPhone = String(payload.kaspi_phone || "").trim();
+    const kaspiName = String(payload.kaspi_name || "").trim();
+    const kaspiLink = String(payload.kaspi_link || "").trim();
+    const prepayNote = String(payload.prepay_note || "").trim();
+    const holdMinutes = Number(payload.prepay_hold_minutes) || 30;
 
     if (publicName.length < 2) {
       errors.public_name = "Публичное название должно содержать минимум 2 символа.";
@@ -48,6 +53,22 @@ window.BooklyPublicSettingsValidation = (() => {
       errors.gis_url = "Вставьте ссылку из 2ГИС целиком — она начинается с https://";
     }
 
+    if (kaspiPhone && (kaspiPhone.replace(/\D/g, "").length < 10 || kaspiPhone.length > 30)) {
+      errors.kaspi_phone = "Укажите номер Kaspi полностью.";
+    }
+
+    if (kaspiName.length > 60) {
+      errors.kaspi_name = "Слишком длинное имя.";
+    }
+
+    if (kaspiLink && (!/^https:\/\//i.test(kaspiLink) || kaspiLink.length > 500)) {
+      errors.kaspi_link = "Ссылка должна начинаться с https://";
+    }
+
+    if (prepayNote.length > 300) {
+      errors.prepay_note = "Не больше 300 символов.";
+    }
+
     if (!["auto", "manual"].includes(mode)) {
       errors.booking_confirmation_mode = "Выберите режим подтверждения.";
     }
@@ -76,6 +97,11 @@ window.BooklyPublicSettingsValidation = (() => {
         instagram: instagram || null,
         whatsapp: whatsapp || null,
         gis_url: gisUrl || null,
+        kaspi_phone: kaspiPhone || null,
+        kaspi_name: kaspiName || null,
+        kaspi_link: kaspiLink || null,
+        prepay_hold_minutes: [15, 30, 60].includes(holdMinutes) ? holdMinutes : 30,
+        prepay_note: prepayNote || null,
       },
     };
   }

@@ -40,6 +40,10 @@ function fakeSupabase() {
           filters.push((row) => row[column] <= value);
           return builder;
         },
+        lt(column, value) {
+          filters.push((row) => row[column] < value);
+          return builder;
+        },
         is(column, value) {
           filters.push((row) => (row[column] ?? null) === value);
           return builder;

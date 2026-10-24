@@ -48,6 +48,11 @@ window.BooklyOrg = (() => {
           gis_url,
           logo_url,
           cover_url,
+          kaspi_phone,
+          kaspi_name,
+          kaspi_link,
+          prepay_hold_minutes,
+          prepay_note,
           created_at,
           updated_at
         )
@@ -176,6 +181,11 @@ window.BooklyOrg = (() => {
         instagram: payload.instagram,
         whatsapp: payload.whatsapp,
         gis_url: payload.gis_url,
+        kaspi_phone: payload.kaspi_phone,
+        kaspi_name: payload.kaspi_name,
+        kaspi_link: payload.kaspi_link,
+        prepay_hold_minutes: payload.prepay_hold_minutes,
+        prepay_note: payload.prepay_note,
       })
       .eq("id", organizationId)
       .select(`
@@ -198,6 +208,11 @@ window.BooklyOrg = (() => {
         gis_url,
         logo_url,
         cover_url,
+        kaspi_phone,
+        kaspi_name,
+        kaspi_link,
+        prepay_hold_minutes,
+        prepay_note,
         created_at,
         updated_at
       `)

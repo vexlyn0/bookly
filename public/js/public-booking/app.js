@@ -134,6 +134,7 @@ window.PublicBookingApp = (() => {
     // Сменили язык — перерисовываем всё, что собрано в JS.
     document.addEventListener("pb:lang", () => {
       PublicBookingUI.renderOrganization(state.organization);
+      PublicBookingUI.rerenderPrepay();
       if (state.result && !PublicBookingUI.els.success.hidden) {
         PublicBookingUI.showSuccess(state.result);
       } else {
@@ -341,7 +342,15 @@ window.PublicBookingApp = (() => {
       stopPolling();
       saveClient(state.selection.clientName, state.selection.clientPhone);
       state.result = result;
-      PublicBookingUI.showSuccess(result);
+      if (result.booking?.prepay) {
+        // Услуга с предоплатой: сначала оплата, «Вы записаны» — после подтверждения салоном
+        PublicBookingUI.showPrepay(result, () => {
+          state.result = { ...result, booking: { ...result.booking, status: "confirmed" } };
+          PublicBookingUI.showSuccess(state.result);
+        });
+      } else {
+        PublicBookingUI.showSuccess(result);
+      }
     } catch (error) {
       if (error.code === "PHONE_NOT_VERIFIED") {
         // Новый номер у салона с проверкой — подтверждаем в Telegram.

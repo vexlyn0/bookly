@@ -1449,3 +1449,137 @@ a.pb-chip:hover {
     height: 240px;
   }
 }
+
+/* ===========================================================================
+ * Предоплата Kaspi
+ * ========================================================================= */
+
+.pb-prepay-tag {
+  color: #9a5b00;
+  font-weight: 600;
+}
+
+.pb-prepay__amount {
+  margin: 4px 0 16px;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--brand-strong);
+}
+
+.pb-prepay__card,
+.pb-prepay__note {
+  margin-bottom: 14px;
+  padding: 16px;
+  border: 1px solid var(--pb-line);
+  border-radius: 16px;
+  background: var(--pb-bg);
+}
+
+.pb-prepay__label {
+  margin: 0 0 4px;
+  color: var(--pb-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pb-prepay__phone {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-prepay__name {
+  margin: 2px 0 0;
+  font-size: 15px;
+}
+
+.pb-prepay__hint {
+  margin: 10px 0 0;
+  color: var(--pb-muted);
+  font-size: 13px;
+}
+
+.pb-prepay__note p:last-child {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pb-prepay__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pb-prepay__actions .pb-btn {
+  flex: 1 1 160px;
+  width: auto;
+  margin: 0;
+  text-align: center;
+  text-decoration: none;
+}
+
+.pb-prepay__warning {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid #f5d08a;
+  border-radius: 16px;
+  background: #fff8e6;
+  color: #5c3b00;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pb-prepay__warning p {
+  margin: 0;
+}
+
+.pb-prepay__warning-title {
+  margin-bottom: 4px !important;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.pb-prepay__timer {
+  margin-top: 8px !important;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-prepay__links {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--pb-line);
+}
+
+.pb-prepay__fallback {
+  margin: 0;
+  color: var(--pb-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pb-prepay__result {
+  padding: 8px 0;
+  text-align: center;
+}
+
+.pb-prepay__result-text {
+  margin: 0 0 16px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.pb-prepay__result--paid .pb-prepay__result-text {
+  color: #166534;
+}
+
+#pm-prepay {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--pb-line);
+}

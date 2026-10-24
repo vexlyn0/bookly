@@ -22,6 +22,7 @@ window.PublicBookingUI = (() => {
     els.successStatus = document.getElementById("pb-success-status");
     els.successDetails = document.getElementById("pb-success-details");
     els.successRestart = document.getElementById("pb-success-restart");
+    els.prepay = document.getElementById("pb-prepay");
     els.powered = document.getElementById("pb-powered");
   }
 
@@ -96,6 +97,7 @@ window.PublicBookingUI = (() => {
     els.errorScreen.hidden = true;
     els.flow.hidden = true;
     els.success.hidden = true;
+    hidePrepay();
   }
 
   function showError(title, message) {
@@ -103,6 +105,7 @@ window.PublicBookingUI = (() => {
     els.errorScreen.hidden = false;
     els.flow.hidden = true;
     els.success.hidden = true;
+    hidePrepay();
     els.errorTitle.textContent = title;
     els.errorText.textContent = message;
   }
@@ -112,6 +115,46 @@ window.PublicBookingUI = (() => {
     els.errorScreen.hidden = true;
     els.flow.hidden = false;
     els.success.hidden = true;
+    hidePrepay();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Предоплата Kaspi: после записи на услугу с предоплатой
+  // ---------------------------------------------------------------------------
+
+  let prepayHandle = null;
+
+  function hidePrepay() {
+    prepayHandle?.destroy();
+    prepayHandle = null;
+    if (els.prepay) els.prepay.hidden = true;
+  }
+
+  /** @param {() => void} onPaid — салон подтвердил оплату */
+  function showPrepay(result, onPaid) {
+    els.loader.hidden = true;
+    els.errorScreen.hidden = true;
+    els.flow.hidden = true;
+    els.success.hidden = true;
+    els.prepay.hidden = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    const booking = result.booking;
+    prepayHandle?.destroy();
+    prepayHandle = PublicBookingPrepay.mount(els.prepay, {
+      token: String(booking.manage_url || "").split("/").pop(),
+      prepay: booking.prepay,
+      summary: `${booking.service_name} · ${formatDayLabel(booking.booking_date)}, ${booking.start_time}`,
+      manageUrl: booking.manage_url ? `${window.location.origin}${booking.manage_url}` : "",
+      restartUrl: window.location.pathname,
+      onDone(status) {
+        if (status === "paid") onPaid?.();
+      },
+    });
+  }
+
+  function rerenderPrepay() {
+    prepayHandle?.rerender();
   }
 
   function showSuccess(result) {
@@ -119,6 +162,7 @@ window.PublicBookingUI = (() => {
     els.errorScreen.hidden = true;
     els.flow.hidden = true;
     els.success.hidden = false;
+    hidePrepay();
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     const booking = result.booking;
@@ -448,7 +492,9 @@ window.PublicBookingUI = (() => {
         <span class="pb-service__body">
           <span class="pb-service__name">${escapeHtml(service.name)}${service.is_popular ? ` <span class="pb-badge">${escapeHtml(t("popular"))}</span>` : ""}</span>
           ${service.description ? `<span class="pb-service__text">${escapeHtml(service.description)}</span>` : ""}
-          <span class="pb-service__meta">${escapeHtml(formatDuration(service.duration_minutes))}</span>
+          <span class="pb-service__meta">${escapeHtml(formatDuration(service.duration_minutes))}${
+            service.prepay_amount ? ` · <span class="pb-prepay-tag">${escapeHtml(t("prepay_badge", { amount: PublicBookingPrepay.formatAmount(service.prepay_amount) }))}</span>` : ""
+          }</span>
         </span>
         <span class="pb-price">${price ? escapeHtml(price) : t("choose")}</span>
       </button>`;
@@ -700,6 +746,8 @@ window.PublicBookingUI = (() => {
     showError,
     showFlow,
     showSuccess,
+    showPrepay,
+    rerenderPrepay,
     renderOrganization,
     renderPanel,
     escapeHtml,

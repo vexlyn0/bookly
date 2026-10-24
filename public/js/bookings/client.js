@@ -261,6 +261,27 @@ window.BooklyBookings = (() => {
     }
   }
 
+  /**
+   * Владелец подтвердил (paid = true) или отклонил предоплату Kaspi.
+   * Через сервер: он же сообщит клиенту в Telegram.
+   */
+  async function settlePrepay(bookingId, paid) {
+    const supabase = await BooklyAuth.getClient();
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    if (!token) throw new Error("Войдите в аккаунт заново.");
+
+    const response = await fetch(booklyApiUrl(`/api/bookings/${encodeURIComponent(bookingId)}/prepay`), {
+      method: "POST",
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ paid: paid === true }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || "Не удалось сохранить.");
+    return payload;
+  }
+
   function isReschedule(snapshot, payload) {
     if (!snapshot) return true;
 
@@ -289,5 +310,6 @@ window.BooklyBookings = (() => {
     computeStats,
     toNotifySnapshot,
     notifyChange,
+    settlePrepay,
   };
 })();

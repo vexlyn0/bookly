@@ -25,6 +25,7 @@ const server = app.listen(config.port, "0.0.0.0", () => {
   telegramService.init();
   // Напоминания клиентам (Pro) — каждые 5 минут, пока сервер работает
   require("./server/lib/client-bot-service").startReminderScheduler();
+  require("./server/lib/prepay-service").startExpireScheduler();
 });
 
 server.on("error", (error) => {

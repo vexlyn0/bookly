@@ -45,6 +45,8 @@ window.BooklyServices = (() => {
           is_active: payload.is_active,
           is_popular: payload.is_popular,
           photo_url: payload.photo_url,
+          prepay_type: payload.prepay_type,
+          prepay_value: payload.prepay_value,
         },
       ])
       .select()
@@ -73,6 +75,8 @@ window.BooklyServices = (() => {
         is_active: payload.is_active,
         is_popular: payload.is_popular,
         photo_url: payload.photo_url,
+        prepay_type: payload.prepay_type,
+        prepay_value: payload.prepay_value,
       })
       .eq("id", serviceId)
       .select()

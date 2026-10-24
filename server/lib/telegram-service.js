@@ -644,6 +644,16 @@ async function handleCallback(callbackQuery) {
     return;
   }
 
+  if (String(callbackQuery?.data || "").startsWith("pp:")) {
+    await require("./prepay-service").handleCallback({
+      callbackId: callbackQuery.id,
+      chatId: callbackQuery.message?.chat?.id,
+      messageId: callbackQuery.message?.message_id,
+      data: callbackQuery.data,
+    });
+    return;
+  }
+
   const { id: callbackId, data, message } = callbackQuery;
   const chatId = message?.chat?.id;
   const parsed = parseCallbackData(data);

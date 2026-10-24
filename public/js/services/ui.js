@@ -38,6 +38,7 @@ window.BooklyServicesUI = (() => {
 
     els.form?.addEventListener("submit", handleFormSubmit);
     BooklyMedia.bindPhotoField(els.form?.querySelector("[data-photo-field]"), "service", () => organization.id);
+    els.form?.elements.namedItem("prepay_type")?.addEventListener("change", syncPrepayField);
 
     document.querySelectorAll("[data-close-modal]").forEach((btn) => {
       btn.addEventListener("click", closeModals);
@@ -215,11 +216,14 @@ window.BooklyServicesUI = (() => {
       els.form.elements.namedItem("category").value = service.category || "";
       els.form.elements.namedItem("is_active").checked = service.is_active !== false;
       els.form.elements.namedItem("is_popular").checked = service.is_popular === true;
+      els.form.elements.namedItem("prepay_type").value = service.prepay_type || "none";
+      els.form.elements.namedItem("prepay_value").value = service.prepay_value ?? "";
     } else if (els.form) {
       els.form.elements.namedItem("duration_minutes").value = 60;
       els.form.elements.namedItem("is_active").checked = true;
     }
     BooklyMedia.setPhotoField(els.form?.querySelector("[data-photo-field]"), service?.photo_url || "");
+    syncPrepayField();
 
     // Подсказки категорий — из уже существующих услуг
     const datalist = document.getElementById("service-categories");
@@ -230,6 +234,16 @@ window.BooklyServicesUI = (() => {
 
     els.formModal?.classList.add("is-open");
     els.formModal?.setAttribute("aria-hidden", "false");
+  }
+
+  /** Поле суммы — только когда предоплата включена; подпись — ₸ или %. */
+  function syncPrepayField() {
+    const type = els.form?.elements.namedItem("prepay_type")?.value;
+    const input = els.form?.elements.namedItem("prepay_value");
+    if (!input) return;
+    input.hidden = type === "none";
+    input.placeholder = type === "percent" ? "Например, 30 (%)" : "Например, 2000 (₸)";
+    input.max = type === "percent" ? "100" : "1000000";
   }
 
   function openDeleteModal(service) {
@@ -265,6 +279,8 @@ window.BooklyServicesUI = (() => {
       category: form.elements.namedItem("category").value,
       is_active: form.elements.namedItem("is_active").checked,
       is_popular: form.elements.namedItem("is_popular").checked,
+      prepay_type: form.elements.namedItem("prepay_type").value,
+      prepay_value: form.elements.namedItem("prepay_value").value,
       photo_url: form.elements.namedItem("photo_url").value,
     };
 

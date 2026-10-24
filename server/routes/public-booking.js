@@ -179,6 +179,15 @@ router.post("/manage/:token/cancel", bookingCreateLimiter, async (req, res) => {
   }
 });
 
+router.post("/manage/:token/prepay-claim", bookingCreateLimiter, async (req, res) => {
+  try {
+    const result = await clientManage.claimPrepayByToken(req.params.token);
+    return res.json({ ok: true, ...result });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
 router.post("/manage/:token/reschedule", bookingCreateLimiter, async (req, res) => {
   try {
     const result = await clientManage.rescheduleByToken(req.params.token, req.body || {});
