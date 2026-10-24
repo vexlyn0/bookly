@@ -571,6 +571,71 @@ const TOOL_FORMS = {
       </div>
       <p class="tool__privacy">Картинка собирается прямо в браузере — мы ничего не сохраняем и никуда не отправляем.</p>
     </div>`,
+
+  "prays-list": () => `
+    <form class="tool__form" onsubmit="return false" autocomplete="off">
+      <div class="tool__pair">
+        <label class="tool__field">
+          <span class="tool__label">Название салона или имя</span>
+          <input class="tool__input" name="name" maxlength="40" placeholder="Nail studio Aru">
+        </label>
+        <label class="tool__field">
+          <span class="tool__label">Заголовок</span>
+          <input class="tool__input" name="title" maxlength="40" placeholder="Прайс-лист">
+        </label>
+      </div>
+
+      <div class="tool__field">
+        <span class="tool__label">Услуги и цены</span>
+        <span class="tool__hint">Цена — числом: <b>5000</b> или <b>5000-7000</b>. Галочка «от» — «от 5 000 ₸». Длительность — по желанию.</span>
+        <div class="pl-sections" id="prays-sections"></div>
+        <button type="button" class="tool__add" data-action="add-section">+ Раздел</button>
+      </div>
+
+      <div class="tool__field">
+        <span class="tool__label">Фон и стиль</span>
+        <div class="ok-styles" id="prays-styles"></div>
+      </div>
+
+      <div class="tool__pair">
+        <div class="tool__field">
+          <span class="tool__label">Формат</span>
+          ${segmented("format", [["story", "Сторис"], ["post", "Пост"], ["a4", "A4 для печати"]])}
+        </div>
+        <div class="tool__field">
+          <span class="tool__label">Текст на картинке</span>
+          ${segmented("lang", [["ru", "Русский"], ["kk", "Қазақша"]])}
+        </div>
+      </div>
+
+      <label class="tool__field">
+        <span class="tool__label">Примечание <span class="tool__optional">— необязательно</span></span>
+        <input class="tool__input" name="note" maxlength="120" placeholder="Цены действительны с 1 ноября">
+      </label>
+
+      <label class="tool__field">
+        <span class="tool__label">Имя или @ник</span>
+        <input class="tool__input" name="nick" maxlength="32" placeholder="@aigerim.nails">
+      </label>
+
+      <div class="tool__field">
+        <span class="tool__label">Как записаться</span>
+        ${segmented("how", [["link", "Ссылка в шапке профиля"], ["direct", "Пишите в директ"], ["whatsapp", "WhatsApp"], ["custom", "Свой текст"]])}
+        <input class="tool__input" id="prays-whatsapp" name="whatsapp" maxlength="24" placeholder="+7 701 000 00 00" inputmode="tel" hidden>
+        <input class="tool__input" id="prays-custom" name="custom" maxlength="60" placeholder="Запись по телефону +7 701 000 00 00" hidden>
+      </div>
+    </form>
+
+    <div class="tool__preview">
+      <p class="tool__preview-title">Предпросмотр</p>
+      <canvas class="tool__canvas" id="prays-canvas" width="1080" height="1920" aria-label="Предпросмотр прайс-листа"></canvas>
+      <button type="button" class="btn btn--primary btn--full" id="prays-download">Скачать картинку</button>
+      <div class="tool__actions">
+        <button type="button" class="btn btn--ghost" id="prays-share" hidden>Поделиться</button>
+        <button type="button" class="btn btn--ghost" id="prays-copy">Скопировать текст</button>
+      </div>
+      <p class="tool__privacy">Картинка собирается прямо в браузере. Прайс запоминается только на этом устройстве — в следующий раз поменяете цены за минуту.</p>
+    </div>`,
 };
 
 function renderTool(tool) {
@@ -673,7 +738,7 @@ function renderTool(tool) {
     title: tool.title,
     description: tool.description,
     body,
-    scripts: [tool.script],
+    scripts: ["/js/tools/kit.js", tool.script],
     // Шрифт с засечками для стилей картинки (кириллица и казахские буквы)
     fonts: "&family=Lora:wght@600;700",
   });

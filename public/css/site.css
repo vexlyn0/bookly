@@ -1689,3 +1689,77 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Прайс-лист: разделы и услуги */
+.pl-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pl-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg-2);
+}
+
+.pl-section__head {
+  display: flex;
+  gap: 8px;
+}
+
+.pl-section__title {
+  font-weight: 700;
+}
+
+.pl-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pl-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 76px auto 40px;
+  gap: 8px;
+  align-items: center;
+}
+
+.pl-item .tool__input {
+  min-width: 0;
+}
+
+.pl-item__from {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pl-section > .tool__add {
+  align-self: flex-start;
+}
+
+@media (max-width: 560px) {
+  .pl-item {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto 40px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .pl-item__name {
+    grid-column: 1 / 4;
+  }
+
+  .pl-item .ok-day__remove {
+    grid-column: 4;
+    grid-row: 1;
+  }
+}
