@@ -3,6 +3,8 @@
  *
  *   - уведомление сотрудника о новой онлайн-записи;
  *   - привязка сотрудника: /start <telegram_link_token> (ссылка из кабинета);
+ *   - привязка владельца: /start o_<owner_telegram_link_token> (раздел «Уведомления»):
+ *     оплаты Kaspi и, по настройке, копии новых записей, отмен и переносов клиентом;
  *   - отвязка: /stop;
  *   - подтверждение / отклонение записи inline-кнопками (только pending).
  *
@@ -21,6 +23,7 @@ const API_BASE = "https://api.telegram.org";
 const REQUEST_TIMEOUT_MS = 8000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LINK_TOKEN_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
+const OWNER_START_PATTERN = /^o_([0-9a-f]{32})$/;
 const CALLBACK_PATTERN = /^bk:(confirm|reject|done|sum|noshow):([0-9a-f-]{36})$/i;
 const COMMAND_PATTERN = /^\/([a-z_]+)(?:@\w+)?(?:\s+(.+))?$/i;
 
@@ -36,6 +39,7 @@ const WEEKDAYS = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
 
 const BOOKING_SELECT = `
   id,
+  organization_id,
   status,
   staff_id,
   booking_date,
@@ -51,7 +55,7 @@ const BOOKING_SELECT = `
   client_telegram_chat_id,
   services(name),
   staff(name),
-  organizations(name, public_name, address, timezone)
+  organizations(name, public_name, address, timezone, owner_telegram_chat_id)
 `;
 
 // -----------------------------------------------------------------------------
@@ -346,11 +350,11 @@ function generateLinkToken() {
 // -----------------------------------------------------------------------------
 
 /**
- * Отправляет сотруднику уведомление о новой записи. Никогда не бросает.
+ * Отправляет сотруднику (и копию владельцу) уведомление о новой записи. Никогда не бросает.
  */
 async function notifyNewBooking({ organization, service, staff, booking, client }) {
   try {
-    if (!isEnabled() || !staff?.telegram_chat_id || !booking?.id) return;
+    if (!isEnabled() || !booking?.id) return;
 
     const text = formatBookingMessage({
       organizationName: organization.public_name || organization.name,
@@ -367,11 +371,65 @@ async function notifyNewBooking({ organization, service, staff, booking, client 
       status: booking.status,
     });
 
-    await sendToStaff(staff, text, {
-      reply_markup: bookingKeyboard(booking.id, booking.status),
-    });
+    const extra = { reply_markup: bookingKeyboard(booking.id, booking.status) };
+    if (staff?.telegram_chat_id) await sendToStaff(staff, text, extra);
+
+    // Копия владельцу (если он не этот же мастер в том же чате).
+    const owner = await loadOwner(organization.id);
+    if (owner?.owner_notify_bookings && !sameChat(owner.owner_telegram_chat_id, staff?.telegram_chat_id)) {
+      await sendToOwner(owner, text, extra);
+    }
   } catch (error) {
     logTelegramError("notifyNewBooking", error);
+  }
+}
+
+function sameChat(a, b) {
+  return Boolean(a) && String(a) === String(b || "");
+}
+
+/** Telegram владельца и его настройки уведомлений. null — не подключён. Никогда не бросает. */
+async function loadOwner(organizationId) {
+  if (!isEnabled() || !organizationId) return null;
+  try {
+    const { data, error } = await getSupabaseAdmin()
+      .from("organizations")
+      .select("id, owner_telegram_chat_id, owner_notify_bookings, owner_notify_changes")
+      .eq("id", organizationId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.owner_telegram_chat_id ? data : null;
+  } catch (error) {
+    logTelegramError("loadOwner", error);
+    return null;
+  }
+}
+
+/**
+ * Сообщение владельцу салона. owner — строка organizations с id и owner_telegram_chat_id.
+ * Возвращает true при успехе, никогда не бросает.
+ */
+async function sendToOwner(owner, text, extra = {}) {
+  if (!isEnabled() || !owner?.owner_telegram_chat_id) return false;
+
+  try {
+    await sendMessage(owner.owner_telegram_chat_id, text, extra);
+    return true;
+  } catch (error) {
+    logTelegramError("sendToOwner", error);
+
+    if (error?.code === 403 && owner?.id) {
+      try {
+        await getSupabaseAdmin()
+          .from("organizations")
+          .update({ owner_telegram_chat_id: null })
+          .eq("id", owner.id)
+          .eq("owner_telegram_chat_id", owner.owner_telegram_chat_id);
+      } catch {
+        // ignore
+      }
+    }
+    return false;
   }
 }
 
@@ -414,7 +472,9 @@ const HELP_TEXT = [
   "",
   "<b>Мастерам:</b> чтобы получать записи, откройте ссылку из кабинета Jazyl (раздел «Сотрудники» → «Telegram»).",
   "",
-  "/stop — отключить уведомления мастера в этом чате",
+  "<b>Владельцу салона:</b> оплаты Kaspi и копии записей — кабинет Jazyl → «Уведомления» → «Подключить Telegram».",
+  "",
+  "/stop — отключить уведомления салона в этом чате",
 ].join("\n");
 
 /** Ленивая загрузка: client-bot-service сам зависит от telegram-service. */
@@ -468,20 +528,68 @@ async function linkStaff(chatId, token) {
   ].join("\n");
 }
 
-async function unlinkChat(chatId) {
-  const { data, error } = await getSupabaseAdmin()
-    .from("staff")
-    .update({ telegram_chat_id: null })
-    .eq("telegram_chat_id", String(chatId))
-    .select("id");
+async function linkOwner(chatId, token) {
+  const supabase = getSupabaseAdmin();
+  const { data: org, error } = await supabase
+    .from("organizations")
+    .select("id, name, public_name")
+    .eq("owner_telegram_link_token", token)
+    .maybeSingle();
 
+  if (error) {
+    logTelegramError("linkOwner:select", error);
+    return "⚠️ Не удалось подключить Telegram. Попробуйте позже.";
+  }
+
+  if (!org) {
+    return "❌ Ссылка недействительна или уже использована. Откройте свежую ссылку в кабинете Jazyl → «Уведомления».";
+  }
+
+  // Ссылка одноразовая: после привязки токен меняется.
+  const { error: updateError } = await supabase
+    .from("organizations")
+    .update({ owner_telegram_chat_id: String(chatId), owner_telegram_link_token: generateLinkToken() })
+    .eq("id", org.id)
+    .eq("owner_telegram_link_token", token);
+
+  if (updateError) {
+    logTelegramError("linkOwner:update", updateError);
+    return "⚠️ Не удалось подключить Telegram. Попробуйте позже.";
+  }
+
+  const orgName = org.public_name || org.name || "Jazyl";
+  return [
+    `✅ Готово! Этот чат подключён как Telegram владельца «${escapeHtml(orgName)}».`,
+    "",
+    "Сюда будут приходить:",
+    "💳 оплаты Kaspi — с кнопками «Деньги пришли» / «Не пришли»;",
+    "🔔 новые записи по всем мастерам;",
+    "❌ отмены и переносы клиентами.",
+    "",
+    "Что присылать, можно выбрать в кабинете → «Уведомления».",
+    "/stop — отключить",
+  ].join("\n");
+}
+
+async function unlinkChat(chatId) {
+  const supabase = getSupabaseAdmin();
+  const [staffResult, ownerResult] = await Promise.all([
+    supabase.from("staff").update({ telegram_chat_id: null }).eq("telegram_chat_id", String(chatId)).select("id"),
+    supabase
+      .from("organizations")
+      .update({ owner_telegram_chat_id: null })
+      .eq("owner_telegram_chat_id", String(chatId))
+      .select("id"),
+  ]);
+
+  const error = staffResult.error || ownerResult.error;
   if (error) {
     logTelegramError("unlinkChat", error);
     return "⚠️ Не удалось отключить уведомления. Попробуйте позже.";
   }
 
-  if (!data?.length) {
-    return "К этому чату не привязан ни один сотрудник.";
+  if (!staffResult.data?.length && !ownerResult.data?.length) {
+    return "К этому чату не привязан ни мастер, ни владелец салона.";
   }
 
   return "🔕 Уведомления отключены. Чтобы включить снова, используйте ссылку из кабинета Jazyl.";
@@ -625,7 +733,11 @@ async function handleMessage(message) {
     return;
   }
 
-  if (parsed?.command === "start" && parsed.args) {
+  const ownerStart = parsed?.command === "start" ? parsed.args.match(OWNER_START_PATTERN) : null;
+
+  if (ownerStart) {
+    reply = await linkOwner(chatId, ownerStart[1]);
+  } else if (parsed?.command === "start" && parsed.args) {
     reply = await linkStaff(chatId, parsed.args);
   } else if (parsed?.command === "stop") {
     reply = await unlinkChat(chatId);
@@ -690,8 +802,11 @@ async function handleCallback(callbackQuery) {
   const linkedStaffIds = (staffResult.data || []).map((row) => row.id);
   const booking = bookingResult.data;
 
-  // Действовать можно только с записями сотрудника, привязанного к этому чату.
-  if (!booking || !linkedStaffIds.includes(booking.staff_id)) {
+  // Действовать можно только с записями мастера, привязанного к этому чату, или владельцу салона.
+  const allowed =
+    booking &&
+    (linkedStaffIds.includes(booking.staff_id) || sameChat(booking.organizations?.owner_telegram_chat_id, chatId));
+  if (!allowed) {
     await answerCallback(callbackId, "Запись не найдена или недоступна", true);
     await editMessage(chatId, message.message_id, message.text ? escapeHtml(message.text) : "Запись недоступна");
     return;
@@ -772,6 +887,9 @@ module.exports = {
   callApi,
   notifyNewBooking,
   sendToStaff,
+  sendToOwner,
+  loadOwner,
+  sameChat,
   sendClientBookingConfirmation,
   sendMessage,
   editMessage,

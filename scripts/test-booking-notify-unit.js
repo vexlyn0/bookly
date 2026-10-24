@@ -263,6 +263,77 @@ async function testGuards() {
   ok("Чужая запись → 404, чужой мастер / прошлое / без Telegram — не шлём, мусор → 400");
 }
 
+async function testOwnerCopies() {
+  const { deliverChangeNotifications } = require("../server/lib/booking-notify-service");
+  const withOwner = (extra = {}) => {
+    tables.organizations[0] = {
+      ...tables.organizations[0],
+      owner_telegram_chat_id: "500",
+      owner_notify_bookings: true,
+      owner_notify_changes: true,
+      ...extra,
+    };
+  };
+
+  // Клиент перенёс запись — мастеру и копия владельцу
+  reset();
+  withOwner();
+  await deliverChangeNotifications({
+    organization: tables.organizations[0],
+    event: "updated",
+    booking: bookingRow(),
+    previous: snapshot(),
+    byClient: true,
+  });
+  assert.deepStrictEqual(sent.map((m) => m.chat_id).sort(), ["111", "500"]);
+  assert.ok(sent.find((m) => m.chat_id === "500").text.includes("Клиент перенёс запись"));
+
+  // Правка в кабинете — владельцу копию не шлём
+  reset();
+  withOwner();
+  await notifyBookingChange(USER, { event: "updated", booking_id: BOOKING, previous: snapshot() });
+  assert.deepStrictEqual(sent.map((m) => m.chat_id), ["111"]);
+
+  // Выключил «Отмены и переносы» — не шлём
+  reset();
+  withOwner({ owner_notify_changes: false });
+  await deliverChangeNotifications({
+    organization: tables.organizations[0],
+    event: "updated",
+    booking: bookingRow({ status: "canceled" }),
+    previous: snapshot(),
+    byClient: true,
+  });
+  assert.deepStrictEqual(sent.map((m) => m.chat_id), ["111"]);
+
+  // Владелец сам этот мастер — без дубля
+  reset();
+  withOwner({ owner_telegram_chat_id: "111" });
+  await deliverChangeNotifications({
+    organization: tables.organizations[0],
+    event: "updated",
+    booking: bookingRow({ status: "canceled" }),
+    previous: snapshot(),
+    byClient: true,
+  });
+  assert.deepStrictEqual(sent.map((m) => m.chat_id), ["111"]);
+
+  // Новая онлайн-запись: мастер не подключил Telegram — владелец всё равно узнаёт
+  reset();
+  withOwner();
+  await telegram.notifyNewBooking({
+    organization: tables.organizations[0],
+    service: { name: "Стрижка" },
+    staff: { id: ALAN, name: "Тимур", telegram_chat_id: null },
+    booking: { id: BOOKING, booking_date: future, start_time: "14:00:00", end_time: "15:00:00", status: "pending" },
+    client: { client_name: "Алан", client_phone: "+77001234567" },
+  });
+  assert.deepStrictEqual(sent.map((m) => m.chat_id), ["500"]);
+  assert.ok(sent[0].text.includes("Мастер: Тимур"));
+  assert.ok(sent[0].reply_markup.inline_keyboard.length, "владелец может подтвердить pending");
+  ok("Владельцу: копии новых онлайн-записей и отмен/переносов клиентом; без дублей и по настройке");
+}
+
 async function testRoute() {
   const request = require("supertest");
   const app = require("../server/app");
@@ -277,6 +348,7 @@ async function testRoute() {
   await testReassign();
   await testCancelAndDelete();
   await testGuards();
+  await testOwnerCopies();
   await testRoute();
   console.log("\nВсе unit-тесты уведомлений об изменениях записи пройдены.");
 })().catch((error) => {

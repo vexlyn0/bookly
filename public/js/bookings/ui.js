@@ -335,7 +335,7 @@ window.BooklyBookingsUI = (() => {
     if (button) button.disabled = true;
     try {
       const result = await BooklyBookings.settlePrepay(booking.id, paid);
-      if (!result.changed) alert("Эту оплату уже обработали — например, мастер в Telegram.");
+      if (!result.changed) alert("Эту оплату уже обработали — например, в Telegram.");
       await loadBookings();
       emitChange();
     } catch (error) {

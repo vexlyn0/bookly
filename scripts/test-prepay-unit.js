@@ -52,6 +52,7 @@ function fakeSupabase() {
 require("../server/lib/supabase-admin").getSupabaseAdmin = () => fakeSupabase();
 const telegram = require("../server/lib/telegram-service");
 telegram.sendToStaff = async (staff, text, extra) => sent.push({ to: staff.telegram_chat_id, text, extra });
+telegram.sendToOwner = async (owner, text, extra) => sent.push({ to: owner.owner_telegram_chat_id, text, extra });
 telegram.answerCallback = async (id, text) => sent.push({ answer: text });
 telegram.editMessage = async (chatId, messageId, text) => sent.push({ edit: text });
 require("../server/lib/client-bot-service").notifyClientOfChange = async () => 0;
@@ -83,7 +84,7 @@ function reset(overrides = {}) {
       prepay_deadline: "2030-03-10T10:30:00.000Z",
       services: { name: "Маникюр", price: 8000 },
       staff: { id: "s1", name: "Айгерим", telegram_chat_id: "777" },
-      organizations: { id: "o1", name: "Aru", timezone: "UTC" },
+      organizations: { id: "o1", name: "Aru", timezone: "UTC", owner_telegram_chat_id: "555" },
       ...overrides,
     },
   ];
@@ -111,44 +112,68 @@ function reset(overrides = {}) {
   });
   ok("Предоплата включается, только если у салона указан Kaspi; держим 30 минут по умолчанию");
 
-  // «Я оплатил» → мастеру «Проверьте Kaspi» с кнопками
+  // «Я оплатил» → владельцу «Проверьте Kaspi» с кнопками, мастеру — ничего
   reset();
   await prepay.claim(tables.bookings[0]);
   assert.strictEqual(tables.bookings[0].prepay_status, "claimed");
   assert.strictEqual(sent.length, 1);
-  assert.strictEqual(sent[0].to, "777");
+  assert.strictEqual(sent[0].to, "555");
   assert.ok(sent[0].text.includes("3 000 ₸"));
+  assert.ok(sent[0].text.includes("Мастер: Айгерим"));
   assert.deepStrictEqual(
     sent[0].extra.reply_markup.inline_keyboard[0].map((b) => b.callback_data),
     [`pp:ok:${BOOKING_ID}`, `pp:no:${BOOKING_ID}`]
   );
-  ok("«Я оплатил» → мастеру в Telegram «Проверьте Kaspi» с кнопками");
+  ok("«Я оплатил» → владельцу в Telegram «Проверьте Kaspi» с кнопками, мастеру — ничего");
 
-  // «Деньги пришли» → подтверждено
-  await prepay.handleCallback({ callbackId: "c1", chatId: 777, messageId: 1, data: `pp:ok:${BOOKING_ID}` });
+  // Мастер подтвердить оплату не может — деньги на Kaspi владельца
+  await prepay.handleCallback({ callbackId: "c0", chatId: 777, messageId: 1, data: `pp:ok:${BOOKING_ID}` });
+  assert.strictEqual(tables.bookings[0].status, "pending");
+  ok("Мастер не может подтвердить оплату");
+
+  // «Деньги пришли» → подтверждено, мастеру — обычное «Новая запись»
+  sent.length = 0;
+  await prepay.handleCallback({ callbackId: "c1", chatId: 555, messageId: 1, data: `pp:ok:${BOOKING_ID}` });
   assert.strictEqual(tables.bookings[0].status, "confirmed");
   assert.strictEqual(tables.bookings[0].prepay_status, "paid");
-  ok("«Деньги пришли» → запись подтверждена");
+  const toStaff = sent.find((m) => m.to === "777");
+  assert.ok(toStaff && toStaff.text.includes("Новая запись") && toStaff.text.includes("Предоплата 3 000 ₸ получена"));
+  assert.ok(!toStaff.extra?.reply_markup);
+  ok("«Деньги пришли» → запись подтверждена, мастеру «Новая запись» без кнопок");
 
   // Повторное нажатие — «уже подтверждена», ничего не меняет
   sent.length = 0;
-  await prepay.handleCallback({ callbackId: "c2", chatId: 777, messageId: 1, data: `pp:no:${BOOKING_ID}` });
+  await prepay.handleCallback({ callbackId: "c2", chatId: 555, messageId: 1, data: `pp:no:${BOOKING_ID}` });
   assert.strictEqual(tables.bookings[0].status, "confirmed");
   assert.ok(sent.some((m) => m.answer === "Оплата уже подтверждена"));
   ok("Второе нажатие (или нажал владелец в кабинете) ничего не ломает");
 
   // «Не пришли» → отменено
   reset({ prepay_status: "claimed" });
-  await prepay.handleCallback({ callbackId: "c3", chatId: 777, messageId: 1, data: `pp:no:${BOOKING_ID}` });
+  await prepay.handleCallback({ callbackId: "c3", chatId: 555, messageId: 1, data: `pp:no:${BOOKING_ID}` });
   assert.strictEqual(tables.bookings[0].status, "canceled");
   assert.strictEqual(tables.bookings[0].prepay_status, "rejected");
-  ok("«Не пришли» → запись отменена");
+  assert.ok(!sent.some((m) => m.to === "777"));
+  ok("«Не пришли» → запись отменена, мастера не беспокоим");
 
   // Чужой чат не может подтвердить
   reset({ prepay_status: "claimed" });
   await prepay.handleCallback({ callbackId: "c4", chatId: 999, messageId: 1, data: `pp:ok:${BOOKING_ID}` });
   assert.strictEqual(tables.bookings[0].status, "pending");
-  ok("Подтвердить оплату может только мастер этой записи");
+  ok("Подтвердить оплату может только владелец этого салона");
+
+  // Владелец без Telegram — «Я оплатил» никуда не шлёт (проверит в кабинете)
+  reset({ organizations: { id: "o1", name: "Aru", timezone: "UTC", owner_telegram_chat_id: null } });
+  await prepay.claim(tables.bookings[0]);
+  assert.strictEqual(tables.bookings[0].prepay_status, "claimed");
+  assert.strictEqual(sent.length, 0);
+  ok("Telegram владельца не подключён — оплата ждёт в кабинете");
+
+  // Владелец и есть мастер (один чат) — второе сообщение не дублируем
+  reset({ prepay_status: "claimed", staff: { id: "s1", name: "Айгерим", telegram_chat_id: "555" } });
+  await prepay.settle(BOOKING_ID, true);
+  assert.ok(!sent.some((m) => m.to === "555" && m.text?.includes("Новая запись")));
+  ok("Владелец-мастер в одном чате не получает дубль");
 
   // Автоотмена: просрочено и не нажал «Я оплатил»
   reset();

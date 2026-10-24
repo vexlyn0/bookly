@@ -11,6 +11,7 @@ window.BooklyAppShell = (() => {
     calendar: { title: "Календарь", subtitle: "Календарь" },
     clients: { title: "Клиенты", subtitle: "Клиенты" },
     analytics: { title: "Аналитика", subtitle: "Аналитика" },
+    notifications: { title: "Уведомления", subtitle: "Уведомления" },
     subscription: { title: "Тариф и оплата", subtitle: "Тариф и оплата" },
   };
 

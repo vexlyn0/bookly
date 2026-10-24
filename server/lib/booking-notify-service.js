@@ -282,7 +282,29 @@ async function deliverChangeNotifications({ organization, event, booking, previo
     if (await telegram.sendToStaff(staff, message, keyboard)) sent += 1;
   }
 
+  // Владельцу — копия отмен и переносов, сделанных клиентом (свои правки в кабинете он и так видит).
+  if (byClient) sent += await notifyOwnerOfClientChange({ organization, booking, previous, plan, staffById, today });
+
   return { sent };
+}
+
+async function notifyOwnerOfClientChange({ organization, booking, previous, plan, staffById, today }) {
+  const owner = await telegram.loadOwner(organization.id);
+  if (!owner?.owner_notify_changes) return 0;
+
+  let sent = 0;
+  for (const { staffId, kind } of plan) {
+    if (kind !== "canceled" && kind !== "rescheduled") continue;
+    if (relevantDate(kind, booking, previous) < today) continue;
+    // Владелец и есть этот мастер — сообщение уже пришло.
+    if (telegram.sameChat(owner.owner_telegram_chat_id, staffById.get(staffId)?.telegram_chat_id)) continue;
+
+    const message = buildMessage(kind, { organization, booking, previous, staffById, byClient: true });
+    const keyboard =
+      kind === "rescheduled" ? { reply_markup: telegram.bookingKeyboard(booking.id, booking.status) } : {};
+    if (await telegram.sendToOwner(owner, message, keyboard)) sent += 1;
+  }
+  return sent;
 }
 
 module.exports = {

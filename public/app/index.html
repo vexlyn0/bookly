@@ -76,10 +76,9 @@
           Аналитика
           <span class="sidebar__badge sidebar__badge--pro">Pro</span>
         </button>
-        <button class="sidebar__link" type="button" data-section="notifications" disabled>
+        <button class="sidebar__link" type="button" data-section="notifications">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           Уведомления
-          <span class="sidebar__badge">скоро</span>
         </button>
       </div>
 
@@ -400,7 +399,7 @@
                   <ol>
                     <li>Укажите номер Kaspi ниже и включите предоплату у нужных услуг (раздел «Услуги»).</li>
                     <li>Клиент записывается, видит сумму и ваш номер, переводит и нажимает «Я оплатил».</li>
-                    <li>Мастеру в Telegram приходит «Проверьте Kaspi». Откройте Kaspi, найдите перевод и нажмите <b>«Деньги пришли»</b> или <b>«Не пришли»</b>. То же можно сделать в разделе «Записи».</li>
+                    <li>Вам в Telegram приходит «Проверьте Kaspi» — подключите его в разделе <button class="link-button" type="button" data-open-section="notifications">«Уведомления»</button>. Откройте Kaspi, найдите перевод и нажмите <b>«Деньги пришли»</b> или <b>«Не пришли»</b>. То же можно сделать в разделе «Записи». Мастер получит запись, когда вы подтвердите оплату.</li>
                     <li>Не нажал клиент «Я оплатил» за выбранное время — запись отменится сама, время освободится.</li>
                   </ol>
                   <p>Возвраты Jazyl не делает — при отмене вы возвращаете деньги сами в Kaspi, по своим правилам.</p>
@@ -641,6 +640,55 @@
             <div><span>Алина</span><strong>13 записей · 131 000 ₸</strong></div>
           </div>
         </div>
+        </div>
+      </section>
+
+      <!-- Уведомления -->
+      <section class="panel notify-panel" id="notifications-section" data-section="notifications" hidden>
+        <header class="panel__header">
+          <div>
+            <h2 class="panel__title">Уведомления</h2>
+            <p class="panel__subtitle">Telegram владельца: оплаты Kaspi и всё, что происходит с записями, — в одном чате.</p>
+          </div>
+        </header>
+
+        <div class="notify-card" id="owner-telegram">
+          <div class="notify-card__head">
+            <span class="notify-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.8 15.2 9.6 19c.4 0 .6-.2.8-.4l2-1.9 4.1 3c.8.4 1.3.2 1.5-.7l2.7-12.7c.3-1.1-.4-1.6-1.1-1.3L3.7 10.8c-1.1.4-1.1 1-.2 1.3l4.1 1.3 9.5-6c.4-.3.9-.1.5.2z"/></svg>
+            </span>
+            <div class="notify-card__body">
+              <h3 class="notify-card__title">Telegram владельца</h3>
+              <p class="notify-card__status" id="owner-telegram-status">Загрузка…</p>
+            </div>
+            <div class="notify-card__actions">
+              <button class="btn btn--primary btn--sm" type="button" id="owner-telegram-connect" hidden>Подключить Telegram</button>
+              <button class="btn btn--ghost btn--sm" type="button" id="owner-telegram-check" hidden>Я нажал Start — проверить</button>
+              <button class="btn btn--ghost btn--sm" type="button" id="owner-telegram-disconnect" hidden>Отключить</button>
+            </div>
+          </div>
+          <p class="notify-card__hint" id="owner-telegram-hint" hidden>Откроется наш бот — нажмите <b>Start</b> и вернитесь сюда.</p>
+
+          <ul class="notify-options" id="owner-telegram-options">
+            <li class="notify-option notify-option--fixed">
+              <span class="notify-option__check" aria-hidden="true">✓</span>
+              <span><b>💳 Оплаты Kaspi</b> — «Проверьте Kaspi» с кнопками «Деньги пришли» / «Не пришли». Приходят всегда: деньги идут на ваш Kaspi, проверить их можете только вы.</span>
+            </li>
+            <li>
+              <label class="notify-option">
+                <input type="checkbox" id="owner-notify-bookings">
+                <span><b>🔔 Новые записи по всем мастерам</b> — кто, к кому и когда записался онлайн. Если запись ждёт подтверждения, подтвердить можно прямо из сообщения.</span>
+              </label>
+            </li>
+            <li>
+              <label class="notify-option">
+                <input type="checkbox" id="owner-notify-changes">
+                <span><b>❌ Отмены и переносы</b> — когда клиент сам отменил или перенёс запись.</span>
+              </label>
+            </li>
+          </ul>
+          <p class="alert alert--error" id="owner-telegram-error" role="alert" hidden></p>
+          <p class="notify-card__note">Мастера получают в свой Telegram только свои записи — подключаются в разделе «Сотрудники». Если вы сами работаете мастером в том же Telegram, дублей не будет.</p>
         </div>
       </section>
 
@@ -1201,6 +1249,7 @@
   <script src="/js/profile-media/ui.js"></script>
   <script src="/js/public-settings/ui.js"></script>
   <script src="/js/blacklist/ui.js"></script>
+  <script src="/js/owner-telegram/ui.js"></script>
   <script src="/js/subscription/client.js"></script>
   <script src="/js/billing/client.js"></script>
   <script src="/js/subscription/ui.js"></script>

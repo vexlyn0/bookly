@@ -5,9 +5,10 @@
  *   1. Онлайн-запись на услугу с предоплатой создаётся «ждёт оплату» (status pending,
  *      prepay_status awaiting) и держит время prepay_hold_minutes.
  *   2. Клиент переводит на Kaspi салона и жмёт «Я оплатил» → claimed,
- *      мастеру в Telegram уходит «Проверьте Kaspi» с кнопками «Деньги пришли» / «Не пришли».
- *   3. «Деньги пришли» (в Telegram или в кабинете) → paid, запись подтверждена.
- *      «Не пришли» → rejected, запись отменена.
+ *      владельцу салона в Telegram уходит «Проверьте Kaspi» с кнопками «Деньги пришли» / «Не пришли»
+ *      (деньги приходят на Kaspi салона — проверить их может только владелец).
+ *   3. «Деньги пришли» (в Telegram владельца или в кабинете) → paid, запись подтверждена,
+ *      мастеру уходит обычное «Новая запись». «Не пришли» → rejected, запись отменена.
  *   4. Не нажал «Я оплатил» вовремя → expired, запись отменена (expireUnpaid, раз в минуту и по cron).
  */
 
@@ -37,7 +38,7 @@ const BOOKING_SELECT = `
   prepay_deadline,
   services(name, price),
   staff(id, name, telegram_chat_id),
-  organizations(id, name, public_name, address, timezone)
+  organizations(id, name, public_name, address, timezone, owner_telegram_chat_id)
 `;
 
 /** Сколько брать предоплаты за услугу (₸, округление до 100) или 0 — без предоплаты. */
@@ -168,10 +169,26 @@ async function claim(booking) {
   if (!data) return loadBooking(booking.id);
 
   const fresh = await loadBooking(booking.id);
-  if (fresh?.staff?.telegram_chat_id) {
-    await telegram().sendToStaff(fresh.staff, claimMessage(fresh), { reply_markup: claimKeyboard(fresh.id) });
+  // Не подключил Telegram — проверит в кабинете («Записи»).
+  if (fresh?.organizations?.owner_telegram_chat_id) {
+    await telegram().sendToOwner(fresh.organizations, claimMessage(fresh), { reply_markup: claimKeyboard(fresh.id) });
   }
   return fresh;
+}
+
+/** Оплата подтверждена — мастер узнаёт о записи (до этого его не беспокоили). */
+async function notifyStaffOfPaidBooking(booking) {
+  const tg = telegram();
+  const chat = booking.staff?.telegram_chat_id;
+  // Владелец и есть этот мастер — он уже видел «Предоплата получена».
+  if (!chat || tg.sameChat(booking.organizations?.owner_telegram_chat_id, chat)) return;
+  const org = booking.organizations || {};
+  const text =
+    tg.formatBookingMessage({
+      ...tg.viewFromBookingRow(booking),
+      organizationName: org.public_name || org.name || "",
+    }) + `\n💳 Предоплата ${formatAmount(booking.prepay_amount)} получена`;
+  await tg.sendToStaff(booking.staff, text);
 }
 
 /**
@@ -198,6 +215,13 @@ async function settle(bookingId, paid) {
   if (!data) return { booking, changed: false };
 
   await notifyClient(booking, "pending");
+  if (paid) {
+    try {
+      await notifyStaffOfPaidBooking(booking);
+    } catch (error) {
+      console.error("[prepay] notify staff failed", error?.code || "unknown");
+    }
+  }
   return { booking, changed: true };
 }
 
@@ -224,13 +248,9 @@ async function handleCallback({ callbackId, chatId, messageId, data }) {
   }
   const [, action, bookingId] = match;
 
-  const supabase = getSupabaseAdmin();
-  const [{ data: staffRows }, booking] = await Promise.all([
-    supabase.from("staff").select("id").eq("telegram_chat_id", String(chatId)),
-    loadBooking(bookingId).catch(() => null),
-  ]);
-  const linked = (staffRows || []).map((row) => row.id);
-  if (!booking || !linked.includes(booking.staff_id)) {
+  // Подтверждать оплату может только владелец салона: деньги приходят на его Kaspi.
+  const booking = await loadBooking(bookingId).catch(() => null);
+  if (!booking || !tg.sameChat(booking.organizations?.owner_telegram_chat_id, chatId)) {
     await tg.answerCallback(callbackId, "Запись не найдена или недоступна", true);
     return;
   }

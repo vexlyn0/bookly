@@ -92,6 +92,7 @@
   BooklyInsightsUI.init(organization);
   BooklyPublicSettingsUI.init(organization);
   BooklyBlacklist.init(organization);
+  BooklyOwnerTelegram.init(organization);
   BooklySubscriptionUI.init(organization);
 
   const closeSidebar = () => {
