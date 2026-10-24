@@ -4047,3 +4047,177 @@
   font-size: var(--text-xs);
   line-height: 1.5;
 }
+
+/* =============================================================================
+ * Тема «Графит и фиалка» (25.10.2026)
+ * Тёплый графит в меню и шапке, сливочное рабочее поле, фиолетовый акцент как на сайте.
+ * Работает поверх «гибрида» выше: меняет токены и несколько ключевых блоков.
+ * ========================================================================== */
+
+.app {
+  --color-bg: #faf8f4;
+  --color-bg-elevated: #ffffff;
+  --color-bg-muted: #f3efe8;
+  --color-bg-subtle: #ebe6dc;
+  --color-text: #201e24;
+  --color-text-secondary: #5c5864;
+  --color-text-muted: #948f9c;
+  --color-border: #ebe6dc;
+  --color-border-strong: #ddd5c8;
+  --color-accent: #534ab7;
+  --color-accent-hover: #463ea0;
+  --color-accent-muted: rgba(83, 74, 183, 0.1);
+  --color-accent-subtle: rgba(83, 74, 183, 0.06);
+  --shadow-xs: 0 1px 2px rgba(32, 30, 36, 0.04);
+  --shadow-sm: 0 1px 3px rgba(32, 30, 36, 0.06), 0 1px 2px rgba(32, 30, 36, 0.04);
+  --shadow-md: 0 6px 18px rgba(32, 30, 36, 0.06), 0 2px 4px rgba(32, 30, 36, 0.04);
+
+  --side-bg: #201e24;
+  --side-text: #b9b4c4;
+  --side-dim: #7d7887;
+  --side-line: rgba(255, 255, 255, 0.07);
+  --side-hover: rgba(255, 255, 255, 0.06);
+  --side-active: rgba(160, 150, 230, 0.22);
+
+  /* Шапка раздела */
+  --head-bg: #2a2730;
+  --head-text: #ffffff;
+  --head-sub: #c9c2ef;
+}
+
+.app .sidebar__link.is-active svg {
+  color: #c9c2ef;
+}
+
+/* Шапка над каждым разделом — графитовая полоса, как первый экран на сайте */
+.app .topbar {
+  height: 64px;
+  background: var(--head-bg);
+  border-bottom: 0;
+  backdrop-filter: none;
+  color: var(--head-text);
+}
+
+.app .topbar__title {
+  color: var(--head-text);
+  font-size: 18px;
+}
+
+.app .topbar__org {
+  color: var(--head-sub);
+}
+
+.app .topbar__burger {
+  color: var(--head-text);
+}
+
+.app .topbar__burger:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.app .plan-badge {
+  color: #e7e3ff;
+  background: rgba(160, 150, 230, 0.22);
+}
+
+.app .plan-badge:hover {
+  background: rgba(160, 150, 230, 0.34);
+}
+
+/* Карточки и списки: белые на сливочном фоне, мягкие тени, скругление как на сайте */
+.app .service-card,
+.app .staff-card,
+.app .booking-card,
+.app .today-card,
+.app .public-booking-link-card,
+.app .subscription-card,
+.app .plan-card,
+.app .notify-card,
+.app .today-setup,
+.app .insights-card,
+.app .client-row {
+  border-color: var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-xs);
+}
+
+.app .today-setup {
+  border-color: rgba(83, 74, 183, 0.22);
+  box-shadow: 0 8px 26px rgba(83, 74, 183, 0.07);
+}
+
+.app .setup-step {
+  background: var(--color-bg-muted);
+}
+
+/* Кнопки: основная — фиолетовая, вторичные — белые с тёплой рамкой */
+.app .btn {
+  border-radius: 10px;
+}
+
+.app .btn--outline {
+  background: #fff;
+  border-color: var(--color-border-strong);
+}
+
+.app .btn--outline:hover:not(:disabled) {
+  background: var(--color-bg-muted);
+  border-color: #cfc6b7;
+}
+
+.app .btn--primary {
+  box-shadow: 0 6px 16px rgba(83, 74, 183, 0.22);
+}
+
+/* Поля ввода: белые, тёплая рамка, фиолетовый фокус */
+.app .field__input,
+.app .field__select,
+.app .field__textarea {
+  background: #fff;
+  border-color: var(--color-border-strong);
+  border-radius: 10px;
+}
+
+.app .field__input:focus,
+.app .field__select:focus,
+.app .field__textarea:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-muted);
+}
+
+/* Метки и статусы — мягкие плашки */
+.app .badge {
+  border-radius: 8px;
+}
+
+/* Окна: белые, с тёплой границей */
+.app .modal__dialog,
+.app .modal__content {
+  border-radius: 18px;
+}
+
+/* Галочки и радиокнопки — фирменного цвета */
+.app input[type="checkbox"],
+.app input[type="radio"] {
+  accent-color: var(--color-accent);
+}
+
+/* Карточка Pro — выделена фирменным цветом */
+.app .plan-card--pro {
+  border: 2px solid rgba(83, 74, 183, 0.45);
+  background: linear-gradient(180deg, #f6f4ff 0%, #ffffff 55%);
+}
+
+.app .plan-card--pro .plan-card__name {
+  color: var(--color-accent);
+}
+
+/* Телефон: в панелях поиска элементы стоят столбиком — их базовая ширина
+   (flex-basis 200px / 180px) не должна превращаться в высоту */
+@media (max-width: 640px) {
+  .services-toolbar > *,
+  .staff-toolbar > *,
+  .bookings-toolbar > * {
+    flex: 0 0 auto;
+  }
+}
