@@ -48,11 +48,20 @@ router.get("/organizations", async (req, res) => {
   try {
     const result = await platformAdminService.listOrganizations({
       search: req.query.search,
-      subscriptionStatus: req.query.subscription_status,
+      segment: req.query.segment,
       page: req.query.page,
       limit: req.query.limit,
     });
     return res.json({ ok: true, ...result });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+router.get("/audit", async (req, res) => {
+  try {
+    const items = await platformAdminService.listAuditLog({ limit: req.query.limit });
+    return res.json({ ok: true, items });
   } catch (error) {
     return sendError(res, error);
   }

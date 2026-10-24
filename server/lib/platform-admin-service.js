@@ -4,6 +4,99 @@
 
 const { getSupabaseAdmin } = require("./supabase-admin");
 const { appError } = require("./subscription-service");
+const stats = require("./platform-admin-stats");
+
+// -----------------------------------------------------------------------------
+// Снимок платформы (кеш 30 секунд, сбрасывается после действий админа)
+// -----------------------------------------------------------------------------
+
+const SNAPSHOT_TTL_MS = 30 * 1000;
+const PAGE = 1000;
+let snapshotCache = null;
+
+/** Все строки запроса постранично: PostgREST отдаёт не больше 1000 за раз. */
+async function fetchAll(makeQuery, context) {
+  const rows = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await makeQuery().range(from, from + PAGE - 1);
+    if (error) {
+      console.error(`[platform-admin] ${context}`, error.code || "unknown");
+      throw appError("Не удалось выполнить запрос", "INTERNAL_ERROR", 500);
+    }
+    rows.push(...(data || []));
+    if (!data || data.length < PAGE) return rows;
+  }
+}
+
+async function fetchAllUsers(admin) {
+  const users = [];
+  for (let page = 1; page <= 50; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: PAGE });
+    if (error) {
+      console.error("[platform-admin] listUsers", error.code || "unknown");
+      throw appError("Не удалось выполнить запрос", "INTERNAL_ERROR", 500);
+    }
+    const batch = data?.users || [];
+    users.push(...batch.map((u) => ({ id: u.id, email: u.email || null, last_sign_in_at: u.last_sign_in_at || null })));
+    if (batch.length < PAGE) break;
+  }
+  return users;
+}
+
+async function loadSnapshot({ force = false } = {}) {
+  if (!force && snapshotCache && Date.now() - snapshotCache.at < SNAPSHOT_TTL_MS) return snapshotCache;
+
+  const admin = getSupabaseAdmin();
+  const [organizations, subscriptions, owners, staff, services, bookings, payments, users] = await Promise.all([
+    fetchAll(
+      () =>
+        admin
+          .from("organizations")
+          .select("id, name, public_name, slug, business_type, phone, address, created_at, public_booking_enabled")
+          .order("created_at", { ascending: true }),
+      "snapshot:organizations"
+    ),
+    fetchAll(
+      () =>
+        admin
+          .from("organization_subscriptions")
+          .select("organization_id, status, trial_ends_at, current_period_end, grace_period_ends_at")
+          .order("organization_id"),
+      "snapshot:subscriptions"
+    ),
+    fetchAll(
+      () => admin.from("organization_members").select("organization_id, user_id").eq("role", "owner").order("organization_id"),
+      "snapshot:owners"
+    ),
+    fetchAll(
+      () => admin.from("staff").select("organization_id, is_active, telegram_chat_id").order("id"),
+      "snapshot:staff"
+    ),
+    fetchAll(() => admin.from("services").select("organization_id, is_active").order("id"), "snapshot:services"),
+    fetchAll(
+      () => admin.from("bookings").select("organization_id, created_at, source, status").order("created_at"),
+      "snapshot:bookings"
+    ),
+    fetchAll(
+      () =>
+        admin
+          .from("manual_payment_requests")
+          .select("id, organization_id, amount, billing_months, status, created_at, reviewed_at")
+          .order("created_at"),
+      "snapshot:payments"
+    ),
+    fetchAllUsers(admin),
+  ]);
+
+  const raw = { organizations, subscriptions, owners, staff, services, bookings, payments, users };
+  const orgs = stats.buildOrganizations(raw);
+  snapshotCache = { at: Date.now(), raw, orgs };
+  return snapshotCache;
+}
+
+function invalidateSnapshot() {
+  snapshotCache = null;
+}
 
 function assertSupabaseResult(result, context) {
   if (result?.error) {
@@ -43,175 +136,53 @@ async function isPlatformAdminUser(userId) {
 }
 
 async function getOverview() {
-  const admin = getSupabaseAdmin();
-
-  const orgCount = assertSupabaseResult(
-    await admin.from("organizations").select("id", { count: "exact", head: true }),
-    "getOverview:organizations"
-  );
-  const statusResult = assertSupabaseResult(
-    await admin.from("organization_subscriptions").select("status"),
-    "getOverview:subscriptions"
-  );
-  const pendingResult = assertSupabaseResult(
-    await admin
-      .from("manual_payment_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
-    "getOverview:pending"
-  );
-  const approvedResult = assertSupabaseResult(
-    await admin.from("manual_payment_requests").select("amount").eq("status", "approved"),
-    "getOverview:approved"
-  );
-
-  const counts = { trialing: 0, active: 0, expired: 0, suspended: 0 };
-  for (const row of statusResult.data || []) {
-    if (row.status === "trialing") counts.trialing += 1;
-    else if (row.status === "active") counts.active += 1;
-    else if (row.status === "expired") counts.expired += 1;
-    else if (row.status === "suspended") counts.suspended += 1;
-  }
-
-  const approvedPaymentsTotal = (approvedResult.data || []).reduce(
-    (sum, row) => sum + Number(row.amount || 0),
-    0
-  );
-
-  return {
-    organizations_total: orgCount.count || 0,
-    subscriptions: counts,
-    pending_payment_requests: pendingResult.count || 0,
-    approved_payments_total_amount: approvedPaymentsTotal,
-    approved_payments_currency: "KZT",
-  };
+  const { raw, orgs } = await loadSnapshot();
+  return stats.buildOverview(raw, orgs);
 }
 
-async function listOrganizations({ search = "", subscriptionStatus = "", page = 1, limit = 20 } = {}) {
-  const admin = getSupabaseAdmin();
-  const safeLimit = Math.max(1, Math.min(100, Number(limit) || 20));
+async function listOrganizations({ search = "", segment = "all", page = 1, limit = 50 } = {}) {
+  const { orgs } = await loadSnapshot();
+  const safeLimit = Math.max(1, Math.min(200, Number(limit) || 50));
   const safePage = Math.max(1, Number(page) || 1);
-  const from = (safePage - 1) * safeLimit;
-  const to = from + safeLimit - 1;
-
-  const subEmbed = subscriptionStatus
-    ? "organization_subscriptions!inner(status, trial_ends_at, current_period_end)"
-    : "organization_subscriptions(status, trial_ends_at, current_period_end)";
-
-  let query = admin
-    .from("organizations")
-    .select(
-      `
-      id,
-      name,
-      public_name,
-      slug,
-      created_at,
-      ${subEmbed},
-      organization_members!inner (
-        role,
-        user_id
-      )
-    `,
-      { count: "exact" }
-    )
-    .eq("organization_members.role", "owner")
-    .order("created_at", { ascending: false })
-    .range(from, to);
-
-  const term = String(search || "").trim();
-  if (term) {
-    const pattern = `%${term}%`;
-    query = query.or(`name.ilike.${pattern},public_name.ilike.${pattern},slug.ilike.${pattern}`);
-  }
-
-  if (subscriptionStatus) {
-    query = query.eq("organization_subscriptions.status", subscriptionStatus);
-  }
-
-  const { data, error, count } = await query;
-  if (error) {
-    console.error("[platform-admin] list organizations failed", error.code || "unknown");
-    throw appError("Не удалось загрузить организации", "INTERNAL_ERROR", 500);
-  }
-
-  const seen = new Set();
-  const uniqueRows = (data || []).filter((row) => {
-    if (seen.has(row.id)) return false;
-    seen.add(row.id);
-    return true;
-  });
-
-  const orgIds = uniqueRows.map((row) => row.id);
-  const statsByOrg = await getOrganizationStats(orgIds);
-
-  const items = await Promise.all(
-    uniqueRows.map(async (row) => {
-      const sub = Array.isArray(row.organization_subscriptions)
-        ? row.organization_subscriptions[0]
-        : row.organization_subscriptions;
-      const ownerMember = Array.isArray(row.organization_members)
-        ? row.organization_members.find((m) => m.role === "owner") || row.organization_members[0]
-        : row.organization_members;
-      const ownerEmail = await getUserEmail(ownerMember?.user_id);
-
-      return {
-        id: row.id,
-        name: row.name,
-        public_name: row.public_name,
-        slug: row.slug,
-        owner_email: ownerEmail,
-        subscription_status: sub?.status || null,
-        trial_ends_at: sub?.trial_ends_at || null,
-        current_period_end: sub?.current_period_end || null,
-        created_at: row.created_at,
-        services_count: statsByOrg[row.id]?.services || 0,
-        staff_count: statsByOrg[row.id]?.staff || 0,
-        bookings_count: statsByOrg[row.id]?.bookings || 0,
-      };
-    })
-  );
+  const filtered = stats.filterOrganizations(orgs, { segment, search });
 
   return {
-    items,
+    items: filtered.slice((safePage - 1) * safeLimit, safePage * safeLimit),
+    counts: stats.segmentCounts(orgs),
     page: safePage,
     limit: safeLimit,
-    total: count || 0,
+    total: filtered.length,
   };
 }
 
-async function getOrganizationStats(orgIds) {
-  const result = {};
-  if (!orgIds.length) return result;
-
+/** Журнал действий админов по всей платформе. */
+async function listAuditLog({ limit = 100 } = {}) {
   const admin = getSupabaseAdmin();
-  const servicesResult = assertSupabaseResult(
-    await admin.from("services").select("organization_id").in("organization_id", orgIds),
-    "getOrganizationStats:services"
-  );
-  const staffResult = assertSupabaseResult(
-    await admin.from("staff").select("organization_id").in("organization_id", orgIds),
-    "getOrganizationStats:staff"
-  );
-  const bookingsResult = assertSupabaseResult(
-    await admin.from("bookings").select("organization_id").in("organization_id", orgIds),
-    "getOrganizationStats:bookings"
+  const safeLimit = Math.max(1, Math.min(300, Number(limit) || 100));
+  const result = assertSupabaseResult(
+    await admin
+      .from("platform_admin_audit_log")
+      .select("id, action, metadata, created_at, admin_user_id, organization_id, organizations(name, public_name)")
+      .order("created_at", { ascending: false })
+      .limit(safeLimit),
+    "listAuditLog"
   );
 
-  for (const id of orgIds) {
-    result[id] = { services: 0, staff: 0, bookings: 0 };
-  }
-  for (const row of servicesResult.data || []) {
-    if (result[row.organization_id]) result[row.organization_id].services += 1;
-  }
-  for (const row of staffResult.data || []) {
-    if (result[row.organization_id]) result[row.organization_id].staff += 1;
-  }
-  for (const row of bookingsResult.data || []) {
-    if (result[row.organization_id]) result[row.organization_id].bookings += 1;
-  }
+  const { raw } = await loadSnapshot();
+  const emails = new Map(raw.users.map((u) => [u.id, u.email]));
 
-  return result;
+  return (result.data || []).map((row) => {
+    const org = Array.isArray(row.organizations) ? row.organizations[0] : row.organizations;
+    return {
+      id: row.id,
+      action: row.action,
+      metadata: row.metadata || {},
+      created_at: row.created_at,
+      admin_email: emails.get(row.admin_user_id) || null,
+      organization_id: row.organization_id,
+      organization_name: org?.public_name || org?.name || null,
+    };
+  });
 }
 
 async function getUserEmail(userId) {
@@ -286,7 +257,20 @@ async function getOrganizationDetail(organizationId) {
     "getOrganizationDetail:audit"
   );
 
+  const { orgs } = await loadSnapshot();
+  const recentResult = assertSupabaseResult(
+    await admin
+      .from("bookings")
+      .select("id, booking_date, start_time, status, source, client_name, created_at, services(name), staff(name)")
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false })
+      .limit(10),
+    "getOrganizationDetail:bookings"
+  );
+
   return {
+    stats: orgs.find((o) => o.id === organizationId) || null,
+    recent_bookings: recentResult.data || [],
     organization: orgResult.data,
     subscription: subResult.data,
     owner: {
@@ -389,6 +373,7 @@ async function listPaymentRequests({
 }
 
 async function approvePaymentRequest(requestId, adminUserId, adminNote) {
+  invalidateSnapshot();
   if (adminNote != null && String(adminNote).trim().length > 500) {
     throw appError("Проверьте параметры запроса", "VALIDATION_ERROR", 400);
   }
@@ -415,6 +400,7 @@ async function approvePaymentRequest(requestId, adminUserId, adminNote) {
 }
 
 async function rejectPaymentRequest(requestId, adminUserId, adminNote) {
+  invalidateSnapshot();
   const note = String(adminNote || "").trim();
   if (!note || note.length > 500) {
     throw appError("Проверьте параметры запроса", "VALIDATION_ERROR", 400);
@@ -459,6 +445,7 @@ function sanitizeSubscription(row) {
 }
 
 async function extendSubscription(organizationId, adminUserId, days, reason) {
+  invalidateSnapshot();
   const trimmedReason = String(reason || "").trim();
   if (!trimmedReason || trimmedReason.length > 500) {
     throw appError("Проверьте параметры запроса", "VALIDATION_ERROR", 400);
@@ -483,6 +470,7 @@ async function extendSubscription(organizationId, adminUserId, days, reason) {
 }
 
 async function suspendOrganization(organizationId, adminUserId, reason) {
+  invalidateSnapshot();
   const trimmedReason = String(reason || "").trim();
   if (!trimmedReason || trimmedReason.length > 500) {
     throw appError("Проверьте параметры запроса", "VALIDATION_ERROR", 400);
@@ -506,6 +494,7 @@ async function suspendOrganization(organizationId, adminUserId, reason) {
 }
 
 async function unsuspendOrganization(organizationId, adminUserId) {
+  invalidateSnapshot();
   const admin = getSupabaseAdmin();
   const { data, error } = await admin.rpc("admin_unsuspend_organization", {
     p_organization_id: organizationId,
@@ -523,6 +512,8 @@ async function unsuspendOrganization(organizationId, adminUserId) {
 }
 
 module.exports = {
+  listAuditLog,
+  loadSnapshot,
   isPlatformAdminUser,
   getOverview,
   listOrganizations,

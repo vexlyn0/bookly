@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
   <title>Админ-панель — Bookly</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,25 +26,68 @@
     </div>
   </div>
 
-  <div class="platform-admin__layout" id="admin-app" hidden>
-    <aside class="platform-admin__sidebar">
-      <div class="platform-admin__brand">Bookly Admin</div>
-      <nav class="platform-admin__nav" aria-label="Разделы админки">
-        <button type="button" class="is-active" data-view="overview">Главная</button>
-        <button type="button" data-view="organizations">Организации</button>
-        <button type="button" data-view="payments">Платежи</button>
+  <div class="pa" id="admin-app" hidden>
+    <div class="pa__overlay" id="pa-overlay" hidden></div>
+
+    <aside class="pa-side" id="pa-side">
+      <div class="pa-side__brand">
+        <span class="pa-side__mark">B</span>
+        Bookly
+        <span class="pa-side__tag">Admin</span>
+      </div>
+
+      <nav class="pa-nav" aria-label="Разделы админки">
+        <button type="button" class="pa-nav__link is-active" data-view="overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          Главная
+        </button>
+        <button type="button" class="pa-nav__link" data-view="organizations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>
+          Салоны
+          <span class="pa-nav__count" id="pa-count-orgs"></span>
+        </button>
+        <button type="button" class="pa-nav__link" data-view="payments">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          Платежи
+          <span class="pa-nav__count pa-nav__count--alert" id="pa-count-payments" hidden></span>
+        </button>
+        <button type="button" class="pa-nav__link" data-view="audit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+          Журнал
+        </button>
       </nav>
-      <p class="platform-admin__user" id="admin-user-email"></p>
-      <button class="btn btn--ghost btn--sm" type="button" id="admin-logout">Выйти</button>
+
+      <div class="pa-side__footer">
+        <p class="pa-side__user" id="admin-user-email"></p>
+        <div class="pa-side__actions">
+          <a class="pa-side__link" href="/app">Кабинет салона</a>
+          <button class="pa-side__link" type="button" id="admin-logout">Выйти</button>
+        </div>
+      </div>
     </aside>
 
-    <main class="platform-admin__main">
-      <header class="platform-admin__header">
-        <h1 id="admin-page-title">Главная</h1>
-        <a class="btn btn--outline btn--sm" href="/app">Кабинет</a>
+    <main class="pa-main">
+      <header class="pa-top">
+        <button class="pa-top__burger" id="pa-burger" type="button" aria-label="Меню">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <h1 class="pa-top__title" id="admin-page-title">Главная</h1>
+        <button class="btn btn--outline btn--sm" type="button" id="pa-refresh">Обновить</button>
       </header>
-      <div id="admin-content"></div>
+      <div class="pa-content" id="admin-content"></div>
     </main>
+
+    <div class="pa-modal" id="pa-modal" hidden>
+      <div class="pa-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="pa-modal-title">
+        <h2 class="pa-modal__title" id="pa-modal-title"></h2>
+        <div class="pa-modal__body" id="pa-modal-body"></div>
+        <p class="pa-modal__error" id="pa-modal-error" hidden></p>
+        <div class="pa-modal__actions">
+          <button class="btn btn--ghost" type="button" data-modal-cancel>Отмена</button>
+          <button class="btn btn--primary" type="button" id="pa-modal-ok">Подтвердить</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -51,6 +95,7 @@
   <script src="/js/api.js"></script>
   <script src="/js/auth/errors.js"></script>
   <script src="/js/auth/client.js"></script>
+  <script src="/js/org/constants.js"></script>
   <script src="/js/platform-admin/api.js"></script>
   <script src="/js/platform-admin/ui.js"></script>
   <script src="/js/platform-admin/app.js"></script>

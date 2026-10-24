@@ -77,6 +77,7 @@ window.BooklyPlatformAdminApi = (() => {
       return request(`/api/admin/organizations${query ? `?${query}` : ""}`);
     },
     organization: (id) => request(`/api/admin/organizations/${id}`),
+    audit: (limit = 100) => request(`/api/admin/audit?limit=${limit}`),
     paymentRequests: (params = {}) => {
       const query = new URLSearchParams(params).toString();
       return request(`/api/admin/payment-requests${query ? `?${query}` : ""}`);
