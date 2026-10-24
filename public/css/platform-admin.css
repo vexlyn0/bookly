@@ -986,3 +986,89 @@ button.pa-table__row:hover {
   font-size: var(--text-sm);
   letter-spacing: 0;
 }
+
+/* Управление салоном */
+.pa-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.pa-card__head--sub {
+  margin-top: var(--space-5);
+}
+
+.pa-card__head--pad {
+  padding: var(--space-4) var(--space-5) 0;
+}
+
+.pa-card__pad {
+  padding: 0 var(--space-5) var(--space-4);
+}
+
+.pa-list__row.is-off {
+  opacity: 0.55;
+}
+
+.pa-table--bookings .pa-table__head,
+.pa-table--bookings .pa-table__row {
+  grid-template-columns: 1fr 1.6fr 1.8fr 1.1fr 0.9fr;
+}
+
+.pa-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.pa-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--pa-accent);
+}
+
+.pa-warn {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: 10px;
+  background: #fffaf0;
+  border: 1px solid #fac775;
+  color: #854f0b;
+  font-size: var(--text-sm);
+}
+
+.pa-danger-zone {
+  border-color: #f7c1c1;
+}
+
+.pa-danger-zone__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.pa-danger-zone__row p {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+}
+
+.pa-btn-danger {
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.pa-modal__dialog {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+  .pa-danger-zone__row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

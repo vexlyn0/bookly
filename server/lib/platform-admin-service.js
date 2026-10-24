@@ -514,6 +514,7 @@ async function unsuspendOrganization(organizationId, adminUserId) {
 module.exports = {
   listAuditLog,
   loadSnapshot,
+  invalidateSnapshot,
   isPlatformAdminUser,
   getOverview,
   listOrganizations,

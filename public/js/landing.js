@@ -3,8 +3,15 @@
  */
 
 (() => {
-  if (/(^|&)type=recovery(&|$)/.test(window.location.hash.slice(1))) {
+  // Ссылки из писем Supabase (сброс пароля, вход по ссылке, подтверждение почты),
+  // если они открылись на главной, переносим туда, где их обработают.
+  const authHash = window.location.hash.slice(1);
+  if (/(^|&)type=recovery(&|$)/.test(authHash)) {
     window.location.replace(`/reset-password${window.location.hash}`);
+    return;
+  }
+  if (/(^|&)(access_token|error_code)=/.test(authHash)) {
+    window.location.replace(`/login${window.location.hash}`);
     return;
   }
 

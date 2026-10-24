@@ -78,6 +78,23 @@ window.BooklyPlatformAdminApi = (() => {
     },
     organization: (id) => request(`/api/admin/organizations/${id}`),
     audit: (limit = 100) => request(`/api/admin/audit?limit=${limit}`),
+    updateOrganization: (id, body) =>
+      request(`/api/admin/organizations/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    loginLink: (id) => request(`/api/admin/organizations/${id}/login-link`, { method: "POST", body: "{}" }),
+    changeOwnerEmail: (id, email) =>
+      request(`/api/admin/organizations/${id}/owner/email`, { method: "POST", body: JSON.stringify({ email }) }),
+    ownerPasswordLink: (id) =>
+      request(`/api/admin/organizations/${id}/owner/password-link`, { method: "POST", body: "{}" }),
+    blockOwner: (id, reason) =>
+      request(`/api/admin/organizations/${id}/owner/block`, { method: "POST", body: JSON.stringify({ reason }) }),
+    unblockOwner: (id) => request(`/api/admin/organizations/${id}/owner/unblock`, { method: "POST", body: "{}" }),
+    revokePro: (id, reason) =>
+      request(`/api/admin/organizations/${id}/revoke-pro`, { method: "POST", body: JSON.stringify({ reason }) }),
+    deleteOrganization: (id, confirmSlug, deleteOwner) =>
+      request(`/api/admin/organizations/${id}/delete`, {
+        method: "POST",
+        body: JSON.stringify({ confirm_slug: confirmSlug, delete_owner: deleteOwner }),
+      }),
     paymentRequests: (params = {}) => {
       const query = new URLSearchParams(params).toString();
       return request(`/api/admin/payment-requests${query ? `?${query}` : ""}`);

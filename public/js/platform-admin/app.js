@@ -25,6 +25,7 @@
     search: "",
     payStatus: "pending",
     orgId: null,
+    detail: null,
   };
   let bootDone = false;
 
@@ -205,6 +206,7 @@
     setView("organization");
     loading();
     const detail = await Api.organization(orgId);
+    state.detail = detail;
     pageTitle.textContent = detail.organization?.public_name || detail.organization?.name || "Салон";
     content.innerHTML = UI.renderOrganizationDetail(detail);
   }
@@ -320,6 +322,183 @@
       },
     });
   }
+
+  function editOrg(orgId) {
+    const detail = state.detail || {};
+    openModal({
+      title: "Редактировать салон",
+      okLabel: "Сохранить",
+      bodyHtml: UI.renderEditForm(detail.organization || {}, detail.stats || {}),
+      onSubmit: async (root) => {
+        await Api.updateOrganization(orgId, {
+          public_name: fieldValue(root, "#pa-edit-public-name"),
+          name: fieldValue(root, "#pa-edit-name"),
+          slug: fieldValue(root, "#pa-edit-slug"),
+          business_type: fieldValue(root, "#pa-edit-type"),
+          phone: fieldValue(root, "#pa-edit-phone"),
+          address: fieldValue(root, "#pa-edit-address"),
+          public_booking_enabled: root.querySelector("#pa-edit-online").checked,
+        });
+        await reload();
+      },
+    });
+  }
+
+  /** Показать одноразовую ссылку (вход / пароль) с кнопками «Открыть» и «Скопировать». */
+  function showLink({ title, text, link, openLabel }) {
+    openModal({
+      title,
+      okLabel: "Готово",
+      bodyHtml: `
+        <p class="pa-muted">${text}</p>
+        <input class="field__input" id="pa-link" readonly value="${UI.escapeHtml(link)}">
+        <div class="pa-presets">
+          <button class="btn btn--outline btn--sm" type="button" id="pa-link-copy">Скопировать</button>
+          ${openLabel ? `<a class="btn btn--outline btn--sm" href="${UI.escapeHtml(link)}" target="_blank" rel="noopener">${openLabel}</a>` : ""}
+        </div>`,
+      onSubmit: async () => {},
+    });
+    document.getElementById("pa-link-copy")?.addEventListener("click", async (event) => {
+      try {
+        await navigator.clipboard.writeText(link);
+        event.target.textContent = "Скопировано ✓";
+      } catch {
+        document.getElementById("pa-link").select();
+      }
+    });
+  }
+
+  function loginAsOwner(orgId) {
+    openModal({
+      title: "Войти как владелец?",
+      okLabel: "Получить ссылку",
+      bodyHtml: `
+        <p class="pa-muted">Бот создаст одноразовую ссылку входа в кабинет этого салона. У вас будут <b>все права владельца</b> — действуйте аккуратно. Вход попадёт в журнал.</p>
+        <p class="pa-warn">Откройте ссылку в окне <b>инкогнито</b> (Ctrl+Shift+N). В этом же окне вы выйдете из админки.</p>`,
+      onSubmit: async () => {
+        const { link, email } = await Api.loginLink(orgId);
+        setTimeout(
+          () =>
+            showLink({
+              title: "Ссылка для входа",
+              text: `Вход в кабинет ${UI.escapeHtml(email)}. Ссылка одноразовая и действует ограниченное время. Скопируйте и откройте в окне инкогнито.`,
+              link,
+            }),
+          0
+        );
+      },
+    });
+  }
+
+  function changeOwnerEmail(orgId) {
+    openModal({
+      title: "Сменить почту владельца",
+      okLabel: "Сменить",
+      bodyHtml: `
+        <p class="pa-muted">Владелец будет входить с новой почтой. Почта сразу считается подтверждённой — убедитесь, что она правильная.</p>
+        <label class="field"><span class="field__label">Новая почта</span><input class="field__input" id="pa-new-email" type="email" placeholder="owner@mail.kz"></label>`,
+      onSubmit: async (root) => {
+        await Api.changeOwnerEmail(orgId, requireText(fieldValue(root, "#pa-new-email"), "Укажите почту."));
+        await reload();
+      },
+    });
+  }
+
+  async function ownerPassword(orgId) {
+    try {
+      const { link, email } = await Api.ownerPasswordLink(orgId);
+      showLink({
+        title: "Ссылка для нового пароля",
+        text: `Отправьте её владельцу (${UI.escapeHtml(email)}) в WhatsApp или Telegram — по ней он задаст новый пароль. Ссылка одноразовая.`,
+        link,
+      });
+      await reload();
+    } catch (error) {
+      alert(error.message || "Не удалось создать ссылку");
+    }
+  }
+
+  function blockOwner(orgId) {
+    openModal({
+      title: "Заблокировать вход владельцу?",
+      okLabel: "Заблокировать",
+      danger: true,
+      bodyHtml: `
+        <p class="pa-muted">Владелец не сможет войти в кабинет. Салон и онлайн-запись продолжат работать — чтобы остановить и их, используйте «Приостановить».</p>
+        <label class="field"><span class="field__label">Причина</span><input class="field__input" id="pa-reason" maxlength="500"></label>`,
+      onSubmit: async (root) => {
+        await Api.blockOwner(orgId, requireText(fieldValue(root, "#pa-reason"), "Укажите причину."));
+        await reload();
+      },
+    });
+  }
+
+  function unblockOwner(orgId) {
+    openModal({
+      title: "Разблокировать вход?",
+      okLabel: "Разблокировать",
+      bodyHtml: `<p class="pa-muted">Владелец снова сможет войти в кабинет.</p>`,
+      onSubmit: async () => {
+        await Api.unblockOwner(orgId);
+        await reload();
+      },
+    });
+  }
+
+  function revokePro(orgId) {
+    openModal({
+      title: "Забрать Pro?",
+      okLabel: "Перевести на Free",
+      danger: true,
+      bodyHtml: `
+        <p class="pa-muted">Салон сразу перейдёт на Free. Если активных мастеров больше 5 — самые новые встанут на паузу (данные сохранятся).</p>
+        <label class="field"><span class="field__label">Причина</span><input class="field__input" id="pa-reason" maxlength="500" placeholder="Например: возврат оплаты, ошибочная выдача"></label>`,
+      onSubmit: async (root) => {
+        await Api.revokePro(orgId, requireText(fieldValue(root, "#pa-reason"), "Укажите причину."));
+        await reload();
+      },
+    });
+  }
+
+  function deleteOrg(orgId, slug) {
+    openModal({
+      title: "Удалить салон навсегда?",
+      okLabel: "Удалить навсегда",
+      danger: true,
+      bodyHtml: `
+        <p class="pa-muted">Удалятся услуги, мастера, графики, все записи, клиенты и оплаты салона. <b>Отменить нельзя.</b></p>
+        <label class="pa-check"><input type="checkbox" id="pa-delete-owner"> Удалить и аккаунт владельца (он не сможет войти)</label>
+        <label class="field"><span class="field__label">Для подтверждения введите адрес страницы: <b>${UI.escapeHtml(slug)}</b></span><input class="field__input" id="pa-confirm-slug" autocomplete="off"></label>`,
+      onSubmit: async (root) => {
+        const typed = fieldValue(root, "#pa-confirm-slug");
+        if (typed.toLowerCase() !== String(slug).toLowerCase()) throw new Error("Адрес страницы введён неверно.");
+        await Api.deleteOrganization(orgId, typed, root.querySelector("#pa-delete-owner").checked);
+        state.view = "organizations";
+        await reload();
+      },
+    });
+  }
+
+  const ACTIONS = {
+    orgEdit: editOrg,
+    orgLogin: loginAsOwner,
+    orgRevoke: revokePro,
+    ownerEmail: changeOwnerEmail,
+    ownerPassword,
+    ownerBlock: blockOwner,
+    ownerUnblock: unblockOwner,
+  };
+
+  content.addEventListener("click", (event) => {
+    const extra = event.target.closest(
+      "[data-org-edit], [data-org-login], [data-org-revoke], [data-owner-email], [data-owner-password], [data-owner-block], [data-owner-unblock], [data-org-delete]"
+    );
+    if (extra) {
+      if (extra.dataset.orgDelete) return deleteOrg(extra.dataset.orgDelete, extra.dataset.orgSlug || "");
+      const key = Object.keys(ACTIONS).find((k) => extra.dataset[k]);
+      if (key) return ACTIONS[key](extra.dataset[key]);
+    }
+  });
 
   content.addEventListener("click", (event) => {
     const target = event.target.closest(

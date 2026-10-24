@@ -15,6 +15,16 @@
   const forgotLink = document.getElementById("login-forgot-link");
   if (next && forgotLink) forgotLink.href = `/forgot-password?next=${encodeURIComponent(next)}`;
 
+  const infoEl = document.getElementById("login-info");
+  const resendBtn = document.getElementById("login-resend");
+  const googleBtn = document.getElementById("login-google");
+
+  // Вернулись по ссылке из письма, но сессия не создалась (ссылка устарела)
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  if (hashParams.get("error_code") === "otp_expired") {
+    BooklyAuthUI.showAlert(errorEl, "Ссылка из письма устарела. Войдите — и мы отправим новую.");
+  }
+
   const emailInput = form.elements.namedItem("email");
   const passwordInput = form.elements.namedItem("password");
 
@@ -33,6 +43,42 @@
   } finally {
     BooklyAuthUI.setPageReady(page);
   }
+
+  googleBtn?.addEventListener("click", async () => {
+    BooklyAuthUI.hideAlert(errorEl);
+    googleBtn.disabled = true;
+    const { error } = await BooklyAuth.signInWithGoogle();
+    if (error) {
+      googleBtn.disabled = false;
+      BooklyAuthUI.showAlert(
+        errorEl,
+        /provider is not enabled|Unsupported provider/i.test(error.message || "")
+          ? "Вход через Google пока не включён. Войдите по почте."
+          : BooklyAuthErrors.fromError(error)
+      );
+    }
+  });
+
+  resendBtn?.addEventListener("click", async () => {
+    const email = String(emailInput.value || "").trim();
+    if (!email) return;
+    resendBtn.disabled = true;
+    BooklyAuthUI.hideAlert(errorEl);
+    const { error } = await BooklyAuth.resendConfirmation(email);
+    if (error) {
+      resendBtn.disabled = false;
+      BooklyAuthUI.showAlert(
+        errorEl,
+        BooklyAuthErrors.isEmailSendRateLimit(error)
+          ? "Слишком много писем подряд. Подождите немного."
+          : BooklyAuthErrors.fromError(error)
+      );
+      return;
+    }
+    resendBtn.hidden = true;
+    infoEl.textContent = `Письмо отправлено на ${email}. Откройте ссылку — и вы сразу войдёте.`;
+    infoEl.hidden = false;
+  });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -59,6 +105,11 @@
       if (error) {
         BooklyAuthErrors.logError("signIn", error);
         BooklyAuthUI.showAlert(errorEl, BooklyAuthErrors.fromError(error));
+        const notConfirmed = error.code === "email_not_confirmed" || /not confirmed/i.test(error.message || "");
+        if (resendBtn) {
+          resendBtn.hidden = !notConfirmed;
+          resendBtn.disabled = false;
+        }
         return;
       }
 

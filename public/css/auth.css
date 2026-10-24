@@ -203,3 +203,65 @@
   color: var(--color-text);
   text-decoration: underline;
 }
+
+/* Кнопка Google */
+.auth-google {
+  gap: var(--space-3);
+  font-weight: var(--weight-medium);
+}
+
+.auth-google svg {
+  width: 18px;
+  height: 18px;
+}
+
+.auth-card__divider[hidden],
+.auth-google[hidden] {
+  display: none !important;
+}
+
+/* «Проверьте почту» после регистрации */
+.auth-check {
+  display: grid;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.auth-check[hidden] {
+  display: none !important;
+}
+
+.auth-check__icon {
+  font-size: 40px;
+}
+
+.auth-check__title {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+.auth-check__text,
+.auth-check__hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.auth-check__hint {
+  color: var(--color-text-muted);
+}
+
+.auth-check__back {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.auth-check__back:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.auth-form[hidden] {
+  display: none !important;
+}

@@ -275,7 +275,8 @@ window.BooklyAuth = (() => {
       password,
       options: {
         data: metadata,
-        emailRedirectTo: `${window.location.origin}${booklyPath(APP_PATH)}`,
+        // После подтверждения почты Supabase вернёт на вход уже с сессией.
+        emailRedirectTo: `${window.location.origin}${booklyPath(LOGIN_PATH)}?confirmed=1`,
       },
     });
 
@@ -314,6 +315,31 @@ window.BooklyAuth = (() => {
       error: signInResult.error || signUpResult.error,
       step: "signIn",
     };
+  };
+
+  /** Вход через Google: Supabase уводит на Google и возвращает на /login с сессией. */
+  const signInWithGoogle = async () => {
+    const supabase = await getClient();
+    const next = new URLSearchParams(window.location.search).get("next");
+    const back = new URL(booklyPath(LOGIN_PATH), window.location.origin);
+    if (next && next.startsWith("/") && !next.startsWith("//")) back.searchParams.set("next", next);
+
+    const result = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: back.toString(), queryParams: { prompt: "select_account" } },
+    });
+    log("signInWithGoogle:", result.error?.message || "redirect");
+    return result;
+  };
+
+  /** Повторно отправить письмо для подтверждения почты. */
+  const resendConfirmation = async (email) => {
+    const supabase = await getClient();
+    return supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}${booklyPath(LOGIN_PATH)}?confirmed=1` },
+    });
   };
 
   const signOut = async ({ redirect = true } = {}) => {
@@ -362,6 +388,8 @@ window.BooklyAuth = (() => {
     signIn,
     signUp,
     signUpAndEnter,
+    signInWithGoogle,
+    resendConfirmation,
     signOut,
     formatUserName,
     log,

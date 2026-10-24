@@ -33,6 +33,14 @@ window.BooklyPlatformAdminUI = (() => {
     SUBSCRIPTION_EXTENDED: "Выдал / продлил Pro",
     ORGANIZATION_SUSPENDED: "Приостановил салон",
     ORGANIZATION_UNSUSPENDED: "Вернул салон",
+    ORGANIZATION_UPDATED: "Изменил данные салона",
+    ORGANIZATION_DELETED: "Удалил салон",
+    OWNER_LOGIN_LINK: "Вошёл как владелец",
+    OWNER_EMAIL_CHANGED: "Сменил почту владельца",
+    OWNER_PASSWORD_LINK: "Создал ссылку для пароля",
+    OWNER_BLOCKED: "Заблокировал вход владельцу",
+    OWNER_UNBLOCKED: "Разблокировал вход владельцу",
+    SUBSCRIPTION_REVOKED: "Забрал Pro",
   };
 
   // ---------------------------------------------------------------------------
@@ -279,9 +287,14 @@ window.BooklyPlatformAdminUI = (() => {
     const org = detail.organization || {};
     const s = detail.stats || {};
     const sub = detail.subscription || {};
-    const ownerEmail = detail.owner?.email;
+    const owner = detail.owner_info || {};
+    const ownerEmail = owner.email || detail.owner?.email;
     const wa = toWhatsApp(org.phone);
     const suspended = s.plan === "suspended";
+    const hasPro = s.plan === "pro" || s.plan === "trial";
+    const staff = detail.staff || [];
+    const services = detail.services || [];
+    const bookings = detail.bookings || [];
 
     return `
       <button class="pa-back" type="button" data-goto-view="organizations">← Все салоны</button>
@@ -293,9 +306,10 @@ window.BooklyPlatformAdminUI = (() => {
         </div>
         <div class="pa-hero__actions">
           ${org.slug ? `<a class="btn btn--outline btn--sm" href="/book/${encodeURIComponent(org.slug)}" target="_blank" rel="noopener">Страница записи ↗</a>` : ""}
-          ${wa ? `<a class="btn btn--outline btn--sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
-          ${ownerEmail ? `<a class="btn btn--outline btn--sm" href="mailto:${escapeHtml(ownerEmail)}">Письмо владельцу</a>` : ""}
+          <button class="btn btn--outline btn--sm" type="button" data-org-edit="${org.id}">Редактировать</button>
+          <button class="btn btn--outline btn--sm" type="button" data-org-login="${org.id}">Войти как владелец</button>
           <button class="btn btn--primary btn--sm" type="button" data-org-extend="${org.id}">Выдать Pro</button>
+          ${hasPro ? `<button class="btn btn--outline btn--sm" type="button" data-org-revoke="${org.id}">Забрать Pro</button>` : ""}
           ${
             suspended
               ? `<button class="btn btn--outline btn--sm" type="button" data-org-unsuspend="${org.id}">Вернуть салон</button>`
@@ -314,14 +328,24 @@ window.BooklyPlatformAdminUI = (() => {
 
       <div class="pa-grid">
         <section class="pa-card">
-          <header class="pa-card__head"><h3>Владелец и контакты</h3></header>
+          <header class="pa-card__head"><h3>Владелец</h3>${owner.blocked ? '<span class="pa-badge pa-badge--suspended">вход заблокирован</span>' : ""}</header>
           <dl class="pa-dl">
-            <dt>Почта</dt><dd>${escapeHtml(ownerEmail || "—")}</dd>
-            <dt>Последний вход</dt><dd>${escapeHtml(ago(s.owner_last_sign_in_at))}</dd>
-            <dt>Телефон салона</dt><dd>${escapeHtml(org.phone || "—")}</dd>
+            <dt>Почта</dt><dd>${escapeHtml(ownerEmail || "—")}${owner.email_confirmed === false ? ' <small class="pa-danger">не подтверждена</small>' : ""}</dd>
+            <dt>Вход через</dt><dd>${owner.provider === "google" ? "Google" : "почту и пароль"}</dd>
+            <dt>Последний вход</dt><dd>${escapeHtml(ago(owner.last_sign_in_at || s.owner_last_sign_in_at))}</dd>
+            <dt>Телефон салона</dt><dd>${escapeHtml(org.phone || "—")}${wa ? ` · <a class="pa-link" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</dd>
             <dt>Адрес</dt><dd>${escapeHtml(org.address || "—")}</dd>
-            <dt>Юр. название</dt><dd>${escapeHtml(org.name || "—")}</dd>
           </dl>
+          <div class="pa-card__actions">
+            ${ownerEmail ? `<a class="btn btn--outline btn--sm" href="mailto:${escapeHtml(ownerEmail)}">Написать на почту</a>` : ""}
+            <button class="btn btn--outline btn--sm" type="button" data-owner-email="${org.id}">Сменить почту</button>
+            <button class="btn btn--outline btn--sm" type="button" data-owner-password="${org.id}">Ссылка для нового пароля</button>
+            ${
+              owner.blocked
+                ? `<button class="btn btn--outline btn--sm" type="button" data-owner-unblock="${org.id}">Разблокировать вход</button>`
+                : `<button class="btn btn--ghost btn--sm pa-danger" type="button" data-owner-block="${org.id}">Заблокировать вход</button>`
+            }
+          </div>
         </section>
 
         <section class="pa-card">
@@ -332,38 +356,74 @@ window.BooklyPlatformAdminUI = (() => {
             ).join("")}
           </ul>
           ${s.setup_done < 4 ? `<p class="pa-muted pa-hint">Можно написать владельцу и помочь с недостающими шагами.</p>` : ""}
-        </section>
-      </div>
-
-      <div class="pa-grid">
-        <section class="pa-card">
-          <header class="pa-card__head"><h3>Подписка</h3></header>
+          <header class="pa-card__head pa-card__head--sub"><h3>Подписка</h3></header>
           <dl class="pa-dl">
             <dt>Тариф</dt><dd>${planBadge(s.plan, s.plan_until)}</dd>
-            <dt>Статус в базе</dt><dd>${escapeHtml(sub.status || "—")}</dd>
             <dt>Оплачен до</dt><dd>${escapeHtml(date(sub.current_period_end))}</dd>
             <dt>Пробный до</dt><dd>${escapeHtml(date(sub.trial_ends_at))}</dd>
             ${sub.suspension_reason ? `<dt>Причина приостановки</dt><dd>${escapeHtml(sub.suspension_reason)}</dd>` : ""}
           </dl>
         </section>
+      </div>
 
+      <div class="pa-grid">
         <section class="pa-card">
-          <header class="pa-card__head"><h3>Последние записи</h3></header>
+          <header class="pa-card__head"><h3>Мастера</h3><span class="pa-muted">${staff.length}</span></header>
           ${
-            (detail.recent_bookings || []).length
-              ? `<div class="pa-list">${detail.recent_bookings
+            staff.length
+              ? `<div class="pa-list">${staff
                   .map(
-                    (b) => `
-                      <div class="pa-list__row">
-                        <span><b>${escapeHtml(b.client_name)}</b><small>${escapeHtml(b.services?.name || "")} · ${escapeHtml(b.staff?.name || "")}</small></span>
-                        <span class="pa-list__meta">${escapeHtml(date(b.booking_date))} ${String(b.start_time || "").slice(0, 5)}<small>${escapeHtml(BOOKING_STATUS[b.status] || b.status)}${b.source === "public_booking" ? " · онлайн" : ""}</small></span>
+                    (m) => `
+                      <div class="pa-list__row ${m.is_active ? "" : "is-off"}">
+                        <span><b>${escapeHtml(m.name)}${m.telegram ? ' <small class="pa-tg">TG</small>' : ""}</b><small>${escapeHtml([m.position, m.phone].filter(Boolean).join(" · ") || "—")}</small></span>
+                        <span class="pa-list__meta">${m.is_active ? "активен" : "на паузе"}</span>
                       </div>`
                   )
                   .join("")}</div>`
-              : empty("Записей пока нет")
+              : empty("Мастеров нет")
+          }
+        </section>
+
+        <section class="pa-card">
+          <header class="pa-card__head"><h3>Услуги</h3><span class="pa-muted">${services.length}</span></header>
+          ${
+            services.length
+              ? `<div class="pa-list">${services
+                  .map(
+                    (sv) => `
+                      <div class="pa-list__row ${sv.is_active ? "" : "is-off"}">
+                        <span><b>${escapeHtml(sv.name)}</b><small>${sv.duration_minutes} мин${sv.is_active ? "" : " · выключена"}</small></span>
+                        <span class="pa-list__meta">${money(sv.price)}</span>
+                      </div>`
+                  )
+                  .join("")}</div>`
+              : empty("Услуг нет")
           }
         </section>
       </div>
+
+      <section class="pa-card pa-card--flush">
+        <header class="pa-card__head pa-card__head--pad"><h3>Записи</h3><span class="pa-muted">последние ${bookings.length}</span></header>
+        ${
+          bookings.length
+            ? `<div class="pa-table pa-table--bookings">
+                <div class="pa-table__head"><span>Дата</span><span>Клиент</span><span>Услуга · мастер</span><span>Статус</span><span>Сумма</span></div>
+                ${bookings
+                  .map(
+                    (b) => `
+                      <div class="pa-table__row pa-table__row--static">
+                        <span data-label="Дата">${escapeHtml(date(b.booking_date))} ${String(b.start_time || "").slice(0, 5)}</span>
+                        <span data-label="Клиент"><b>${escapeHtml(b.client_name)}</b> <small class="pa-muted">${escapeHtml(b.client_phone || "")}</small></span>
+                        <span data-label="Услуга">${escapeHtml(b.services?.name || "")} · ${escapeHtml(b.staff?.name || "")}</span>
+                        <span data-label="Статус">${escapeHtml(BOOKING_STATUS[b.status] || b.status)}${b.source === "public_booking" ? ' <small class="pa-muted">онлайн</small>' : ""}</span>
+                        <span data-label="Сумма">${b.status === "completed" ? money(b.paid_amount ?? b.price) : b.price ? `<span class="pa-muted">${money(b.price)}</span>` : "—"}</span>
+                      </div>`
+                  )
+                  .join("")}
+              </div>`
+            : `<div class="pa-card__pad">${empty("Записей пока нет")}</div>`
+        }
+      </section>
 
       <div class="pa-grid">
         <section class="pa-card">
@@ -388,6 +448,35 @@ window.BooklyPlatformAdminUI = (() => {
           ${renderAuditList(detail.audit_log || [], { compact: true })}
         </section>
       </div>
+
+      <section class="pa-card pa-danger-zone">
+        <header class="pa-card__head"><h3>Опасная зона</h3></header>
+        <div class="pa-danger-zone__row">
+          <div>
+            <b>Удалить салон навсегда</b>
+            <p class="pa-muted">Удалятся услуги, мастера, графики, все записи и клиенты салона. Отменить нельзя. Если нужно просто остановить салон — используйте «Приостановить».</p>
+          </div>
+          <button class="btn btn--sm pa-btn-danger" type="button" data-org-delete="${org.id}" data-org-slug="${escapeHtml(org.slug || "")}">Удалить салон</button>
+        </div>
+      </section>
+    `;
+  }
+
+  /** Форма редактирования салона (для окна). */
+  function renderEditForm(org, stats = {}) {
+    const types = window.BooklyOrgConstants?.BUSINESS_TYPES || [];
+    const current = stats.business_type || org.business_type || "";
+    const options = types.some((t) => t.value === current) ? types : [...types, { value: current, label: current }];
+    return `
+      <label class="field"><span class="field__label">Название на странице записи</span><input class="field__input" id="pa-edit-public-name" maxlength="80" value="${escapeHtml(org.public_name || org.name || "")}"></label>
+      <label class="field"><span class="field__label">Юр. название</span><input class="field__input" id="pa-edit-name" maxlength="120" value="${escapeHtml(org.name || "")}"></label>
+      <label class="field"><span class="field__label">Адрес страницы (bookly…/book/<b>адрес</b>)</span><input class="field__input" id="pa-edit-slug" maxlength="60" value="${escapeHtml(org.slug || "")}"></label>
+      <label class="field"><span class="field__label">Тип бизнеса</span><select class="field__select" id="pa-edit-type">${options
+        .map((t) => `<option value="${escapeHtml(t.value)}" ${t.value === current ? "selected" : ""}>${escapeHtml(t.label)}</option>`)
+        .join("")}</select></label>
+      <label class="field"><span class="field__label">Телефон</span><input class="field__input" id="pa-edit-phone" maxlength="30" value="${escapeHtml(org.phone || "")}"></label>
+      <label class="field"><span class="field__label">Адрес</span><input class="field__input" id="pa-edit-address" maxlength="200" value="${escapeHtml(org.address || "")}"></label>
+      <label class="pa-check"><input type="checkbox" id="pa-edit-online" ${stats.setup?.public_booking ? "checked" : ""}> Онлайн-запись включена</label>
     `;
   }
 
@@ -450,6 +539,10 @@ window.BooklyPlatformAdminUI = (() => {
     if (meta.amount) extra.push(money(meta.amount));
     if (meta.reason) extra.push(`«${meta.reason}»`);
     if (meta.admin_note) extra.push(`«${meta.admin_note}»`);
+    const FIELD = { public_name: "название", name: "юр. название", slug: "адрес страницы", phone: "телефон", address: "адрес", business_type: "тип бизнеса", public_booking_enabled: "онлайн-запись" };
+    if (meta.changes) extra.push(Object.keys(meta.changes).map((k) => FIELD[k] || k).join(", "));
+    if (meta.to) extra.push(`→ ${meta.to}`);
+    if (item.action === "ORGANIZATION_DELETED" && meta.name) extra.push(`«${meta.name}» /${meta.slug || ""}`);
     return `${AUDIT_LABELS[item.action] || item.action}${extra.length ? ` · ${extra.join(" · ")}` : ""}`;
   }
 
@@ -481,6 +574,7 @@ window.BooklyPlatformAdminUI = (() => {
     renderOrganizationsView,
     renderOrganizationsTable,
     renderOrganizationDetail,
+    renderEditForm,
     renderPaymentsView,
     renderPaymentsTable,
     renderAuditView,

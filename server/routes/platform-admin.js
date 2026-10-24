@@ -6,6 +6,26 @@ const { Router } = require("express");
 const { requireAuth } = require("../middleware/auth");
 const { requirePlatformAdmin } = require("../middleware/platform-admin");
 const platformAdminService = require("../lib/platform-admin-service");
+const manage = require("../lib/platform-admin-manage");
+
+/** Адрес сайта для ссылок (Render стоит за прокси). */
+function baseUrl(req) {
+  const proto = String(req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim();
+  return `${proto}://${req.get("host")}`;
+}
+
+/** Действие админа: выполнить, сбросить кеш показателей, вернуть результат. */
+function action(handler) {
+  return async (req, res) => {
+    try {
+      const result = await handler(req);
+      platformAdminService.invalidateSnapshot();
+      return res.json({ ok: true, ...result });
+    } catch (error) {
+      return sendError(res, error);
+    }
+  };
+}
 
 const router = Router();
 
@@ -69,8 +89,12 @@ router.get("/audit", async (req, res) => {
 
 router.get("/organizations/:id", async (req, res) => {
   try {
-    const detail = await platformAdminService.getOrganizationDetail(req.params.id);
-    return res.json({ ok: true, ...detail });
+    const [detail, contents, ownerInfo] = await Promise.all([
+      platformAdminService.getOrganizationDetail(req.params.id),
+      manage.organizationContents(req.params.id),
+      manage.ownerInfo(req.params.id).catch(() => null),
+    ]);
+    return res.json({ ok: true, ...detail, ...contents, owner_info: ownerInfo });
   } catch (error) {
     return sendError(res, error);
   }
@@ -214,5 +238,52 @@ router.post("/organizations/:id/unsuspend", async (req, res) => {
     return sendError(res, error);
   }
 });
+
+// --- Управление салоном ------------------------------------------------------
+
+router.patch(
+  "/organizations/:id",
+  action(async (req) => ({ organization: await manage.updateOrganization(req.params.id, req.user.id, req.body || {}) }))
+);
+
+router.post(
+  "/organizations/:id/login-link",
+  action((req) => manage.ownerLoginLink(req.params.id, req.user.id, baseUrl(req)))
+);
+
+router.post(
+  "/organizations/:id/owner/email",
+  action((req) => manage.changeOwnerEmail(req.params.id, req.user.id, req.body?.email))
+);
+
+router.post(
+  "/organizations/:id/owner/password-link",
+  action((req) => manage.ownerPasswordLink(req.params.id, req.user.id, baseUrl(req)))
+);
+
+router.post(
+  "/organizations/:id/owner/block",
+  action((req) => manage.setOwnerBlocked(req.params.id, req.user.id, true, req.body?.reason))
+);
+
+router.post(
+  "/organizations/:id/owner/unblock",
+  action((req) => manage.setOwnerBlocked(req.params.id, req.user.id, false))
+);
+
+router.post(
+  "/organizations/:id/revoke-pro",
+  action((req) => manage.revokePro(req.params.id, req.user.id, req.body?.reason))
+);
+
+router.post(
+  "/organizations/:id/delete",
+  action((req) =>
+    manage.deleteOrganization(req.params.id, req.user.id, {
+      confirmSlug: req.body?.confirm_slug,
+      deleteOwner: req.body?.delete_owner === true,
+    })
+  )
+);
 
 module.exports = router;
