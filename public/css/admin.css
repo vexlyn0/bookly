@@ -4028,3 +4028,22 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Окно «Ссылка мастеру»: чья ссылка и предупреждение */
+.invite-label {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.invite-warning {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid #f5d08a;
+  border-radius: var(--radius-md);
+  background: #fff8e6;
+  color: #5c3b00;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}

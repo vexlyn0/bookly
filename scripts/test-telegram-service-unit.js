@@ -257,14 +257,23 @@ async function testStartLinksStaff() {
   };
 
   await telegram.handleUpdate({
-    message: { chat: { id: CHAT_ID, type: "private" }, text: `/start ${oldToken}` },
+    message: {
+      chat: { id: CHAT_ID, type: "private" },
+      from: { id: 1, username: "dana_nails", first_name: "Дана" },
+      text: `/start ${oldToken}`,
+    },
   });
 
   const update = dbCalls.find((q) => q.op === "update");
   assert.strictEqual(update.payload.telegram_chat_id, String(CHAT_ID));
   assert.notStrictEqual(update.payload.telegram_link_token, oldToken, "токен ротируется");
   assert.strictEqual(update.filters.telegram_link_token, oldToken);
-  assert.ok(apiCalls.find((c) => c.method === "sendMessage").body.text.includes("Готово"));
+  // Кто нажал Start — сохраняется отдельно, чтобы владелец видел, к чьему Telegram привязан мастер
+  const nameUpdate = dbCalls.find((q) => q.op === "update" && q.payload.telegram_username);
+  assert.strictEqual(nameUpdate.payload.telegram_username, "@dana_nails");
+  const reply = apiCalls.find((c) => c.method === "sendMessage").body.text;
+  assert.ok(reply.includes("Готово") && reply.includes("мастер") && reply.includes("Дана"));
+  assert.ok(reply.includes("Если вы не Дана"), "подсказка, если ссылку открыл не мастер");
 
   reset();
   await telegram.handleUpdate({

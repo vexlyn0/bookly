@@ -4,7 +4,8 @@
  * Оплаты Kaspi приходят всегда, копии записей и отмен — по галочкам.
  */
 window.BooklyOwnerTelegram = (() => {
-  const FIELDS = "owner_telegram_chat_id, owner_telegram_link_token, owner_notify_bookings, owner_notify_changes";
+  // «*» — чтобы раздел работал и до миграции 029 (owner_telegram_username)
+  const FIELDS = "*";
 
   let organization = null;
   let state = null;
@@ -44,7 +45,8 @@ window.BooklyOwnerTelegram = (() => {
     els.root.classList.toggle("is-connected", connected);
 
     if (connected) {
-      els.status.textContent = "✅ Подключён. Оплаты Kaspi и записи приходят в ваш Telegram.";
+      const who = state.owner_telegram_username ? ` (${state.owner_telegram_username})` : "";
+      els.status.textContent = `✅ Подключён${who}. Оплаты Kaspi и записи приходят в ваш Telegram.`;
       waiting = false;
     } else if (waiting) {
       els.status.textContent = "Ждём, когда вы нажмёте Start в боте…";
@@ -63,6 +65,7 @@ window.BooklyOwnerTelegram = (() => {
     els.changes.disabled = !isOwner();
 
     if (!isOwner()) showError("Подключить Telegram и менять настройки может только владелец салона.");
+    document.dispatchEvent(new CustomEvent("bookly:owner-telegram-changed", { detail: { connected } }));
   }
 
   function connect() {

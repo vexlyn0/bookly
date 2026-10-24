@@ -18,6 +18,9 @@ window.BooklyDashboardUI = (() => {
   let staffById = new Map();
   let bookings = [];
   let loading = false;
+  // Telegram владельца (раздел «Уведомления») — узнаём из события модуля BooklyOwnerTelegram
+  let ownerTelegram = false;
+  let lastSetup = null;
   const els = {};
 
   // ---------------------------------------------------------------------------
@@ -78,6 +81,7 @@ window.BooklyDashboardUI = (() => {
   // ---------------------------------------------------------------------------
 
   function renderSetup(services, staff) {
+    lastSetup = [services, staff];
     const activeStaff = staff.filter((m) => m.is_active);
     const steps = [
       {
@@ -104,11 +108,19 @@ window.BooklyDashboardUI = (() => {
       {
         done: activeStaff.some((m) => m.telegram_chat_id),
         title: "Подключите Telegram мастеру",
-        text: "Чтобы записи приходили ему сразу.",
+        text: "Отправьте ему ссылку — записи будут приходить ему сразу.",
         section: "staff",
         action: "Подключить",
       },
-    ];
+      {
+        done: ownerTelegram,
+        title: "Подключите свой Telegram",
+        text: "Оплаты Kaspi и записи по всем мастерам — вам в чат.",
+        section: "notifications",
+        action: "Подключить",
+        ownerOnly: true,
+      },
+    ].filter((step) => !step.ownerOnly || organization?.role === "owner");
 
     const doneCount = steps.filter((step) => step.done).length;
     els.setup.hidden = doneCount === steps.length;
@@ -370,6 +382,12 @@ window.BooklyDashboardUI = (() => {
     });
 
     document.addEventListener("bookly:bookings-changed", refresh);
+    document.addEventListener("bookly:owner-telegram-changed", (event) => {
+      const connected = Boolean(event.detail?.connected);
+      if (connected === ownerTelegram) return;
+      ownerTelegram = connected;
+      if (lastSetup) renderSetup(...lastSetup);
+    });
     document
       .querySelector('.sidebar__link[data-section="dashboard"]')
       ?.addEventListener("click", refresh);

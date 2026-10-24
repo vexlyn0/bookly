@@ -32,6 +32,8 @@ window.BooklyStaffUI = (() => {
     els.inviteText = document.getElementById("telegram-invite-text");
     els.inviteLink = document.getElementById("telegram-invite-link");
     els.inviteHint = document.getElementById("telegram-invite-hint");
+    els.inviteLabel = document.getElementById("telegram-invite-label");
+
     els.inviteWhatsApp = document.getElementById("telegram-invite-whatsapp");
     els.inviteCopy = document.getElementById("telegram-invite-copy");
     els.inviteSelf = document.getElementById("telegram-invite-self");
@@ -205,7 +207,7 @@ window.BooklyStaffUI = (() => {
               <div class="staff-card__header">
                 <h3 class="staff-card__name">${escapeHtml(item.name)}</h3>
                 <span class="staff-card__badge ${item.is_active ? "staff-card__badge--on" : "staff-card__badge--off"}">${statusLabel}</span>
-                ${item.telegram_chat_id ? `<span class="staff-card__badge staff-card__badge--telegram" title="Уведомления о новых записях приходят в Telegram">Telegram</span>` : ""}
+                ${item.telegram_chat_id ? `<span class="staff-card__badge staff-card__badge--telegram" title="Записи мастера приходят в этот Telegram. Если это не его аккаунт — нажмите «Отключить Telegram» и отправьте ссылку заново.">Telegram${item.telegram_username ? ` · ${escapeHtml(item.telegram_username)}` : ""}</span>` : ""}
               </div>
               ${item.position ? `<p class="staff-card__position">${escapeHtml(item.position)}</p>` : ""}
               ${item.description ? `<p class="staff-card__desc">${escapeHtml(item.description)}</p>` : ""}
@@ -358,6 +360,8 @@ window.BooklyStaffUI = (() => {
         ? `Мастер «${member.name}» добавлен. Отправьте ему ссылку — и записи к нему будут приходить ему в Telegram.`
         : `Записи к мастеру «${member.name}» будут приходить в тот Telegram, где нажмут Start по этой ссылке.`;
     }
+    if (els.inviteLabel) els.inviteLabel.textContent = `🔗 Ссылка для мастера «${member.name}»`;
+    if (els.inviteSelf) els.inviteSelf.textContent = `«${member.name}» — это я, подключить мой Telegram`;
     if (els.inviteLink) els.inviteLink.value = link;
 
     if (els.inviteWhatsApp) {

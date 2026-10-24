@@ -490,7 +490,26 @@ function adminBot() {
   return require("./admin-bot-service");
 }
 
-async function linkStaff(chatId, token) {
+/** Как показать в кабинете, кто подключил Telegram: @ник или имя. */
+function telegramDisplayName(from) {
+  if (from?.username) return `@${String(from.username).slice(0, 40)}`;
+  const name = [from?.first_name, from?.last_name].filter(Boolean).join(" ").trim();
+  return name ? name.slice(0, 60) : null;
+}
+
+/** Запомнить, кто подключил Telegram. Отдельно и без ошибок — привязка важнее подписи. */
+async function saveTelegramName(table, column, id, from) {
+  const name = telegramDisplayName(from);
+  if (!name) return;
+  try {
+    const { error } = await getSupabaseAdmin().from(table).update({ [column]: name }).eq("id", id);
+    if (error) logTelegramError(`saveTelegramName:${table}`, error);
+  } catch (error) {
+    logTelegramError(`saveTelegramName:${table}`, error);
+  }
+}
+
+async function linkStaff(chatId, token, from = null) {
   if (!LINK_TOKEN_PATTERN.test(token)) {
     return "❌ Ссылка недействительна. Откройте свежую ссылку в кабинете Jazyl.";
   }
@@ -522,17 +541,20 @@ async function linkStaff(chatId, token) {
     logTelegramError("linkStaff:update", updateError);
     return "⚠️ Не удалось привязать аккаунт. Попробуйте позже.";
   }
+  await saveTelegramName("staff", "telegram_username", staff.id, from);
 
   const orgName = staff.organizations?.public_name || staff.organizations?.name || "Jazyl";
   return [
-    `✅ Готово, ${escapeHtml(staff.name)}!`,
-    `Уведомления о записях (новые, переносы, отмены) в «${escapeHtml(orgName)}» будут приходить сюда.`,
+    `✅ Готово! Вы подключены как мастер <b>«${escapeHtml(staff.name)}»</b> в салоне «${escapeHtml(orgName)}».`,
     "",
+    "Сюда будут приходить ваши записи: новые, переносы и отмены.",
+    "",
+    `⚠️ Если вы не ${escapeHtml(staff.name)} — нажмите /stop и попросите у салона правильную ссылку.`,
     "/stop — отключить уведомления",
   ].join("\n");
 }
 
-async function linkOwner(chatId, token) {
+async function linkOwner(chatId, token, from = null) {
   const supabase = getSupabaseAdmin();
   const { data: org, error } = await supabase
     .from("organizations")
@@ -560,10 +582,11 @@ async function linkOwner(chatId, token) {
     logTelegramError("linkOwner:update", updateError);
     return "⚠️ Не удалось подключить Telegram. Попробуйте позже.";
   }
+  await saveTelegramName("organizations", "owner_telegram_username", org.id, from);
 
   const orgName = org.public_name || org.name || "Jazyl";
   return [
-    `✅ Готово! Этот чат подключён как Telegram владельца «${escapeHtml(orgName)}».`,
+    `✅ Готово! Этот чат подключён как <b>Telegram владельца</b> «${escapeHtml(orgName)}».`,
     "",
     "Сюда будут приходить:",
     "💳 оплаты Kaspi — с кнопками «Деньги пришли» / «Не пришли»;",
@@ -571,6 +594,8 @@ async function linkOwner(chatId, token) {
     "❌ отмены и переносы клиентами.",
     "",
     "Что присылать, можно выбрать в кабинете → «Уведомления».",
+    "",
+    "⚠️ Если вы не владелец салона — нажмите /stop.",
     "/stop — отключить",
   ].join("\n");
 }
@@ -756,9 +781,9 @@ async function handleMessage(message) {
   if (adminStart) {
     reply = await adminBot().link(chatId, adminStart[1]);
   } else if (ownerStart) {
-    reply = await linkOwner(chatId, ownerStart[1]);
+    reply = await linkOwner(chatId, ownerStart[1], message.from);
   } else if (parsed?.command === "start" && parsed.args) {
-    reply = await linkStaff(chatId, parsed.args);
+    reply = await linkStaff(chatId, parsed.args, message.from);
   } else if (parsed?.command === "stop") {
     reply = await unlinkChat(chatId);
   } else {
