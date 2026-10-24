@@ -227,7 +227,6 @@ window.PublicBookingUI = (() => {
       staff: renderStaffStep,
       time: renderTimeStep,
       client: renderClientStep,
-      confirm: renderConfirmStep,
     };
     els.panel.innerHTML = (renderers[state.step]?.(state) || "") + errorHtml;
   }
@@ -271,10 +270,27 @@ window.PublicBookingUI = (() => {
       `;
     }
 
+    const anyNext = state.staff
+      .filter((m) => m.next_available)
+      .map((m) => m.next_available)
+      .sort((a, b) => `${a.date} ${a.start_time}`.localeCompare(`${b.date} ${b.start_time}`))[0];
+    const anyCard =
+      state.staff.length > 1 && anyNext
+        ? `
+          <button class="pb-master pb-master--any" type="button" data-action="select-any">
+            <span class="pb-avatar">★</span>
+            <span class="pb-master__name">Любой мастер</span>
+            <span class="pb-master__position">к кому раньше</span>
+            <span class="pb-master__next">${escapeHtml(formatDayLabel(anyNext.date))}, ${escapeHtml(anyNext.start_time)}</span>
+          </button>`
+        : "";
+
     return `
       ${backButton()}
       <h2 class="pb-panel__title">Выберите мастера</h2>
+      <p class="pb-panel__hint">Нажмите на время под мастером — запишем на ближайшее.</p>
       <div class="pb-masters">
+        ${anyCard}
         ${state.staff
           .map((member) => {
             const next = member.next_available;
@@ -286,7 +302,7 @@ window.PublicBookingUI = (() => {
                 <span class="pb-avatar">${escapeHtml(initials(member.name))}</span>
                 <span class="pb-master__name">${escapeHtml(member.name)}</span>
                 ${member.position ? `<span class="pb-master__position">${escapeHtml(member.position)}</span>` : ""}
-                <span class="pb-master__next">${next ? "Ближайшее: " : ""}${escapeHtml(nextText)}</span>
+                <span class="pb-master__next" ${next ? `data-action="select-next" data-id="${member.id}" title="Записаться на это время"` : ""}>${next ? "⚡ " : ""}${escapeHtml(nextText)}</span>
               </button>`;
           })
           .join("")}
@@ -400,79 +416,61 @@ window.PublicBookingUI = (() => {
   }
 
   function renderClientStep(state) {
-    return `
-      ${backButton()}
-      <h2 class="pb-panel__title">Ваши контакты</h2>
-      <p class="pb-panel__hint">${escapeHtml(formatDayLabel(state.selection.bookingDate))}, ${escapeHtml(state.selection.startTime)} — осталось указать имя и телефон.</p>
-      <form class="pb-form-grid" id="pb-client-form">
-        <label class="field">
-          <span class="field__label">Имя</span>
-          <input class="field__input" name="client_name" required minlength="2" maxlength="100" autocomplete="name" value="${escapeHtml(state.selection.clientName)}">
-        </label>
-        <label class="field">
-          <span class="field__label">Телефон</span>
-          <input class="field__input" name="client_phone" type="tel" required minlength="7" maxlength="30" autocomplete="tel" inputmode="tel" placeholder="+7 700 000 00 00" value="${escapeHtml(state.selection.clientPhone)}">
-        </label>
-        <label class="field">
-          <span class="field__label">Комментарий <span class="pb-optional">— необязательно</span></span>
-          <textarea class="field__textarea" name="client_comment" rows="2" maxlength="500">${escapeHtml(state.selection.clientComment)}</textarea>
-        </label>
-        <input type="hidden" name="client_email" value="${escapeHtml(state.selection.clientEmail)}">
-        <label class="pb-consent">
-          <input type="checkbox" name="consent" ${state.selection.consent ? "checked" : ""}>
-          <span>Согласен на обработку данных для записи</span>
-        </label>
-        <label class="pb-honeypot" aria-hidden="true">
-          <span>Website</span>
-          <input type="text" name="website" tabindex="-1" autocomplete="off">
-        </label>
-      </form>
-      <button class="pb-btn" type="button" data-action="continue-client">Продолжить</button>
-    `;
-  }
-
-  function renderConfirmStep(state) {
     const service = PublicBookingState.getSelectedService(state);
     const staff = PublicBookingState.getSelectedStaff(state);
     const price = formatPrice(service?.price, service?.currency);
+    const showComment = state.showComment || Boolean(state.selection.clientComment);
 
     return `
       ${backButton()}
-      <h2 class="pb-panel__title">Проверьте запись</h2>
-      <div class="pb-ticket">
+      <h2 class="pb-panel__title">Почти готово</h2>
+      <div class="pb-ticket pb-ticket--compact">
         <div class="pb-ticket__when">
           <span class="pb-ticket__day">${escapeHtml(formatDayLabel(state.selection.bookingDate))}</span>
           <span class="pb-ticket__time">${escapeHtml(state.selection.startTime)}–${escapeHtml(state.selection.endTime)}</span>
         </div>
         <div class="pb-ticket__rows">
-          <div class="pb-ticket__row"><span>Услуга</span><span>${escapeHtml(service?.name || "")}</span></div>
+          <div class="pb-ticket__row"><span>${escapeHtml(service?.name || "")}</span><span>${escapeHtml(price)}</span></div>
           <div class="pb-ticket__row"><span>Мастер</span><span>${escapeHtml(staff?.name || "")}</span></div>
-          <div class="pb-ticket__row"><span>Длительность</span><span>${escapeHtml(formatDuration(service?.duration_minutes))}</span></div>
-          ${price ? `<div class="pb-ticket__row"><span>Цена</span><span>${escapeHtml(price)}</span></div>` : ""}
-          <div class="pb-ticket__row"><span>Имя</span><span>${escapeHtml(state.selection.clientName)}</span></div>
-          <div class="pb-ticket__row"><span>Телефон</span><span>${escapeHtml(state.selection.clientPhone)}</span></div>
-          ${state.selection.clientComment ? `<div class="pb-ticket__row"><span>Комментарий</span><span>${escapeHtml(state.selection.clientComment)}</span></div>` : ""}
         </div>
       </div>
+
+      <form class="pb-form-grid" id="pb-client-form" onsubmit="return false">
+        <label class="field">
+          <span class="field__label">Ваше имя</span>
+          <input class="field__input" name="client_name" required minlength="2" maxlength="100" autocomplete="name" value="${escapeHtml(state.selection.clientName)}">
+        </label>
+        <label class="field">
+          <span class="field__label">Телефон</span>
+          <input class="field__input" name="client_phone" type="tel" required maxlength="30" autocomplete="tel" inputmode="tel" placeholder="+7 (700) 000-00-00" value="${escapeHtml(state.selection.clientPhone)}">
+        </label>
+        ${
+          showComment
+            ? `<label class="field">
+                 <span class="field__label">Комментарий <span class="pb-optional">— необязательно</span></span>
+                 <textarea class="field__textarea" name="client_comment" rows="2" maxlength="500">${escapeHtml(state.selection.clientComment)}</textarea>
+               </label>`
+            : `<button class="pb-link pb-link--left" type="button" data-action="show-comment">+ Добавить комментарий</button>`
+        }
+        <label class="pb-honeypot" aria-hidden="true">
+          <span>Website</span>
+          <input type="text" name="website" tabindex="-1" autocomplete="off">
+        </label>
+      </form>
       ${renderVerification(state)}
     `;
   }
 
   /** Кнопка подтверждения записи или шаг «Подтвердите номер в Telegram». */
   function renderVerification(state) {
-    const required = state.organization?.phone_verification_required;
     const v = state.verification;
-    const verified = v?.status === "verified" && v.phone === state.selection.clientPhone;
     const phone = escapeHtml(state.selection.clientPhone);
-
-    if (!required || verified) {
-      return `<button class="pb-btn" type="button" data-action="submit-booking" id="pb-submit-btn">Записаться</button>`;
-    }
+    const consent = `<p class="pb-consent-note">Нажимая «Записаться», вы соглашаетесь на обработку имени и телефона для записи.</p>`;
 
     if (v?.status === "waiting") {
       return `
         <div class="pb-verify">
-          <p class="pb-verify__title">Подтвердите номер ${phone}</p>
+          <p class="pb-verify__title">Остался один шаг — подтвердите номер ${phone}</p>
           <ol class="pb-verify__steps">
             <li>Откройте Telegram кнопкой ниже.</li>
             <li>Нажмите <b>Start</b>, затем <b>«Поделиться номером»</b>.</li>
@@ -480,6 +478,7 @@ window.PublicBookingUI = (() => {
           </ol>
           <a class="btn btn--primary pb-verify__open" href="${escapeHtml(v.botUrl)}" target="_blank" rel="noopener">Открыть Telegram</a>
           <p class="pb-verify__wait"><span class="pb-verify__spinner" aria-hidden="true"></span>Ждём подтверждения…</p>
+          <p class="pb-verify__note">Это нужно только в первый раз — дальше записывайтесь без подтверждения.</p>
         </div>
         <button class="pb-btn pb-btn--ghost" type="button" data-action="change-phone">Изменить номер</button>`;
     }
@@ -495,11 +494,11 @@ window.PublicBookingUI = (() => {
         <button class="pb-btn pb-btn--ghost" type="button" data-action="change-phone">Изменить номер</button>`;
     }
 
-    return `
-      <p class="pb-verify__note">Салон просит подтвердить номер в Telegram — это защищает расписание от фейковых записей. Бесплатно, 10 секунд.</p>
-      <button class="pb-btn" type="button" data-action="submit-booking" id="pb-submit-btn" ${v?.status === "creating" ? "disabled" : ""}>
-        ${v?.status === "creating" ? "Подождите…" : "Подтвердить номер в Telegram"}
-      </button>`;
+    if (v?.status === "creating") {
+      return `<button class="pb-btn" type="button" disabled>Подождите…</button>`;
+    }
+
+    return `<button class="pb-btn" type="button" data-action="submit-booking" id="pb-submit-btn">Записаться</button>${consent}`;
   }
 
   return {

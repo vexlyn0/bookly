@@ -45,6 +45,34 @@ function isRequired(organization) {
   return organization?.require_phone_verification === true && isAvailable();
 }
 
+/**
+ * Номер, которому верим без проверки: клиент уже подтверждал его в нашем
+ * Telegram-боте или у него есть состоявшийся визит в этом салоне.
+ * @returns {Promise<{ trusted: boolean, chatIds: string[] }>}
+ */
+async function trustInfo(organization, clientPhone) {
+  const key = phoneKey(clientPhone);
+  if (key.length < 10) return { trusted: false, chatIds: [] };
+
+  const supabase = getSupabaseAdmin();
+  const [clientsResult, visitResult] = await Promise.all([
+    supabase.from("telegram_clients").select("chat_id").eq("phone_key", key),
+    supabase
+      .from("bookings")
+      .select("id")
+      .eq("organization_id", organization.id)
+      .eq("client_phone_key", key)
+      .eq("status", "completed")
+      .limit(1),
+  ]);
+
+  if (clientsResult.error) console.error("[phone-verify] trust:clients", clientsResult.error.code || "unknown");
+  if (visitResult.error) console.error("[phone-verify] trust:visits", visitResult.error.code || "unknown");
+
+  const chatIds = (clientsResult.data || []).map((row) => String(row.chat_id));
+  return { trusted: chatIds.length > 0 || (visitResult.data || []).length > 0, chatIds };
+}
+
 async function create(organization, clientPhone) {
   if (!isAvailable()) {
     throw appError("Подтверждение номера временно недоступно", "VERIFICATION_UNAVAILABLE", 503);
@@ -199,6 +227,7 @@ async function confirmContact(chatId, contactPhone) {
 module.exports = {
   isAvailable,
   isRequired,
+  trustInfo,
   create,
   getStatus,
   requireVerified,

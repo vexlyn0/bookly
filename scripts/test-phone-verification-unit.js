@@ -7,7 +7,7 @@ const assert = require("assert");
 
 // --- Подмена Supabase: таблицы в памяти --------------------------------------
 
-const tables = { phone_verifications: [], organizations: [], telegram_clients: [] };
+const tables = { phone_verifications: [], organizations: [], telegram_clients: [], bookings: [] };
 
 function fakeSupabase() {
   return {
@@ -212,6 +212,25 @@ async function testUnavailable() {
   ok("Бот не настроен — проверка не требуется, онлайн-запись не ломается");
 }
 
+async function testTrusted() {
+  reset();
+  tables.bookings = [];
+  let info = await verification.trustInfo(ORG, "8 701 123 45 67");
+  assert.deepStrictEqual(info, { trusted: false, chatIds: [] }, "новый номер — проверяем");
+
+  tables.telegram_clients = [{ chat_id: "555", phone_key: "77011234567" }];
+  info = await verification.trustInfo(ORG, "+7 701 123-45-67");
+  assert.ok(info.trusted && info.chatIds[0] === "555", "подтверждал номер в боте — свой");
+
+  tables.telegram_clients = [];
+  tables.bookings = [{ id: "b1", organization_id: ORG.id, client_phone_key: "77011234567", status: "completed" }];
+  assert.ok((await verification.trustInfo(ORG, "87011234567")).trusted, "был в салоне — свой");
+  assert.ok(!(await verification.trustInfo({ ...ORG, id: "other" }, "87011234567")).trusted, "визит в другом салоне не считается");
+  tables.bookings = [{ id: "b2", organization_id: ORG.id, client_phone_key: "77011234567", status: "no_show" }];
+  assert.ok(!(await verification.trustInfo(ORG, "87011234567")).trusted, "неявка — не визит");
+  ok("Свой номер (бот или визит в салоне) — без подтверждения; новый — с подтверждением");
+}
+
 async function testClientConfirmation() {
   reset();
   await telegram.sendClientBookingConfirmation(
@@ -237,6 +256,7 @@ async function testClientConfirmation() {
   await testHappyPath();
   await testRejections();
   await testUnavailable();
+  await testTrusted();
   await testClientConfirmation();
   console.log("\nВсе unit-тесты подтверждения номера пройдены.");
 })().catch((error) => {

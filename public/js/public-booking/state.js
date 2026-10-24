@@ -3,8 +3,7 @@ window.PublicBookingState = (() => {
     { id: "service", label: "Услуга" },
     { id: "staff", label: "Мастер" },
     { id: "time", label: "Дата и время" },
-    { id: "client", label: "Контакты" },
-    { id: "confirm", label: "Подтверждение" },
+    { id: "client", label: "Ваши данные" },
   ];
 
   const MAX_DAYS_AHEAD = 60;
@@ -17,6 +16,7 @@ window.PublicBookingState = (() => {
       staff: [],
       slots: [],
       slotsLoading: false,
+      showComment: false,
       loading: false,
       error: "",
       selection: {

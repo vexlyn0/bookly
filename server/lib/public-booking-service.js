@@ -562,9 +562,13 @@ async function createPublicBooking(slug, body, { honeypotFilled = false, baseUrl
   await assertClientMayBook(supabase, organization, payload.client_phone);
 
   // Номер подтверждён в Telegram-боте (если владелец включил проверку).
-  const verification = phoneVerification.isRequired(organization)
-    ? await phoneVerification.requireVerified(organization, body?.verification_token, payload.client_phone)
-    : null;
+  // Подтверждение нужно только новым номерам: кто уже подтверждал номер
+  // в боте или был в салоне, записывается без лишних шагов.
+  const trust = await phoneVerification.trustInfo(organization, payload.client_phone);
+  const verification =
+    phoneVerification.isRequired(organization) && !trust.trusted
+      ? await phoneVerification.requireVerified(organization, body?.verification_token, payload.client_phone)
+      : null;
 
   const { slots } = await getPublicSlots(slug, {
     serviceId: payload.service_id,
@@ -591,10 +595,13 @@ async function createPublicBooking(slug, body, { honeypotFilled = false, baseUrl
     verification?.chat_id ? { client_telegram_chat_id: verification.chat_id } : {}
   );
 
-  if (verification) {
-    await phoneVerification.markUsed(verification.id);
+  if (verification) await phoneVerification.markUsed(verification.id);
+
+  // Подтверждение записи в Telegram — всем чатам, привязанным к этому номеру.
+  const clientChats = [...new Set([verification?.chat_id, ...trust.chatIds].filter(Boolean))];
+  for (const chatId of clientChats) {
     void telegramService.sendClientBookingConfirmation(
-      verification.chat_id,
+      chatId,
       {
         organizationName: organization.public_name || organization.name,
         serviceName: service.name,

@@ -17,6 +17,53 @@ window.PublicBookingApp = (() => {
     }
   }
 
+  const CLIENT_KEY = "bookly:client";
+
+  function readSavedClient() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CLIENT_KEY) || "null");
+      return saved && typeof saved === "object" ? saved : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function saveClient(name, phone) {
+    try {
+      localStorage.setItem(CLIENT_KEY, JSON.stringify({ name, phone }));
+    } catch {
+      // приватный режим — не страшно
+    }
+  }
+
+  function initialSelection() {
+    const saved = readSavedClient();
+    return {
+      ...PublicBookingState.createInitialState().selection,
+      bookingDate: PublicBookingState.getTodayString(),
+      clientName: String(saved.name || ""),
+      clientPhone: String(saved.phone || ""),
+    };
+  }
+
+  /** Маска казахстанского номера: +7 (701) 123-45-67. Чужие коды не трогаем. */
+  function formatPhone(value) {
+    const raw = String(value || "");
+    let digits = raw.replace(/\D/g, "");
+    if (!digits) return raw.startsWith("+") ? "+" : "";
+    if (digits[0] === "8") digits = `7${digits.slice(1)}`;
+    if (digits[0] !== "7") return raw;
+    digits = digits.slice(0, 11);
+    const p = digits.slice(1);
+    let out = "+7";
+    if (p.length) out += ` (${p.slice(0, 3)}`;
+    if (p.length >= 3) out += ")";
+    if (p.length > 3) out += ` ${p.slice(3, 6)}`;
+    if (p.length > 6) out += `-${p.slice(6, 8)}`;
+    if (p.length > 8) out += `-${p.slice(8, 10)}`;
+    return out;
+  }
+
   function setSelection(patch) {
     state = {
       ...state,
@@ -47,10 +94,7 @@ window.PublicBookingApp = (() => {
         ...PublicBookingState.createInitialState(),
         organization,
         services: servicesPayload.services || [],
-        selection: {
-          ...PublicBookingState.createInitialState().selection,
-          bookingDate: PublicBookingState.getTodayString(),
-        },
+        selection: initialSelection(),
       };
 
       PublicBookingUI.renderOrganization(organization);
@@ -71,6 +115,19 @@ window.PublicBookingApp = (() => {
     PublicBookingUI.els.panel.addEventListener("change", (event) => {
       if (event.target.id === "pb-date-input" && event.target.value) selectDay(event.target.value);
     });
+    // Поля контактов пишем в состояние без перерисовки — ничего не теряется.
+    PublicBookingUI.els.panel.addEventListener("input", (event) => {
+      const field = event.target;
+      if (field.name === "client_phone") {
+        const formatted = formatPhone(field.value);
+        if (formatted !== field.value) field.value = formatted;
+        state.selection.clientPhone = field.value;
+      } else if (field.name === "client_name") {
+        state.selection.clientName = field.value;
+      } else if (field.name === "client_comment") {
+        state.selection.clientComment = field.value;
+      }
+    });
     PublicBookingUI.els.successRestart?.addEventListener("click", restartFlow);
   }
 
@@ -83,6 +140,18 @@ window.PublicBookingApp = (() => {
       if (!serviceId) return;
       setSelection({ serviceId, staffId: "", startTime: "", endTime: "" });
       await goToStaff();
+      return;
+    }
+
+    if (action === "select-next") {
+      const staffId = event.target.closest("[data-id]")?.dataset.id;
+      if (staffId) pickNearest(staffId);
+      return;
+    }
+
+    if (action === "select-any") {
+      const earliest = earliestStaff();
+      if (earliest) await selectStaff(earliest.id);
       return;
     }
 
@@ -110,41 +179,28 @@ window.PublicBookingApp = (() => {
       return;
     }
 
-    if (action === "continue-client") {
-      const form = document.getElementById("pb-client-form");
-      if (!form) return;
-
-      const formData = new FormData(form);
-      const clientName = String(formData.get("client_name") || "").trim();
-      const clientPhone = String(formData.get("client_phone") || "").trim();
-      const clientEmail = String(formData.get("client_email") || "").trim();
-      const clientComment = String(formData.get("client_comment") || "").trim();
-      const consent = formData.get("consent") === "on";
-
-      if (clientName.length < 2) {
-        setState({ error: "Имя должно содержать минимум 2 символа." });
-        return;
-      }
-      if (clientPhone.length < 7) {
-        setState({ error: "Укажите корректный телефон." });
-        return;
-      }
-      if (!consent) {
-        setState({ error: "Нужно согласие на обработку данных." });
-        return;
-      }
-
-      setSelection({ clientName, clientPhone, clientEmail, clientComment, consent });
-      setState({ step: "confirm" });
+    if (action === "show-comment") {
+      setState({ showComment: true });
+      document.querySelector('[name="client_comment"]')?.focus();
       return;
     }
 
     if (action === "submit-booking") {
-      if (needsVerification()) {
-        await startVerification();
-      } else {
-        await submitBooking();
+      const clientName = String(state.selection.clientName || "").trim();
+      const clientPhone = String(state.selection.clientPhone || "").trim();
+      const digits = clientPhone.replace(/\D/g, "");
+
+      if (clientName.length < 2) {
+        setState({ error: "Как вас зовут? Имя — минимум 2 буквы." });
+        return;
       }
+      if (digits.length < 10) {
+        setState({ error: "Укажите номер телефона полностью." });
+        return;
+      }
+
+      setSelection({ clientName, clientPhone, clientComment: String(state.selection.clientComment || "").trim() });
+      await submitBooking();
       return;
     }
 
@@ -155,7 +211,8 @@ window.PublicBookingApp = (() => {
 
     if (action === "change-phone") {
       stopPolling();
-      setState({ step: "client", verification: null, error: "" });
+      setState({ verification: null, error: "" });
+      document.querySelector('[name="client_phone"]')?.focus();
       return;
     }
 
@@ -178,6 +235,30 @@ window.PublicBookingApp = (() => {
         error: error.message || PublicBookingErrors.MESSAGES.GENERIC,
       });
     }
+  }
+
+  /** Мастер, к которому можно попасть раньше всех. */
+  function earliestStaff() {
+    return state.staff
+      .filter((m) => m.next_available)
+      .sort((a, b) =>
+        `${a.next_available.date} ${a.next_available.start_time}`.localeCompare(
+          `${b.next_available.date} ${b.next_available.start_time}`
+        )
+      )[0];
+  }
+
+  /** Нажали «Ближайшее: сегодня 15:00» — сразу к имени и телефону. */
+  function pickNearest(staffId) {
+    const member = state.staff.find((item) => item.id === staffId);
+    const next = member?.next_available;
+    if (!next) return;
+    const service = PublicBookingState.getSelectedService(state);
+    const [h, m] = next.start_time.split(":").map(Number);
+    const end = h * 60 + m + (Number(service?.duration_minutes) || 0);
+    const endTime = `${String(Math.floor(end / 60)).padStart(2, "0")}:${String(end % 60).padStart(2, "0")}`;
+    setSelection({ staffId, bookingDate: next.date, startTime: next.start_time, endTime });
+    setState({ step: "client", slots: [] });
   }
 
   /** Мастер выбран: сразу открываем его ближайший свободный день. */
@@ -240,12 +321,17 @@ window.PublicBookingApp = (() => {
       });
 
       stopPolling();
+      saveClient(state.selection.clientName, state.selection.clientPhone);
       state.result = result;
       PublicBookingUI.showSuccess(result);
     } catch (error) {
-      // Подтверждение устарело — пройти заново.
-      const verification = error.code === "PHONE_NOT_VERIFIED" ? null : state.verification;
-      setState({ error: error.message || PublicBookingErrors.MESSAGES.GENERIC, verification });
+      if (error.code === "PHONE_NOT_VERIFIED") {
+        // Новый номер у салона с проверкой — подтверждаем в Telegram.
+        submitting = false;
+        await startVerification();
+        return;
+      }
+      setState({ error: error.message || PublicBookingErrors.MESSAGES.GENERIC });
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.textContent = "Записаться";
@@ -260,12 +346,6 @@ window.PublicBookingApp = (() => {
   // ---------------------------------------------------------------------------
 
   let pollTimer = null;
-
-  function needsVerification() {
-    if (!state.organization?.phone_verification_required) return false;
-    const v = state.verification;
-    return !(v && v.status === "verified" && v.phone === state.selection.clientPhone);
-  }
 
   function stopPolling() {
     clearTimeout(pollTimer);
@@ -300,7 +380,7 @@ window.PublicBookingApp = (() => {
 
   async function pollVerification() {
     const current = state.verification;
-    if (!current?.token || current.status !== "waiting" || state.step !== "confirm") return;
+    if (!current?.token || current.status !== "waiting" || state.step !== "client") return;
 
     try {
       const { status } = await PublicBookingApi.getPhoneVerification(current.token);
@@ -338,6 +418,8 @@ window.PublicBookingApp = (() => {
     // Мастер один и выбран автоматически — шаг «Мастер» пропускаем и назад.
     if (target === "staff" && state.staff.length === 1) target = "service";
     setState({ step: target, error: "", verification });
+    // Пришли сюда быстрым путём (нажали ближайшее время) — время дня ещё не загружено.
+    if (target === "time" && !state.slots.length) loadSlots();
   }
 
   function restartFlow() {
@@ -347,10 +429,7 @@ window.PublicBookingApp = (() => {
       ...PublicBookingState.createInitialState(),
       organization,
       services,
-      selection: {
-        ...PublicBookingState.createInitialState().selection,
-        bookingDate: PublicBookingState.getTodayString(),
-      },
+      selection: initialSelection(),
     };
     PublicBookingUI.showFlow();
     PublicBookingUI.renderPanel(state);
