@@ -497,8 +497,38 @@ window.BooklyPlatformAdminUI = (() => {
           ${options.map(([v, l]) => `<button type="button" class="pa-seg__item ${v === status ? "is-active" : ""}" data-pay-status="${v}">${l}</button>`).join("")}
         </div>
       </div>
+      <div id="pa-pay-telegram"></div>
       <div id="pa-pay-table"></div>
     `;
+  }
+
+  /** Карточка «Заявки в Telegram» над таблицей оплат. */
+  function renderTelegramCard(status) {
+    if (!status) {
+      return `<section class="pa-card pa-tg"><p class="pa-muted">Telegram для заявок недоступен: выполните миграцию 028 в Supabase.</p></section>`;
+    }
+    if (status.connected) {
+      return `
+        <section class="pa-card pa-tg pa-tg--on">
+          <div class="pa-tg__text">
+            <b>✅ Заявки приходят вам в Telegram</b>
+            <span class="pa-muted">Кнопки «Оплата пришла» / «Отклонить» прямо в чате. Команда /pay — все ждущие заявки.</span>
+          </div>
+          <button class="btn btn--ghost btn--sm" type="button" data-tg-disconnect="1">Отключить</button>
+        </section>`;
+    }
+    return `
+      <section class="pa-card pa-tg">
+        <div class="pa-tg__text">
+          <b>Получать заявки на оплату в Telegram</b>
+          <span class="pa-muted">Новая заявка — сразу сообщение с кнопками «Оплата пришла» / «Отклонить». Видите только вы.</span>
+        </div>
+        ${
+          status.link
+            ? `<a class="btn btn--primary btn--sm" href="${escapeHtml(status.link)}" target="_blank" rel="noopener" data-tg-connect="1">Подключить Telegram</a>`
+            : `<span class="pa-muted">Бот не настроен (TELEGRAM_BOT_TOKEN)</span>`
+        }
+      </section>`;
   }
 
   function renderPaymentsTable(items) {
@@ -577,6 +607,7 @@ window.BooklyPlatformAdminUI = (() => {
     renderEditForm,
     renderPaymentsView,
     renderPaymentsTable,
+    renderTelegramCard,
     renderAuditView,
   };
 })();

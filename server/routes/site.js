@@ -44,6 +44,12 @@ router.get("/instrumenty/:slug", (req, res, next) => {
   res.type("html").send(site.renderTool(tool));
 });
 
+router.get(["/privacy", "/terms"], (req, res, next) => {
+  const page = site.findLegal(req.path);
+  if (!page) return next();
+  res.type("html").send(site.renderLegal(page));
+});
+
 router.get("/sitemap.xml", (req, res) => {
   const urls = site
     .sitePaths()

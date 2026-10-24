@@ -1877,3 +1877,92 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* Подвал: контакты и документы */
+.footer__links--contacts a {
+  color: var(--text);
+}
+
+.footer__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  width: 100%;
+}
+
+.footer__bottom .footer__copy {
+  width: auto;
+  margin: 0;
+}
+
+.footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.footer__legal a {
+  color: var(--dim);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.footer__legal a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+/* Юридические страницы: спокойный текст для чтения */
+.legal__updated {
+  margin: 12px 0 0;
+  color: var(--dim);
+  font-size: 14px;
+}
+
+.legal {
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.legal section + section {
+  margin-top: 36px;
+}
+
+.legal h2 {
+  margin: 0 0 12px;
+  color: var(--text);
+  font-size: 21px;
+  line-height: 1.3;
+}
+
+.legal p {
+  margin: 0 0 12px;
+}
+
+.legal ul {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+.legal li + li {
+  margin-top: 6px;
+}
+
+.legal b {
+  color: var(--text);
+}
+
+.legal a {
+  color: var(--coral);
+}
+
+/* Длинные слова в заголовках документов («конфиденциальности») — меньше шрифт и перенос */
+.page-hero--legal .page-hero__title {
+  font-size: clamp(28px, 7.4vw, 64px);
+  overflow-wrap: break-word;
+  hyphens: auto;
+}

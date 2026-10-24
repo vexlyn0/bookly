@@ -214,6 +214,7 @@
   async function loadPayments() {
     setView("payments");
     content.innerHTML = UI.renderPaymentsView(state.payStatus);
+    void loadTelegramCard();
     const payload = await Api.paymentRequests({ status: state.payStatus, limit: 100 });
     document.getElementById("pa-pay-table").innerHTML = UI.renderPaymentsTable(payload.items || []);
     document.getElementById("pa-pay-status").addEventListener("click", (event) => {
@@ -222,6 +223,18 @@
       state.payStatus = button.dataset.payStatus;
       loadPayments().catch(showError);
     });
+  }
+
+  async function loadTelegramCard() {
+    const box = document.getElementById("pa-pay-telegram");
+    if (!box) return;
+    let status = null;
+    try {
+      status = (await Api.telegram()).telegram;
+    } catch {
+      status = null;
+    }
+    if (document.getElementById("pa-pay-telegram") === box) box.innerHTML = UI.renderTelegramCard(status);
   }
 
   async function loadAudit() {
@@ -488,6 +501,22 @@
     ownerBlock: blockOwner,
     ownerUnblock: unblockOwner,
   };
+
+  // Telegram для заявок: подключили в боте — вернулись на вкладку, обновляем карточку
+  content.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-tg-connect]")) {
+      window.addEventListener("focus", () => void loadTelegramCard(), { once: true });
+      return;
+    }
+    if (!event.target.closest("[data-tg-disconnect]")) return;
+    if (!window.confirm("Отключить заявки в Telegram?")) return;
+    try {
+      await Api.disconnectTelegram();
+    } catch (error) {
+      showError(error);
+    }
+    void loadTelegramCard();
+  });
 
   content.addEventListener("click", (event) => {
     const extra = event.target.closest(

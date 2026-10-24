@@ -95,6 +95,8 @@ window.BooklyPlatformAdminApi = (() => {
         method: "POST",
         body: JSON.stringify({ confirm_slug: confirmSlug, delete_owner: deleteOwner }),
       }),
+    telegram: () => request("/api/admin/telegram"),
+    disconnectTelegram: () => request("/api/admin/telegram/disconnect", { method: "POST", body: "{}" }),
     paymentRequests: (params = {}) => {
       const query = new URLSearchParams(params).toString();
       return request(`/api/admin/payment-requests${query ? `?${query}` : ""}`);

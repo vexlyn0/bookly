@@ -1078,3 +1078,26 @@ button.pa-table__row:hover {
   width: 72%;
   height: 72%;
 }
+
+/* Карточка «Заявки в Telegram» в разделе «Оплаты» */
+.pa-tg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.pa-tg__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.pa-tg--on {
+  border-color: #b7e4c7;
+  background: #f1fbf4;
+}

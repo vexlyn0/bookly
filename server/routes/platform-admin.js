@@ -55,6 +55,25 @@ router.get("/me", (req, res) => {
   });
 });
 
+// Telegram администратора: заявки на оплату Pro приходят в чат
+router.get("/telegram", async (req, res) => {
+  try {
+    const telegram = await require("../lib/admin-bot-service").getStatus(req.user.id);
+    return res.json({ ok: true, telegram });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+router.post("/telegram/disconnect", async (req, res) => {
+  try {
+    const telegram = await require("../lib/admin-bot-service").disconnect(req.user.id);
+    return res.json({ ok: true, telegram });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
 router.get("/overview", async (req, res) => {
   try {
     const overview = await platformAdminService.getOverview();

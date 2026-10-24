@@ -1583,3 +1583,8 @@ a.pb-chip:hover {
   padding-bottom: 20px;
   border-bottom: 1px solid var(--pb-line);
 }
+
+.pb-consent-note a {
+  color: inherit;
+  text-decoration: underline;
+}

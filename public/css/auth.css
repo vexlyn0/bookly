@@ -270,3 +270,17 @@
 .auth-form[hidden] {
   display: none !important;
 }
+
+/* Ссылки на документы под кнопкой регистрации */
+.auth-form__legal {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.auth-form__legal a {
+  color: inherit;
+  text-decoration: underline;
+}

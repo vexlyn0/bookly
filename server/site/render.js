@@ -10,6 +10,7 @@ const config = require("../config");
 const { AUDIENCES } = require("./audiences");
 const { FEATURES } = require("./features");
 const { TOOLS } = require("./tools");
+const { findLegal, LEGAL_PATHS, CONTACTS } = require("./legal");
 
 const LOGO_MARK =
   '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
@@ -103,6 +104,22 @@ function renderHeader(currentPath = "/") {
   </header>`;
 }
 
+/** Контакты в подвале — только заполненные в contacts.js. */
+function footerContacts() {
+  const items = [];
+  if (CONTACTS.instagram) {
+    items.push(`<a href="https://instagram.com/${escapeHtml(CONTACTS.instagram)}" target="_blank" rel="noopener">Instagram</a>`);
+  }
+  if (CONTACTS.whatsapp) {
+    items.push(`<a href="https://wa.me/${CONTACTS.whatsapp.replace(/\D/g, "")}" target="_blank" rel="noopener">WhatsApp ${escapeHtml(CONTACTS.whatsapp)}</a>`);
+  }
+  if (CONTACTS.telegram) {
+    items.push(`<a href="https://t.me/${escapeHtml(CONTACTS.telegram)}" target="_blank" rel="noopener">Telegram</a>`);
+  }
+  if (CONTACTS.email) items.push(`<a href="mailto:${escapeHtml(CONTACTS.email)}">${escapeHtml(CONTACTS.email)}</a>`);
+  return items.length ? `<nav class="footer__links footer__links--contacts" aria-label="Контакты">${items.join("")}</nav>` : "";
+}
+
 function renderFooter() {
   const audiences = AUDIENCES.map((a) => `<a href="/dlya/${a.slug}">${escapeHtml(a.menu)}</a>`).join("");
   const features = FEATURES.map((f) => `<a href="/vozmozhnosti/${f.slug}">${escapeHtml(f.menu)}</a>`).join("");
@@ -129,7 +146,14 @@ function renderFooter() {
       <nav class="footer__links footer__links--wide" aria-label="Кому подойдёт">
         ${audiences}
       </nav>
-      <p class="footer__copy">© 2026 Jazyl · Онлайн-запись для салонов и мастеров Казахстана</p>
+      ${footerContacts()}
+      <div class="footer__bottom">
+        <p class="footer__copy">© 2026 Jazyl · Онлайн-запись для салонов и мастеров Казахстана</p>
+        <nav class="footer__legal" aria-label="Документы">
+          <a href="/privacy">Политика конфиденциальности</a>
+          <a href="/terms">Пользовательское соглашение</a>
+        </nav>
+      </div>
     </div>
   </footer>`;
 }
@@ -917,6 +941,30 @@ function renderTool(tool) {
   });
 }
 
+function renderLegal(page) {
+  const body = `
+    <section class="page-hero page-hero--legal">
+      <div class="container">
+        <nav class="crumbs" aria-label="Навигация">
+          <a href="/">Главная</a><span>/</span><span>${escapeHtml(page.h1)}</span>
+        </nav>
+        <h1 class="page-hero__title">${escapeHtml(page.h1)}</h1>
+        <p class="page-hero__lead">${escapeHtml(page.lead)}</p>
+        <p class="legal__updated">Редакция от ${escapeHtml(page.updated)}</p>
+      </div>
+    </section>
+
+    <section class="section section--tight">
+      <div class="container">
+        <article class="legal">
+          ${page.sections.map(([title, html]) => `<section><h2>${escapeHtml(title)}</h2>${html}</section>`).join("")}
+        </article>
+      </div>
+    </section>`;
+
+  return renderPage({ path: page.path, title: page.title, description: page.description, body });
+}
+
 function findTool(slug) {
   return TOOLS.find((t) => t.slug === slug) || null;
 }
@@ -932,6 +980,7 @@ function sitePaths() {
     ...FEATURES.map((f) => `/vozmozhnosti/${f.slug}`),
     ...AUDIENCES.map((a) => `/dlya/${a.slug}`),
     ...TOOLS.map((t) => `/instrumenty/${t.slug}`),
+    ...LEGAL_PATHS,
   ];
 }
 
@@ -944,6 +993,8 @@ module.exports = {
   findFeature,
   renderTool,
   findTool,
+  renderLegal,
+  findLegal,
   sitePaths,
   absoluteUrl,
 };

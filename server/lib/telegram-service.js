@@ -486,6 +486,10 @@ function visitCheck() {
   return require("./visit-check-service");
 }
 
+function adminBot() {
+  return require("./admin-bot-service");
+}
+
 async function linkStaff(chatId, token) {
   if (!LINK_TOKEN_PATTERN.test(token)) {
     return "❌ Ссылка недействительна. Откройте свежую ссылку в кабинете Jazyl.";
@@ -588,7 +592,15 @@ async function unlinkChat(chatId) {
     return "⚠️ Не удалось отключить уведомления. Попробуйте позже.";
   }
 
-  if (!staffResult.data?.length && !ownerResult.data?.length) {
+  // Чат администратора платформы (заявки на оплату Pro)
+  let adminUnlinked = false;
+  try {
+    adminUnlinked = await adminBot().unlinkChat(chatId);
+  } catch (adminError) {
+    logTelegramError("unlinkChat:admin", adminError);
+  }
+
+  if (!staffResult.data?.length && !ownerResult.data?.length && !adminUnlinked) {
     return "К этому чату не привязан ни мастер, ни владелец салона.";
   }
 
@@ -733,9 +745,17 @@ async function handleMessage(message) {
     return;
   }
 
+  // Администратор платформы: заявки на оплату Pro
+  if (parsed?.command === "pay" && (await adminBot().showPending(chatId))) {
+    return;
+  }
+
+  const adminStart = parsed?.command === "start" ? parsed.args.match(adminBot().START_PATTERN) : null;
   const ownerStart = parsed?.command === "start" ? parsed.args.match(OWNER_START_PATTERN) : null;
 
-  if (ownerStart) {
+  if (adminStart) {
+    reply = await adminBot().link(chatId, adminStart[1]);
+  } else if (ownerStart) {
     reply = await linkOwner(chatId, ownerStart[1]);
   } else if (parsed?.command === "start" && parsed.args) {
     reply = await linkStaff(chatId, parsed.args);
@@ -753,6 +773,16 @@ async function handleMessage(message) {
 async function handleCallback(callbackQuery) {
   if (String(callbackQuery?.data || "").startsWith("cl:")) {
     await clientBot().handleClientCallback(callbackQuery);
+    return;
+  }
+
+  if (String(callbackQuery?.data || "").startsWith("sub:")) {
+    await adminBot().handleCallback({
+      callbackId: callbackQuery.id,
+      chatId: callbackQuery.message?.chat?.id,
+      messageId: callbackQuery.message?.message_id,
+      data: callbackQuery.data,
+    });
     return;
   }
 

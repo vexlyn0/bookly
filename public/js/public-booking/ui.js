@@ -704,7 +704,7 @@ window.PublicBookingUI = (() => {
   function renderVerification(state) {
     const v = state.verification;
     const phone = escapeHtml(state.selection.clientPhone);
-    const consent = `<p class="pb-consent-note">${t("consent")}</p>`;
+    const consent = `<p class="pb-consent-note">${t("consent")} <a href="/privacy" target="_blank" rel="noopener">${t("privacy_link")}</a></p>`;
 
     if (v?.status === "waiting") {
       return `

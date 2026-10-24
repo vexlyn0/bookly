@@ -334,6 +334,9 @@ async function createPaymentRequest(userId, body) {
     throw appError("Не удалось создать заявку", "INTERNAL_ERROR", 500);
   }
 
+  // Администратору в Telegram «💰 Заявка на Pro» — не ждём и не ломаем ответ салону.
+  if (data?.id) void require("./admin-bot-service").notifyNewPaymentRequest(data.id);
+
   return sanitizeRequest(data);
 }
 
