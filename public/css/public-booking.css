@@ -1111,3 +1111,38 @@ a.pb-chip:hover {
 .pb-ticket--compact .pb-ticket__rows {
   padding: 2px 16px;
 }
+
+/* ========== Язык: РУС | ҚАЗ ========== */
+
+.pb-lang {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.pb-lang button {
+  min-width: 44px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #52525b;
+  cursor: pointer;
+}
+
+.pb-lang button.is-active {
+  background: var(--brand, #534ab7);
+  color: #fff;
+}

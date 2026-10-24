@@ -2,6 +2,7 @@ window.PublicBookingApp = (() => {
   let slug = "";
   let state = PublicBookingState.createInitialState();
   let submitting = false;
+  const t = (key, vars) => PublicBookingI18n.t(key, vars);
 
   function setState(patch) {
     const stepChanged = patch.step && patch.step !== state.step;
@@ -78,7 +79,7 @@ window.PublicBookingApp = (() => {
     slug = PublicBookingApi.getSlugFromPath();
 
     if (!slug) {
-      PublicBookingUI.showError("Страница недоступна", "Не указан адрес организации.");
+      PublicBookingUI.showError(t("page_unavailable"), t("no_slug"));
       return;
     }
 
@@ -104,8 +105,8 @@ window.PublicBookingApp = (() => {
     } catch (error) {
       const title =
         error.code === "PUBLIC_BOOKING_DISABLED"
-          ? "Онлайн-запись недоступна"
-          : "Страница недоступна";
+          ? t("booking_unavailable")
+          : t("page_unavailable");
       PublicBookingUI.showError(title, error.message || PublicBookingErrors.MESSAGES.GENERIC);
     }
   }
@@ -129,6 +130,16 @@ window.PublicBookingApp = (() => {
       }
     });
     PublicBookingUI.els.successRestart?.addEventListener("click", restartFlow);
+
+    // Сменили язык — перерисовываем всё, что собрано в JS.
+    document.addEventListener("pb:lang", () => {
+      PublicBookingUI.renderOrganization(state.organization);
+      if (state.result && !PublicBookingUI.els.success.hidden) {
+        PublicBookingUI.showSuccess(state.result);
+      } else {
+        PublicBookingUI.renderPanel(state);
+      }
+    });
   }
 
   async function handlePanelClick(event) {
@@ -191,11 +202,11 @@ window.PublicBookingApp = (() => {
       const digits = clientPhone.replace(/\D/g, "");
 
       if (clientName.length < 2) {
-        setState({ error: "Как вас зовут? Имя — минимум 2 буквы." });
+        setState({ error: t("err_name") });
         return;
       }
       if (digits.length < 10) {
-        setState({ error: "Укажите номер телефона полностью." });
+        setState({ error: t("err_phone") });
         return;
       }
 
@@ -301,7 +312,7 @@ window.PublicBookingApp = (() => {
     const submitBtn = document.getElementById("pb-submit-btn");
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.textContent = "Создание записи…";
+      submitBtn.textContent = t("submitting");
     }
 
     setState({ error: "" });
@@ -334,7 +345,7 @@ window.PublicBookingApp = (() => {
       setState({ error: error.message || PublicBookingErrors.MESSAGES.GENERIC });
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = "Записаться";
+        submitBtn.textContent = t("submit");
       }
     } finally {
       submitting = false;

@@ -5,20 +5,8 @@
   const token = decodeURIComponent(window.location.pathname.split("/").filter(Boolean)[1] || "");
   const BASE = `/api/public/manage/${encodeURIComponent(token)}`;
 
-  const MESSAGES = {
-    BOOKING_NOT_FOUND: "Запись не найдена. Проверьте ссылку.",
-    CANCEL_NOT_ALLOWED: "Отменить эту запись онлайн уже нельзя. Позвоните в салон.",
-    RESCHEDULE_NOT_ALLOWED: "Перенести эту запись онлайн уже нельзя. Позвоните в салон.",
-    BOOKING_CHANGED: "Запись только что изменилась. Страница обновлена.",
-  };
-
-  const STATUS_LABELS = {
-    pending: "Ожидает подтверждения",
-    confirmed: "Подтверждена",
-    canceled: "Отменена",
-    completed: "Завершена",
-    no_show: "Визит не состоялся",
-  };
+  const I18n = window.PublicBookingI18n;
+  const t = (key, vars) => I18n.t(key, vars);
 
   const els = {
     loader: document.getElementById("pm-loader"),
@@ -56,7 +44,7 @@
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
       const code = payload?.code || "GENERIC";
-      const error = new Error(MESSAGES[code] || PublicBookingErrors.fromResponse(payload));
+      const error = new Error(PublicBookingErrors.fromResponse(payload));
       error.code = code;
       error.status = response.status;
       throw error;
@@ -74,7 +62,7 @@
 
   function formatDate(dateStr) {
     const [y, m, d] = String(dateStr).split("-").map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" });
+    return I18n.formatDate(new Date(y, m - 1, d), "weekdayLong");
   }
 
   function localDateString(date) {
@@ -85,17 +73,17 @@
     const phone = state.info?.organization?.phone;
     if (!phone) return "";
     const tel = phone.replace(/[^\d+]/g, "");
-    return `<a class="btn btn--outline" href="tel:${escapeHtml(tel)}">Позвонить: ${escapeHtml(phone)}</a>`;
+    return `<a class="btn btn--outline" href="tel:${escapeHtml(tel)}">${escapeHtml(t("call", { phone }))}</a>`;
   }
 
   function reasonText(info) {
     switch (info.reason) {
       case "too_late":
-        return `Отменить или перенести запись онлайн можно не позже чем за ${info.cutoff_hours} ч до визита. Сейчас — только по телефону.`;
+        return t("reason_too_late", { hours: info.cutoff_hours });
       case "disabled":
-        return "Чтобы отменить или перенести запись, свяжитесь с салоном.";
+        return t("reason_disabled");
       case "reschedule_limit":
-        return "Онлайн-перенос уже использован. Чтобы перенести ещё раз, позвоните в салон.";
+        return t("reason_limit");
       default:
         return "";
     }
@@ -110,8 +98,8 @@
     }
     els.orgName.textContent = info.organization.name || "—";
     const meta = [];
-    if (info.organization.phone) meta.push(`Телефон: ${info.organization.phone}`);
-    if (info.organization.address) meta.push(`Адрес: ${info.organization.address}`);
+    if (info.organization.phone) meta.push(t("phone_label", { phone: info.organization.phone }));
+    if (info.organization.address) meta.push(t("address_label", { address: info.organization.address }));
     els.orgMeta.innerHTML = meta.map((item) => `<span>${escapeHtml(item)}</span>`).join("");
 
     const notice = state.notice ? `<p class="alert alert--success pm-notice" role="status">${escapeHtml(state.notice)}</p>` : "";
@@ -130,13 +118,13 @@
     const b = state.info.booking;
     return `
       <div class="pb-summary">
-        <div class="pb-summary__row"><span class="pb-summary__label">Статус</span><span class="pm-status pm-status--${escapeHtml(b.status)}">${escapeHtml(STATUS_LABELS[b.status] || b.status)}</span></div>
-        <div class="pb-summary__row"><span class="pb-summary__label">Дата</span><span>${escapeHtml(formatDate(b.booking_date))}</span></div>
-        <div class="pb-summary__row"><span class="pb-summary__label">Время</span><span>${escapeHtml(b.start_time)} – ${escapeHtml(b.end_time)}</span></div>
-        <div class="pb-summary__row"><span class="pb-summary__label">Услуга</span><span>${escapeHtml(b.service_name)}</span></div>
-        <div class="pb-summary__row"><span class="pb-summary__label">Мастер</span><span>${escapeHtml(b.staff_name)}</span></div>
-        <div class="pb-summary__row"><span class="pb-summary__label">Имя</span><span>${escapeHtml(b.client_name)}</span></div>
-        ${b.reference ? `<div class="pb-summary__row"><span class="pb-summary__label">Номер записи</span><span>${escapeHtml(b.reference)}</span></div>` : ""}
+        <div class="pb-summary__row"><span class="pb-summary__label">${t("status")}</span><span class="pm-status pm-status--${escapeHtml(b.status)}">${escapeHtml(t(`status_${b.status}`))}</span></div>
+        <div class="pb-summary__row"><span class="pb-summary__label">${t("date")}</span><span>${escapeHtml(formatDate(b.booking_date))}</span></div>
+        <div class="pb-summary__row"><span class="pb-summary__label">${t("time")}</span><span>${escapeHtml(b.start_time)} – ${escapeHtml(b.end_time)}</span></div>
+        <div class="pb-summary__row"><span class="pb-summary__label">${t("service")}</span><span>${escapeHtml(b.service_name)}</span></div>
+        <div class="pb-summary__row"><span class="pb-summary__label">${t("master")}</span><span>${escapeHtml(b.staff_name)}</span></div>
+        <div class="pb-summary__row"><span class="pb-summary__label">${t("name")}</span><span>${escapeHtml(b.client_name)}</span></div>
+        ${b.reference ? `<div class="pb-summary__row"><span class="pb-summary__label">${t("reference")}</span><span>${escapeHtml(b.reference)}</span></div>` : ""}
       </div>
     `;
   }
@@ -147,18 +135,18 @@
     const active = b.status === "pending" || b.status === "confirmed";
     const reason = reasonText(info);
     const bookAgain = info.organization.slug
-      ? `<a class="btn btn--primary" href="/book/${encodeURIComponent(info.organization.slug)}">Записаться снова</a>`
+      ? `<a class="btn btn--primary" href="/book/${encodeURIComponent(info.organization.slug)}">${t("book_again_short")}</a>`
       : "";
 
     let actions = "";
     if (info.can_cancel || info.can_reschedule) {
       actions = `
         <div class="pm-actions">
-          ${info.can_reschedule ? `<button class="btn btn--primary" type="button" data-action="reschedule">Перенести</button>` : ""}
-          ${info.can_cancel ? `<button class="btn btn--outline pm-danger" type="button" data-action="cancel">Отменить запись</button>` : ""}
+          ${info.can_reschedule ? `<button class="btn btn--primary" type="button" data-action="reschedule">${t("reschedule")}</button>` : ""}
+          ${info.can_cancel ? `<button class="btn btn--outline pm-danger" type="button" data-action="cancel">${t("cancel_booking")}</button>` : ""}
         </div>
         ${reason ? `<p class="pm-hint">${escapeHtml(reason)}</p>` : ""}
-        ${info.can_reschedule ? `<p class="pm-hint">Перенести или отменить онлайн можно не позже чем за ${info.cutoff_hours} ч до визита.</p>` : ""}
+        ${info.can_reschedule ? `<p class="pm-hint">${t("cutoff_hint", { hours: info.cutoff_hours })}</p>` : ""}
       `;
     } else if (active) {
       actions = `
@@ -170,7 +158,7 @@
     }
 
     return `
-      <h2 class="pb-panel__title">${active ? "Вы записаны" : "Запись"}</h2>
+      <h2 class="pb-panel__title">${active ? t("you_are_booked") : t("booking")}</h2>
       ${renderSummary()}
       ${actions}
     `;
@@ -179,13 +167,13 @@
   function renderCancel() {
     const b = state.info.booking;
     return `
-      <h2 class="pb-panel__title">Отменить запись?</h2>
+      <h2 class="pb-panel__title">${t("cancel_question")}</h2>
       <p class="pb-panel__hint">${escapeHtml(b.service_name)} · ${escapeHtml(formatDate(b.booking_date))}, ${escapeHtml(b.start_time)}</p>
-      <p class="pm-hint">Время освободится, и на него сможет записаться другой клиент.</p>
+      <p class="pm-hint">${t("cancel_hint")}</p>
       <div class="pb-panel__actions">
-        <button class="btn btn--ghost" type="button" data-action="back">Не отменять</button>
+        <button class="btn btn--ghost" type="button" data-action="back">${t("keep")}</button>
         <button class="btn btn--primary pm-danger-solid" type="button" data-action="confirm-cancel" ${state.busy ? "disabled" : ""}>
-          ${state.busy ? "Отмена…" : "Да, отменить"}
+          ${state.busy ? t("canceling") : t("yes_cancel")}
         </button>
       </div>
     `;
@@ -203,7 +191,7 @@
     } else if (state.slotsLoading) {
       slotsHtml = `<div class="pb-loader"><div class="pb-loader__spinner" aria-hidden="true"></div></div>`;
     } else if (!state.slots.length) {
-      slotsHtml = `<div class="pb-empty">На эту дату свободного времени нет. Выберите другой день.</div>`;
+      slotsHtml = `<div class="pb-empty">${t("no_slots_date")}</div>`;
     } else {
       slotsHtml = `
         <div class="pb-slots">
@@ -219,17 +207,17 @@
     }
 
     return `
-      <h2 class="pb-panel__title">Перенести запись</h2>
-      <p class="pb-panel__hint">Сейчас: ${escapeHtml(formatDate(info.booking.booking_date))}, ${escapeHtml(info.booking.start_time)} · мастер ${escapeHtml(info.booking.staff_name)}</p>
+      <h2 class="pb-panel__title">${t("reschedule_title")}</h2>
+      <p class="pb-panel__hint">${escapeHtml(t("now_booked", { date: formatDate(info.booking.booking_date), time: info.booking.start_time, staff: info.booking.staff_name }))}</p>
       <label class="field">
-        <span class="field__label">Новая дата</span>
+        <span class="field__label">${t("new_date")}</span>
         <input class="field__input pb-date-input" type="date" id="pm-date" min="${today}" max="${localDateString(max)}" value="${escapeHtml(state.date)}">
       </label>
       ${slotsHtml}
       <div class="pb-panel__actions">
-        <button class="btn btn--ghost" type="button" data-action="back">Назад</button>
+        <button class="btn btn--ghost" type="button" data-action="back">${t("back")}</button>
         <button class="btn btn--primary" type="button" data-action="confirm-reschedule" ${!state.selected || state.busy ? "disabled" : ""}>
-          ${state.busy ? "Перенос…" : state.selected ? `Перенести на ${escapeHtml(state.selected)}` : "Выберите время"}
+          ${state.busy ? t("rescheduling") : state.selected ? escapeHtml(t("reschedule_to", { time: state.selected })) : t("choose_time_btn")}
         </button>
       </div>
     `;
@@ -276,7 +264,7 @@
     try {
       state.info = await request("/cancel", { method: "POST", body: "{}" });
       state.mode = "view";
-      state.notice = "Запись отменена. Спасибо, что предупредили!";
+      state.notice = t("canceled_notice");
     } catch (error) {
       state.error = error.message;
       await refreshAfterConflict(error);
@@ -297,7 +285,7 @@
         body: JSON.stringify({ booking_date: state.date, start_time: state.selected }),
       });
       state.mode = "view";
-      state.notice = "Готово! Запись перенесена.";
+      state.notice = t("rescheduled_notice");
     } catch (error) {
       state.error = error.message;
       if (error.code === "BOOKING_TIME_CONFLICT") {
@@ -342,11 +330,17 @@
     }
   });
 
+  document.addEventListener("pb:lang", () => {
+    document.title = t("manage_title");
+    if (state.info) render();
+  });
+
   els.panel.addEventListener("change", (event) => {
     if (event.target.id === "pm-date") loadSlots(event.target.value);
   });
 
   (async () => {
+    document.title = t("manage_title");
     try {
       state.info = await request();
       els.loader.hidden = true;

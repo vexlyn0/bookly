@@ -18,17 +18,17 @@
   <main class="pb-main">
     <div class="pb-loader" id="pm-loader" aria-live="polite">
       <div class="pb-loader__spinner" aria-hidden="true"></div>
-      <p>Загрузка…</p>
+      <p data-i18n="loading">Загрузка…</p>
     </div>
 
     <div class="pb-error-screen" id="pm-error" hidden>
-      <h1 class="pb-error-screen__title">Запись не найдена</h1>
+      <h1 class="pb-error-screen__title" data-i18n="not_found_title">Запись не найдена</h1>
       <p class="pb-error-screen__text" id="pm-error-text">Проверьте ссылку или свяжитесь с салоном.</p>
     </div>
 
     <div id="pm-app" hidden>
       <section class="pb-hero">
-        <p class="pb-hero__eyebrow">Моя запись</p>
+        <p class="pb-hero__eyebrow" data-i18n="my_booking">Моя запись</p>
         <h1 class="pb-hero__title" id="pm-org-name">—</h1>
         <div class="pb-hero__meta" id="pm-org-meta"></div>
       </section>
@@ -37,6 +37,7 @@
     </div>
   </main>
 
+  <script src="/js/public-booking/i18n.js"></script>
   <script src="/js/public-booking/errors.js"></script>
   <script src="/js/public-booking/manage.js"></script>
 </body>

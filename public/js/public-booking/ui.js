@@ -1,8 +1,9 @@
 window.PublicBookingUI = (() => {
   const els = {};
   const DAY_STRIP_LENGTH = 14;
-  const WEEKDAYS_SHORT = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
   const DEFAULT_BRAND = "#534AB7";
+  const I18n = window.PublicBookingI18n;
+  const t = (key, vars) => I18n.t(key, vars);
 
   function cacheElements() {
     els.loader = document.getElementById("pb-loader");
@@ -39,7 +40,7 @@ window.PublicBookingUI = (() => {
   function formatPrice(price, currency = "KZT") {
     const value = Number(price || 0);
     if (!value) return "";
-    if (currency === "KZT") return `${value.toLocaleString("ru-RU")} ₸`;
+    if (currency === "KZT") return `${value.toLocaleString("ru-RU")} ₸`; // пробелы между разрядами в обоих языках
     return `${value} ${currency}`;
   }
 
@@ -47,9 +48,9 @@ window.PublicBookingUI = (() => {
     const value = Number(minutes) || 0;
     const h = Math.floor(value / 60);
     const m = value % 60;
-    if (h && m) return `${h} ч ${m} мин`;
-    if (h) return `${h} ч`;
-    return `${m} мин`;
+    if (h && m) return `${t("duration_h", { h })} ${t("duration_m", { m })}`;
+    if (h) return t("duration_h", { h });
+    return t("duration_m", { m });
   }
 
   function parseDate(dateStr) {
@@ -59,15 +60,15 @@ window.PublicBookingUI = (() => {
 
   function formatDateRu(dateStr) {
     if (!dateStr) return "—";
-    return parseDate(dateStr).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+    return I18n.formatDate(parseDate(dateStr), "full");
   }
 
   /** «Сегодня» / «Завтра» / «пт, 31 октября» */
   function formatDayLabel(dateStr) {
     const today = PublicBookingState.getTodayString();
-    if (dateStr === today) return "Сегодня";
-    if (dateStr === PublicBookingState.addDays(today, 1)) return "Завтра";
-    return parseDate(dateStr).toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "long" });
+    if (dateStr === today) return t("today");
+    if (dateStr === PublicBookingState.addDays(today, 1)) return t("tomorrow");
+    return I18n.formatDate(parseDate(dateStr), "weekdayShort");
   }
 
   function initials(name) {
@@ -122,13 +123,13 @@ window.PublicBookingUI = (() => {
 
     const booking = result.booking;
     els.successStatus.textContent =
-      booking.status === "pending" ? "Салон подтвердит запись — мы сообщим" : "Ждём вас!";
+      booking.status === "pending" ? t("success_pending") : t("success_confirmed");
 
     els.successDetails.innerHTML = `
-      <div><dt>Когда</dt><dd>${escapeHtml(formatDayLabel(booking.booking_date))}, ${escapeHtml(booking.start_time)}–${escapeHtml(booking.end_time)}</dd></div>
-      <div><dt>Услуга</dt><dd>${escapeHtml(booking.service_name)}</dd></div>
-      <div><dt>Мастер</dt><dd>${escapeHtml(booking.staff_name)}</dd></div>
-      <div><dt>Номер записи</dt><dd>${escapeHtml(booking.reference)}</dd></div>
+      <div><dt>${t("when")}</dt><dd>${escapeHtml(formatDayLabel(booking.booking_date))}, ${escapeHtml(booking.start_time)}–${escapeHtml(booking.end_time)}</dd></div>
+      <div><dt>${t("service")}</dt><dd>${escapeHtml(booking.service_name)}</dd></div>
+      <div><dt>${t("master")}</dt><dd>${escapeHtml(booking.staff_name)}</dd></div>
+      <div><dt>${t("reference")}</dt><dd>${escapeHtml(booking.reference)}</dd></div>
     `;
 
     renderManageLink(booking);
@@ -144,21 +145,24 @@ window.PublicBookingUI = (() => {
 
     const url = `${window.location.origin}${booking.manage_url}`;
     const orgName = els.heroName?.textContent || "";
-    const message =
-      `Моя запись${orgName ? ` в «${orgName}»` : ""}: ${booking.service_name}, ` +
-      `${formatDateRu(booking.booking_date)} в ${booking.start_time}. ` +
-      `Перенести или отменить: ${url}`;
+    const message = t("whatsapp_message", {
+      org: orgName ? t("whatsapp_org", { org: orgName }) : "",
+      service: booking.service_name,
+      date: formatDateRu(booking.booking_date),
+      time: booking.start_time,
+      url,
+    });
 
     document.getElementById("pb-manage-whatsapp").href = `https://wa.me/?text=${encodeURIComponent(message)}`;
 
     const copyBtn = document.getElementById("pb-manage-copy");
-    copyBtn.textContent = "Скопировать ссылку";
+    copyBtn.textContent = t("copy_link");
     copyBtn.onclick = async () => {
       try {
         await navigator.clipboard.writeText(url);
-        copyBtn.textContent = "Скопировано ✓";
+        copyBtn.textContent = t("copied");
       } catch {
-        window.prompt("Скопируйте ссылку:", url);
+        window.prompt(t("copy_prompt"), url);
       }
     };
   }
@@ -174,7 +178,7 @@ window.PublicBookingUI = (() => {
     els.heroName.textContent = organization.name || "—";
     els.heroDescription.textContent = organization.description || "";
     els.heroDescription.hidden = !organization.description;
-    document.title = `${organization.name} — онлайн-запись`;
+    document.title = t("page_title", { org: organization.name });
 
     const meta = [];
     if (organization.address) {
@@ -199,15 +203,15 @@ window.PublicBookingUI = (() => {
 
     els.steps.innerHTML = `
       <div class="pb-progress__row">
-        <span class="pb-progress__label">${escapeHtml(steps[index].label)}</span>
-        <span class="pb-progress__count">Шаг ${index + 1} из ${steps.length}</span>
+        <span class="pb-progress__label">${escapeHtml(t(`step_${steps[index].id}`))}</span>
+        <span class="pb-progress__count">${t("step_count", { n: index + 1, total: steps.length })}</span>
       </div>
       <div class="pb-progress__bar"><div class="pb-progress__fill" style="width:${percent}%"></div></div>
     `;
   }
 
   function backButton() {
-    return `<button class="pb-back" type="button" data-action="back"><span aria-hidden="true">←</span> Назад</button>`;
+    return `<button class="pb-back" type="button" data-action="back"><span aria-hidden="true">←</span> ${t("back")}</button>`;
   }
 
   function renderPanel(state) {
@@ -237,11 +241,11 @@ window.PublicBookingUI = (() => {
 
   function renderServiceStep(state) {
     if (!state.services.length) {
-      return `<div class="pb-empty">Сейчас нет доступных услуг для онлайн-записи.</div>`;
+      return `<div class="pb-empty">${t("no_services")}</div>`;
     }
 
     return `
-      <h2 class="pb-panel__title">Выберите услугу</h2>
+      <h2 class="pb-panel__title">${t("choose_service")}</h2>
       <div class="pb-list">
         ${state.services
           .map((service) => {
@@ -253,7 +257,7 @@ window.PublicBookingUI = (() => {
                   ${service.description ? `<span class="pb-service__text">${escapeHtml(service.description)}</span>` : ""}
                   <span class="pb-service__meta">${escapeHtml(formatDuration(service.duration_minutes))}</span>
                 </span>
-                <span class="pb-price">${price ? escapeHtml(price) : "Выбрать"}</span>
+                <span class="pb-price">${price ? escapeHtml(price) : t("choose")}</span>
               </button>`;
           })
           .join("")}
@@ -265,8 +269,8 @@ window.PublicBookingUI = (() => {
     if (!state.staff.length) {
       return `
         ${backButton()}
-        <h2 class="pb-panel__title">Выберите мастера</h2>
-        <div class="pb-empty">Для этой услуги сейчас нет свободных мастеров.</div>
+        <h2 class="pb-panel__title">${t("choose_master")}</h2>
+        <div class="pb-empty">${t("no_masters")}</div>
       `;
     }
 
@@ -279,16 +283,16 @@ window.PublicBookingUI = (() => {
         ? `
           <button class="pb-master pb-master--any" type="button" data-action="select-any">
             <span class="pb-avatar">★</span>
-            <span class="pb-master__name">Любой мастер</span>
-            <span class="pb-master__position">к кому раньше</span>
+            <span class="pb-master__name">${t("any_master")}</span>
+            <span class="pb-master__position">${t("any_master_hint")}</span>
             <span class="pb-master__next">${escapeHtml(formatDayLabel(anyNext.date))}, ${escapeHtml(anyNext.start_time)}</span>
           </button>`
         : "";
 
     return `
       ${backButton()}
-      <h2 class="pb-panel__title">Выберите мастера</h2>
-      <p class="pb-panel__hint">Нажмите на время под мастером — запишем на ближайшее.</p>
+      <h2 class="pb-panel__title">${t("choose_master")}</h2>
+      <p class="pb-panel__hint">${t("masters_hint")}</p>
       <div class="pb-masters">
         ${anyCard}
         ${state.staff
@@ -296,13 +300,13 @@ window.PublicBookingUI = (() => {
             const next = member.next_available;
             const nextText = next
               ? `${formatDayLabel(next.date)}, ${next.start_time}`
-              : "Нет окон на 2 недели";
+              : t("no_windows");
             return `
               <button class="pb-master ${state.selection.staffId === member.id ? "is-selected" : ""} ${next ? "" : "is-busy"}" type="button" data-action="select-staff" data-id="${member.id}">
                 <span class="pb-avatar">${escapeHtml(initials(member.name))}</span>
                 <span class="pb-master__name">${escapeHtml(member.name)}</span>
                 ${member.position ? `<span class="pb-master__position">${escapeHtml(member.position)}</span>` : ""}
-                <span class="pb-master__next" ${next ? `data-action="select-next" data-id="${member.id}" title="Записаться на это время"` : ""}>${next ? "⚡ " : ""}${escapeHtml(nextText)}</span>
+                <span class="pb-master__next" ${next ? `data-action="select-next" data-id="${member.id}" title="${escapeHtml(t("book_this_time"))}"` : ""}>${next ? "⚡ " : ""}${escapeHtml(nextText)}</span>
               </button>`;
           })
           .join("")}
@@ -323,28 +327,26 @@ window.PublicBookingUI = (() => {
       .map((date) => {
         const d = parseDate(date);
         const off = workDays && !workDays.includes(dayIndex(date));
-        const label = date === today ? "сег" : WEEKDAYS_SHORT[d.getDay()];
+        const label = date === today ? t("today_short") : t("weekdays_short").split(",")[d.getDay()];
         return `
-          <button class="pb-day ${date === selected ? "is-selected" : ""} ${off ? "is-off" : ""}" type="button" data-action="select-day" data-date="${date}" ${off ? 'aria-disabled="true" title="Выходной"' : ""}>
+          <button class="pb-day ${date === selected ? "is-selected" : ""} ${off ? "is-off" : ""}" type="button" data-action="select-day" data-date="${date}" ${off ? `aria-disabled="true" title="${escapeHtml(t("day_off"))}"` : ""}>
             <span class="pb-day__week">${label}</span>
             <span class="pb-day__num">${d.getDate()}</span>
           </button>`;
       })
       .join("");
 
-    const monthTitle = parseDate(selected || today)
-      .toLocaleDateString("ru-RU", { month: "long", year: "numeric" })
-      .replace(/\s*г\.?$/, "");
+    const monthTitle = I18n.formatDate(parseDate(selected || today), "monthYear");
 
     return `
       <div class="pb-days-head">
         <span class="pb-days-head__month">${escapeHtml(monthTitle)}</span>
         <label class="pb-other-date">
-          Другая дата
+          ${t("other_date")}
           <input type="date" id="pb-date-input" min="${today}" max="${PublicBookingState.getMaxDateString()}" value="${escapeHtml(selected || today)}">
         </label>
       </div>
-      <div class="pb-days" role="listbox" aria-label="Дата">${chips}</div>
+      <div class="pb-days" role="listbox" aria-label="${escapeHtml(t("date"))}">${chips}</div>
     `;
   }
 
@@ -358,19 +360,19 @@ window.PublicBookingUI = (() => {
       const offerNext = next && next.date !== state.selection.bookingDate && next.date > state.selection.bookingDate;
       return `
         <div class="pb-empty">
-          В этот день свободного времени нет.
+          ${t("no_free_time")}
           ${
             offerNext
-              ? `<button class="pb-link" type="button" data-action="select-day" data-date="${next.date}">Ближайшее: ${escapeHtml(formatDayLabel(next.date))}, ${escapeHtml(next.start_time)} →</button>`
+              ? `<button class="pb-link" type="button" data-action="select-day" data-date="${next.date}">${escapeHtml(t("nearest", { when: `${formatDayLabel(next.date)}, ${next.start_time}` }))}</button>`
               : ""
           }
         </div>`;
     }
 
     const groups = [
-      { title: "Утро", from: 0, to: 12 * 60 },
-      { title: "День", from: 12 * 60, to: 17 * 60 },
-      { title: "Вечер", from: 17 * 60, to: 24 * 60 },
+      { title: t("morning"), from: 0, to: 12 * 60 },
+      { title: t("afternoon"), from: 12 * 60, to: 17 * 60 },
+      { title: t("evening"), from: 17 * 60, to: 24 * 60 },
     ];
     const toMinutes = (time) => {
       const [h, m] = String(time).split(":").map(Number);
@@ -408,7 +410,7 @@ window.PublicBookingUI = (() => {
 
     return `
       ${backButton()}
-      <h2 class="pb-panel__title">Выберите дату и время</h2>
+      <h2 class="pb-panel__title">${t("choose_time")}</h2>
       <p class="pb-panel__hint">${escapeHtml(service?.name || "")}${staff ? ` · ${escapeHtml(staff.name)}` : ""}</p>
       ${renderDayStrip(state, staff)}
       <div class="pb-slots-area">${renderSlots(state, staff)}</div>
@@ -423,7 +425,7 @@ window.PublicBookingUI = (() => {
 
     return `
       ${backButton()}
-      <h2 class="pb-panel__title">Почти готово</h2>
+      <h2 class="pb-panel__title">${t("almost_done")}</h2>
       <div class="pb-ticket pb-ticket--compact">
         <div class="pb-ticket__when">
           <span class="pb-ticket__day">${escapeHtml(formatDayLabel(state.selection.bookingDate))}</span>
@@ -431,26 +433,26 @@ window.PublicBookingUI = (() => {
         </div>
         <div class="pb-ticket__rows">
           <div class="pb-ticket__row"><span>${escapeHtml(service?.name || "")}</span><span>${escapeHtml(price)}</span></div>
-          <div class="pb-ticket__row"><span>Мастер</span><span>${escapeHtml(staff?.name || "")}</span></div>
+          <div class="pb-ticket__row"><span>${t("master")}</span><span>${escapeHtml(staff?.name || "")}</span></div>
         </div>
       </div>
 
       <form class="pb-form-grid" id="pb-client-form" onsubmit="return false">
         <label class="field">
-          <span class="field__label">Ваше имя</span>
+          <span class="field__label">${t("your_name")}</span>
           <input class="field__input" name="client_name" required minlength="2" maxlength="100" autocomplete="name" value="${escapeHtml(state.selection.clientName)}">
         </label>
         <label class="field">
-          <span class="field__label">Телефон</span>
+          <span class="field__label">${t("phone")}</span>
           <input class="field__input" name="client_phone" type="tel" required maxlength="30" autocomplete="tel" inputmode="tel" placeholder="+7 (700) 000-00-00" value="${escapeHtml(state.selection.clientPhone)}">
         </label>
         ${
           showComment
             ? `<label class="field">
-                 <span class="field__label">Комментарий <span class="pb-optional">— необязательно</span></span>
+                 <span class="field__label">${t("comment")} <span class="pb-optional">${t("optional")}</span></span>
                  <textarea class="field__textarea" name="client_comment" rows="2" maxlength="500">${escapeHtml(state.selection.clientComment)}</textarea>
                </label>`
-            : `<button class="pb-link pb-link--left" type="button" data-action="show-comment">+ Добавить комментарий</button>`
+            : `<button class="pb-link pb-link--left" type="button" data-action="show-comment">${t("add_comment")}</button>`
         }
         <label class="pb-honeypot" aria-hidden="true">
           <span>Website</span>
@@ -465,40 +467,40 @@ window.PublicBookingUI = (() => {
   function renderVerification(state) {
     const v = state.verification;
     const phone = escapeHtml(state.selection.clientPhone);
-    const consent = `<p class="pb-consent-note">Нажимая «Записаться», вы соглашаетесь на обработку имени и телефона для записи.</p>`;
+    const consent = `<p class="pb-consent-note">${t("consent")}</p>`;
 
     if (v?.status === "waiting") {
       return `
         <div class="pb-verify">
-          <p class="pb-verify__title">Остался один шаг — подтвердите номер ${phone}</p>
+          <p class="pb-verify__title">${t("verify_title", { phone })}</p>
           <ol class="pb-verify__steps">
-            <li>Откройте Telegram кнопкой ниже.</li>
-            <li>Нажмите <b>Start</b>, затем <b>«Поделиться номером»</b>.</li>
-            <li>Вернитесь сюда — запись создастся сама.</li>
+            <li>${t("verify_step1")}</li>
+            <li>${t("verify_step2")}</li>
+            <li>${t("verify_step3")}</li>
           </ol>
-          <a class="btn btn--primary pb-verify__open" href="${escapeHtml(v.botUrl)}" target="_blank" rel="noopener">Открыть Telegram</a>
-          <p class="pb-verify__wait"><span class="pb-verify__spinner" aria-hidden="true"></span>Ждём подтверждения…</p>
-          <p class="pb-verify__note">Это нужно только в первый раз — дальше записывайтесь без подтверждения.</p>
+          <a class="btn btn--primary pb-verify__open" href="${escapeHtml(v.botUrl)}" target="_blank" rel="noopener">${t("verify_open")}</a>
+          <p class="pb-verify__wait"><span class="pb-verify__spinner" aria-hidden="true"></span>${t("verify_wait")}</p>
+          <p class="pb-verify__note">${t("verify_note")}</p>
         </div>
-        <button class="pb-btn pb-btn--ghost" type="button" data-action="change-phone">Изменить номер</button>`;
+        <button class="pb-btn pb-btn--ghost" type="button" data-action="change-phone">${t("change_phone")}</button>`;
     }
 
     if (v?.status === "mismatch" || v?.status === "expired") {
       const text =
         v.status === "mismatch"
-          ? `Номер вашего Telegram не совпадает с ${phone}. Укажите номер, к которому привязан Telegram.`
-          : "Время на подтверждение истекло. Попробуйте ещё раз.";
+          ? t("verify_mismatch", { phone })
+          : t("verify_expired");
       return `
         <p class="alert alert--error pb-alert" role="alert">${text}</p>
-        <button class="pb-btn" type="button" data-action="retry-verification">Подтвердить ещё раз</button>
-        <button class="pb-btn pb-btn--ghost" type="button" data-action="change-phone">Изменить номер</button>`;
+        <button class="pb-btn" type="button" data-action="retry-verification">${t("verify_retry")}</button>
+        <button class="pb-btn pb-btn--ghost" type="button" data-action="change-phone">${t("change_phone")}</button>`;
     }
 
     if (v?.status === "creating") {
-      return `<button class="pb-btn" type="button" disabled>Подождите…</button>`;
+      return `<button class="pb-btn" type="button" disabled>${t("please_wait")}</button>`;
     }
 
-    return `<button class="pb-btn" type="button" data-action="submit-booking" id="pb-submit-btn">Записаться</button>${consent}`;
+    return `<button class="pb-btn" type="button" data-action="submit-booking" id="pb-submit-btn">${t("submit")}</button>${consent}`;
   }
 
   return {
