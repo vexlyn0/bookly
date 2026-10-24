@@ -27,8 +27,11 @@ async function runReminders(req, res) {
   const received = req.get("x-cron-secret") || req.query.secret;
   if (!secretMatches(received)) return res.sendStatus(401);
 
-  const sent = await clientBot.sendDueReminders();
-  return res.json({ ok: true, sent });
+  const [sent, visitChecks] = await Promise.all([
+    clientBot.sendDueReminders(),
+    require("../lib/visit-check-service").sendDueVisitChecks(),
+  ]);
+  return res.json({ ok: true, sent, visit_checks: visitChecks });
 }
 
 router.post("/reminders", runReminders);

@@ -158,8 +158,9 @@ window.BooklyDashboardUI = (() => {
         const end = toMinutes(b.end_time);
         const state = end <= nowMinutes ? "is-past" : start <= nowMinutes ? "is-now" : "";
         const pending = b.status === "pending";
+        const awaiting = state === "is-past" && ACTIVE.includes(b.status);
         return `
-          <div class="today-row ${state} ${pending ? "is-pending" : ""}" data-booking-id="${b.id}" role="button" tabindex="0">
+          <div class="today-row ${awaiting ? "is-awaiting" : state} ${pending && !awaiting ? "is-pending" : ""}" data-booking-id="${b.id}" role="button" tabindex="0">
             <span class="today-row__time">${hhmm(b.start_time)}<small>${hhmm(b.end_time)}</small></span>
             <span class="today-row__bar status-bar--${escapeHtml(b.status)}" aria-hidden="true"></span>
             <span class="today-row__body">
@@ -167,7 +168,13 @@ window.BooklyDashboardUI = (() => {
               <span>${escapeHtml(b.services?.name || "")} · ${escapeHtml(staffName(b.staff_id))}</span>
             </span>
             ${
-              pending
+              awaiting
+                ? `<span class="today-row__actions">
+                     <button class="btn btn--primary btn--sm" type="button" data-visit-done="${b.id}" title="Пришёл, оплатил по записи">Пришёл${b.price ? ` · ${Number(b.price).toLocaleString("ru-RU")} ₸` : ""}</button>
+                     <button class="btn btn--outline btn--sm" type="button" data-visit-sum="${b.id}" title="Другая сумма">₸</button>
+                     <button class="btn btn--ghost btn--sm" type="button" data-visit-noshow="${b.id}" title="Не пришёл">Не пришёл</button>
+                   </span>`
+                : pending
                 ? `<span class="today-row__actions">
                      <button class="btn btn--primary btn--sm" type="button" data-confirm="${b.id}">Подтвердить</button>
                      <button class="btn btn--ghost btn--sm" type="button" data-reject="${b.id}" aria-label="Отклонить">✕</button>
@@ -263,7 +270,43 @@ window.BooklyDashboardUI = (() => {
     }
   }
 
+  async function markVisit(id, mode, button) {
+    let amount = null;
+    if (mode === "sum") {
+      const booking = bookings.find((b) => b.id === id);
+      const input = window.prompt(
+        `Сколько заплатил(а) ${booking?.client_name || "клиент"}? Сумма в тенге:`,
+        booking?.price ? String(booking.price) : ""
+      );
+      if (input === null) return;
+      amount = Number(String(input).replace(/[\s.,₸]/g, "").replace(/тг$/i, ""));
+      if (!Number.isFinite(amount) || amount < 0 || amount > 100000000) {
+        alert("Введите сумму числом, например 4500.");
+        return;
+      }
+    }
+
+    button.disabled = true;
+    try {
+      if (mode === "noshow") await BooklyBookings.setStatus(id, "no_show");
+      else await BooklyBookings.completeVisit(id, amount);
+      document.dispatchEvent(new CustomEvent("bookly:bookings-changed"));
+    } catch (error) {
+      button.disabled = false;
+      alert(window.BooklyBookingsErrors?.fromError(error) || "Не удалось отметить визит.");
+    }
+  }
+
   function handleClick(event) {
+    const visitBtn = event.target.closest("[data-visit-done], [data-visit-sum], [data-visit-noshow]");
+    if (visitBtn) {
+      event.stopPropagation();
+      const mode = visitBtn.dataset.visitDone ? "done" : visitBtn.dataset.visitSum ? "sum" : "noshow";
+      const id = visitBtn.dataset.visitDone || visitBtn.dataset.visitSum || visitBtn.dataset.visitNoshow;
+      markVisit(id, mode, visitBtn);
+      return;
+    }
+
     const confirmBtn = event.target.closest("[data-confirm]");
     if (confirmBtn) {
       event.stopPropagation();

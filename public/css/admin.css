@@ -3495,3 +3495,17 @@
     grid-column: 1 / -1;
   }
 }
+
+/* Прошедшая запись без отметки «Пришёл / Не пришёл» */
+.today-row.is-awaiting {
+  background: #fff7ed;
+}
+
+.today-row.is-awaiting .today-row__actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.an-awaiting .kpi-card__sub {
+  color: #854f0b;
+}

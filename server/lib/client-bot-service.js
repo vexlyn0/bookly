@@ -564,7 +564,10 @@ let reminderTimer = null;
 /** Проверка напоминаний каждые 5 минут, пока сервер работает. */
 function startReminderScheduler() {
   if (reminderTimer || !telegram.isEnabled()) return;
-  const tick = () => void sendDueReminders();
+  const tick = () => {
+    void sendDueReminders();
+    void require("./visit-check-service").sendDueVisitChecks();
+  };
   reminderTimer = setInterval(tick, 5 * 60 * 1000);
   reminderTimer.unref?.();
   setTimeout(tick, 30 * 1000).unref?.();

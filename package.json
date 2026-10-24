@@ -44,6 +44,7 @@
     "test:phone-verification-unit": "node scripts/test-phone-verification-unit.js",
     "test:client-bot-unit": "node scripts/test-client-bot-unit.js",
     "test:insights-unit": "node scripts/test-insights-unit.js",
+    "test:visit-check-unit": "node scripts/test-visit-check-unit.js",
     "db:freemium": "node scripts/setup-freemium.js",
     "test:migrations": "node scripts/test-migrations.mjs",
     "test:plan-unit": "node scripts/test-plan-unit.js"

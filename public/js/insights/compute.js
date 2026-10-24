@@ -2,9 +2,10 @@
  * Bookly — расчёты для «Клиентов» и «Аналитики» (Pro).
  * Чистые функции без DOM и сети: работают и в браузере, и в unit-тестах Node.
  *
- * «Визит» — завершённая запись или подтверждённая/ожидающая запись, время
- * которой уже прошло (салоны часто не отмечают «Завершена» вручную).
- * Выручка считается по текущим ценам услуг.
+ * «Визит» — только завершённая запись: мастер подтвердил в Telegram «Пришёл»
+ * или салон отметил «Завершена» в кабинете. Сумма визита — оплачено по факту
+ * (paid_amount), иначе цена на момент записи (price), иначе текущая цена услуги.
+ * Прошедшие, но не отмеченные записи — «ждут отметки», в выручку не входят.
  */
 (function (root) {
   const ACTIVE = ["pending", "confirmed"];
@@ -57,8 +58,12 @@
     return d;
   }
 
-  function isVisit(booking, now) {
-    if (booking.status === "completed") return true;
+  function isVisit(booking) {
+    return booking.status === "completed";
+  }
+
+  /** Время прошло, а визит не отмечен (ни «Пришёл», ни «Не пришёл»). */
+  function isAwaiting(booking, now) {
     return ACTIVE.includes(booking.status) && endsAt(booking) <= now;
   }
 
@@ -67,6 +72,8 @@
   }
 
   function priceOf(booking, priceByService) {
+    if (booking.paid_amount !== null && booking.paid_amount !== undefined) return Number(booking.paid_amount) || 0;
+    if (booking.price !== null && booking.price !== undefined) return Number(booking.price) || 0;
     if (priceByService && priceByService.has(booking.service_id)) {
       return Number(priceByService.get(booking.service_id)) || 0;
     }
@@ -241,6 +248,7 @@
   function summarize(bookings, range, { now, priceByService, firstSeen }) {
     const list = bookings.filter((b) => inRange(b, range));
     const visits = list.filter((b) => isVisit(b, now));
+    const awaiting = list.filter((b) => isAwaiting(b, now));
     const noShows = list.filter((b) => b.status === "no_show").length;
     const revenue = visits.reduce((sum, b) => sum + priceOf(b, priceByService), 0);
     const notCanceled = list.filter((b) => b.status !== "canceled");
@@ -261,6 +269,8 @@
       cancellations: list.filter((b) => b.status === "canceled").length,
       onlineShare: notCanceled.length ? Math.round((online / notCanceled.length) * 100) : 0,
       newClients,
+      awaiting: awaiting.length,
+      awaitingAmount: awaiting.reduce((sum, b) => sum + priceOf(b, priceByService), 0),
     };
   }
 
@@ -403,6 +413,7 @@
     addDays,
     daysBetween,
     isVisit,
+    isAwaiting,
     isUpcoming,
     aggregateClients,
     filterClients,

@@ -372,6 +372,15 @@ window.BooklyInsightsUI = (() => {
       <article class="kpi-card"><p class="kpi-card__label">Новых клиентов</p><p class="kpi-card__value">${c.newClients}</p>${deltaBadge(a.deltas.newClients)}</article>
       <article class="kpi-card ${c.noShowRate >= 10 ? "kpi-card--warn is-active" : ""}"><p class="kpi-card__label">Неявки</p><p class="kpi-card__value">${c.noShowRate}%</p><span class="kpi-card__sub">${c.noShows} ${plural(c.noShows, "раз", "раза", "раз")} · отмен: ${c.cancellations}</span></article>
       <article class="kpi-card"><p class="kpi-card__label">Записались онлайн</p><p class="kpi-card__value">${c.onlineShare}%</p><span class="kpi-card__sub">из ${c.bookings} ${plural(c.bookings, "записи", "записей", "записей")}</span></article>
+      ${
+        c.awaiting
+          ? `<article class="kpi-card kpi-card--warn is-active an-awaiting">
+               <p class="kpi-card__label">Ждут отметки</p>
+               <p class="kpi-card__value">${c.awaiting}</p>
+               <span class="kpi-card__sub">${plural(c.awaiting, "визит", "визита", "визитов")} на ${money(c.awaitingAmount)} — пока не в выручке. Мастер отмечает в Telegram, или вы — на «Сегодня» / в «Записях».</span>
+             </article>`
+          : ""
+      }
     `;
 
     els.chartNote.textContent = a.bucketDays === 7 ? "по неделям" : "по дням";

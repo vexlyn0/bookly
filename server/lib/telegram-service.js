@@ -21,7 +21,7 @@ const API_BASE = "https://api.telegram.org";
 const REQUEST_TIMEOUT_MS = 8000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LINK_TOKEN_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
-const CALLBACK_PATTERN = /^bk:(confirm|reject):([0-9a-f-]{36})$/i;
+const CALLBACK_PATTERN = /^bk:(confirm|reject|done|sum|noshow):([0-9a-f-]{36})$/i;
 const COMMAND_PATTERN = /^\/([a-z_]+)(?:@\w+)?(?:\s+(.+))?$/i;
 
 const STATUS_LABELS = {
@@ -422,6 +422,10 @@ function clientBot() {
   return require("./client-bot-service");
 }
 
+function visitCheck() {
+  return require("./visit-check-service");
+}
+
 async function linkStaff(chatId, token) {
   if (!LINK_TOKEN_PATTERN.test(token)) {
     return "❌ Ссылка недействительна. Откройте свежую ссылку в кабинете Bookly.";
@@ -611,6 +615,11 @@ async function handleMessage(message) {
     return;
   }
 
+  // Мастер нажал «Другая сумма» и прислал число.
+  if (!parsed && message.text && (await visitCheck().handleAmountMessage(chatId, message.text))) {
+    return;
+  }
+
   if (parsed?.command === "start" && /^v_[0-9a-f]{32}$/.test(parsed.args)) {
     await startPhoneVerification(chatId, parsed.args.slice(2));
     return;
@@ -641,6 +650,17 @@ async function handleCallback(callbackQuery) {
 
   if (!parsed || !chatId) {
     await answerCallback(callbackId, "Неизвестное действие");
+    return;
+  }
+
+  if (["done", "sum", "noshow"].includes(parsed.action)) {
+    await visitCheck().handleVisitCallback({
+      callbackId,
+      chatId,
+      messageId: message.message_id,
+      action: parsed.action,
+      bookingId: parsed.bookingId,
+    });
     return;
   }
 

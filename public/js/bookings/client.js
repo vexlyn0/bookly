@@ -35,7 +35,7 @@ window.BooklyBookings = (() => {
 
     const { data, error } = await supabase
       .from("bookings")
-      .select("id, staff_id, service_id, booking_date, start_time, end_time, status, source, client_name, client_phone, client_comment, services(name)")
+      .select("id, staff_id, service_id, booking_date, start_time, end_time, status, source, price, paid_amount, client_name, client_phone, client_comment, services(name)")
       .eq("organization_id", organizationId)
       .gte("booking_date", fromDate)
       .lte("booking_date", toDate)
@@ -168,6 +168,23 @@ window.BooklyBookings = (() => {
     return data;
   }
 
+  /** Визит состоялся: «Завершена» и, если указана, фактическая сумма оплаты. */
+  async function completeVisit(bookingId, paidAmount = null) {
+    const supabase = await BooklyAuth.getClient();
+    const body = { status: "completed" };
+    if (paidAmount !== null && paidAmount !== undefined) body.paid_amount = paidAmount;
+
+    const { data, error } = await supabase
+      .from("bookings")
+      .update(body)
+      .eq("id", bookingId)
+      .select("*, services(name, duration_minutes, is_active), staff(name, is_active)")
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   async function remove(bookingId) {
     const supabase = await BooklyAuth.getClient();
     const { error } = await supabase.from("bookings").delete().eq("id", bookingId);
@@ -266,6 +283,7 @@ window.BooklyBookings = (() => {
     update,
     isReschedule,
     setStatus,
+    completeVisit,
     listRange,
     remove,
     computeStats,
