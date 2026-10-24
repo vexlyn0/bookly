@@ -577,11 +577,13 @@ window.BooklyBookingsUI = (() => {
    * Новая запись из календаря: мастер, дата и время уже выбраны.
    * Если мастер оказывает одну услугу — она тоже подставляется.
    */
-  async function openCreate({ staffId = "", date = "", startTime = "" } = {}) {
+  async function openCreate({ staffId = "", date = "", startTime = "", clientName = "", clientPhone = "" } = {}) {
     await openForm(null);
     pendingPrefill = { staffId, date, startTime };
 
     if (date && els.form) els.form.elements.namedItem("booking_date").value = date;
+    if (clientName && els.form) els.form.elements.namedItem("client_name").value = clientName;
+    if (clientPhone && els.form) els.form.elements.namedItem("client_phone").value = clientPhone;
     if (!staffId) return;
 
     try {

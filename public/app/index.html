@@ -443,9 +443,28 @@
       </section>
 
       <!-- Клиенты (Pro) -->
-      <section class="panel pro-feature" id="clients-section" data-section="clients" hidden>
+      <section class="panel insights-panel" id="clients-section" data-section="clients" hidden>
+        <div class="insights" id="clients-app" hidden>
+          <div class="insights-toolbar">
+            <div class="seg" id="clients-segments" role="tablist" aria-label="Сегменты клиентов"></div>
+            <div class="insights-toolbar__right">
+              <input class="field__input insights-search" type="search" id="clients-search" placeholder="Имя или телефон" autocomplete="off">
+              <select class="field__select" id="clients-lapsed" aria-label="Сколько дней без визита" hidden>
+                <option value="30">не были 30+ дней</option>
+                <option value="45" selected>не были 45+ дней</option>
+                <option value="60">не были 60+ дней</option>
+                <option value="90">не были 90+ дней</option>
+              </select>
+              <button class="btn btn--outline" type="button" id="clients-export">Скачать CSV</button>
+            </div>
+          </div>
+          <p class="insights-hint" id="clients-hint"></p>
+          <div class="clients-list" id="clients-list"><p class="today-empty">Загрузка…</p></div>
+        </div>
+
+        <div class="pro-feature" id="clients-gate">
         <div class="pro-feature__intro">
-          <span class="pro-feature__tag">Pro · скоро</span>
+          <span class="pro-feature__tag">Pro</span>
           <h2 class="pro-feature__title">База клиентов: кому пора прийти снова</h2>
           <p class="pro-feature__text">
             Каждый, кто записался с телефоном, попадает в базу сам — без таблиц и ручного ввода.
@@ -453,12 +472,12 @@
           </p>
           <ul class="pro-feature__list">
             <li><strong>Собирается сама</strong> — из онлайн-записей и записей, созданных в кабинете.</li>
-            <li><strong>Кому пора пригласить</strong> — вы задаёте срок после визита, Bookly напоминает.</li>
+            <li><strong>Кому пора пригласить</strong> — вы задаёте срок после визита, Bookly покажет их списком.</li>
             <li><strong>Приглашение в один клик</strong> — готовый текст с именем, услугой и ссылкой.</li>
-            <li><strong>Карточка клиента</strong> — история визитов, сумма, любимый мастер, заметки.</li>
+            <li><strong>Карточка клиента</strong> — история визитов, сумма, любимый мастер, неявки.</li>
           </ul>
           <div class="pro-feature__actions">
-            <button class="btn btn--primary" type="button" data-open-section="subscription">Узнать о Pro</button>
+            <button class="btn btn--primary" type="button" data-open-section="subscription">Попробовать Pro 14 дней бесплатно</button>
           </div>
         </div>
 
@@ -483,25 +502,59 @@
             </div>
           </div>
         </div>
+        </div>
       </section>
 
       <!-- Аналитика (Pro) -->
-      <section class="panel pro-feature" id="analytics-section" data-section="analytics" hidden>
+      <section class="panel insights-panel" id="analytics-section" data-section="analytics" hidden>
+        <div class="insights" id="analytics-app" hidden>
+          <div class="insights-toolbar">
+            <div class="seg" id="analytics-periods" role="tablist" aria-label="Период"></div>
+            <p class="insights-hint insights-hint--inline">Выручка — по текущим ценам услуг</p>
+          </div>
+          <div class="an-kpis" id="analytics-kpis"></div>
+          <div class="an-card">
+            <div class="an-card__head"><h3 class="an-card__title">Выручка</h3><span class="an-card__note" id="analytics-chart-note"></span></div>
+            <div class="an-chart" id="analytics-chart"></div>
+          </div>
+          <div class="an-grid">
+            <div class="an-card">
+              <div class="an-card__head"><h3 class="an-card__title">Мастера</h3><span class="an-card__note">загрузка — по рабочему графику</span></div>
+              <div id="analytics-staff"></div>
+            </div>
+            <div class="an-card">
+              <div class="an-card__head"><h3 class="an-card__title">Популярные услуги</h3></div>
+              <div id="analytics-services"></div>
+            </div>
+          </div>
+          <div class="an-grid">
+            <div class="an-card">
+              <div class="an-card__head"><h3 class="an-card__title">По дням недели</h3><span class="an-card__note">записей</span></div>
+              <div class="an-bars" id="analytics-weekdays"></div>
+            </div>
+            <div class="an-card">
+              <div class="an-card__head"><h3 class="an-card__title">По часам</h3><span class="an-card__note">когда приходят чаще</span></div>
+              <div class="an-bars" id="analytics-hours"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pro-feature" id="analytics-gate">
         <div class="pro-feature__intro">
-          <span class="pro-feature__tag">Pro · скоро</span>
+          <span class="pro-feature__tag">Pro</span>
           <h2 class="pro-feature__title">Аналитика: как работает ваш салон</h2>
           <p class="pro-feature__text">
-            Сколько людей открыли страницу записи и сколько записались, откуда пришли клиенты,
-            какие часы пустуют и сколько приносит каждый мастер.
+            Сколько салон заработал, сколько приносит каждый мастер, какие услуги популярнее
+            и в какие дни и часы пусто — без таблиц и подсчётов вручную.
           </p>
           <ul class="pro-feature__list">
-            <li><strong>Заходы и конверсия</strong> — сколько посетителей стали записями.</li>
-            <li><strong>Откуда клиенты</strong> — Instagram, WhatsApp, 2ГИС, Telegram.</li>
-            <li><strong>Загрузка по часам</strong> — когда пусто и где поставить акцию.</li>
-            <li><strong>По мастерам</strong> — записи, выручка и загрузка каждого мастера.</li>
+            <li><strong>Выручка и визиты</strong> — за неделю, месяц, квартал и сравнение с прошлым периодом.</li>
+            <li><strong>По мастерам</strong> — визиты, выручка и загрузка по рабочему графику.</li>
+            <li><strong>Неявки и отмены</strong> — сколько времени теряете и где помогут напоминания.</li>
+            <li><strong>Пустые часы и дни</strong> — когда поставить акцию.</li>
           </ul>
           <div class="pro-feature__actions">
-            <button class="btn btn--primary" type="button" data-open-section="subscription">Узнать о Pro</button>
+            <button class="btn btn--primary" type="button" data-open-section="subscription">Попробовать Pro 14 дней бесплатно</button>
           </div>
         </div>
 
@@ -509,8 +562,8 @@
           <p class="pro-feature__demo-label">Пример · данные условные</p>
           <div class="demo-stats">
             <div><span>Записей за 7 дней</span><strong>46</strong><em>+28%</em></div>
-            <div><span>Посетителей</span><strong>312</strong></div>
-            <div><span>Конверсия</span><strong>15%</strong></div>
+            <div><span>Выручка</span><strong>501 000 ₸</strong></div>
+            <div><span>Неявки</span><strong>4%</strong></div>
           </div>
           <div class="demo-bars" aria-hidden="true">
             <span style="--h:40%"></span><span style="--h:65%"></span><span style="--h:55%"></span><span style="--h:80%"></span><span style="--h:95%"></span><span style="--h:100%"></span><span style="--h:30%"></span>
@@ -520,6 +573,7 @@
             <div><span>Данияр</span><strong>15 записей · 156 000 ₸</strong></div>
             <div><span>Алина</span><strong>13 записей · 131 000 ₸</strong></div>
           </div>
+        </div>
         </div>
       </section>
 
@@ -963,6 +1017,20 @@
     </div>
   </div>
 
+  <!-- Модалка: карточка клиента -->
+  <div class="modal" id="client-modal" aria-hidden="true" role="dialog" aria-labelledby="client-modal-title">
+    <div class="modal__dialog modal__dialog--wide">
+      <header class="modal__header">
+        <div>
+          <h2 class="modal__title" id="client-modal-title">Клиент</h2>
+          <p class="modal__subtitle" id="client-modal-subtitle"></p>
+        </div>
+        <button class="modal__close" type="button" data-close-client-modal aria-label="Закрыть">×</button>
+      </header>
+      <div class="client-card" id="client-modal-body"></div>
+    </div>
+  </div>
+
   <!-- Модалка: сообщить клиенту о переносе / отмене -->
   <div class="modal" id="client-notify-modal" aria-hidden="true" role="dialog" aria-labelledby="client-notify-title">
     <div class="modal__dialog modal__dialog--sm">
@@ -1009,6 +1077,8 @@
   <script src="/js/bookings/ui.js"></script>
   <script src="/js/calendar/ui.js"></script>
   <script src="/js/dashboard/ui.js"></script>
+  <script src="/js/insights/compute.js"></script>
+  <script src="/js/insights/ui.js"></script>
   <script src="/js/public-settings/validation.js"></script>
   <script src="/js/public-settings/ui.js"></script>
   <script src="/js/blacklist/ui.js"></script>
