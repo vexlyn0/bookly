@@ -548,3 +548,259 @@
     margin-left: 0;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Бесплатные инструменты
+ * ------------------------------------------------------------------------- */
+
+.page-hero--tool {
+  padding-bottom: 8px;
+}
+
+.page-hero--tool .page-hero__lead {
+  max-width: 720px;
+}
+
+.section--tool {
+  padding-top: 24px;
+}
+
+.tool {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  gap: 40px;
+  align-items: start;
+}
+
+.tool__form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--card);
+}
+
+.tool__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.tool__label {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tool__hint {
+  margin: 0;
+  color: var(--dim);
+  font-size: 13px;
+}
+
+.tool__input {
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--bg-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  color-scheme: dark;
+}
+
+.tool__input:focus {
+  outline: none;
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px var(--violet-soft);
+}
+
+.tool__input::placeholder {
+  color: var(--dim);
+}
+
+.tool__presets,
+.tool__seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tool__presets button,
+.tool__seg button,
+.tool__add {
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tool__presets button:hover,
+.tool__seg button:hover,
+.tool__add:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tool__seg button[aria-pressed="true"] {
+  border-color: var(--violet);
+  background: var(--violet-soft);
+  color: var(--text);
+}
+
+.tool__add {
+  align-self: flex-start;
+  border-style: dashed;
+}
+
+.tool__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.okoshki-days {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.okoshki-day {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) 36px;
+  gap: 8px;
+}
+
+.okoshki-day__remove {
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--dim);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.okoshki-day__remove:hover {
+  color: var(--coral);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.okoshki-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.okoshki-theme {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.okoshki-theme span {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.okoshki-theme[aria-pressed="true"] {
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px var(--violet-soft);
+}
+
+.tool__preview {
+  position: sticky;
+  top: 88px;
+}
+
+.tool__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.tool__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.tool__actions .btn {
+  flex: 1;
+}
+
+.tool-promo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 32px;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  background: var(--violet-soft);
+}
+
+.tool-promo__text {
+  max-width: 620px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .tool {
+    grid-template-columns: 1fr;
+  }
+
+  .tool__preview {
+    position: static;
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .tool__form {
+    padding: 18px;
+  }
+
+  .tool__pair {
+    grid-template-columns: 1fr;
+  }
+
+  .okoshki-day {
+    grid-template-columns: minmax(0, 1fr) 36px;
+  }
+
+  .okoshki-day [name="times"] {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .okoshki-day__remove {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+  }
+}

@@ -9,6 +9,7 @@
 const config = require("../config");
 const { AUDIENCES } = require("./audiences");
 const { FEATURES } = require("./features");
+const { TOOLS } = require("./tools");
 
 const LOGO_MARK =
   '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
@@ -38,6 +39,10 @@ function menu() {
     {
       label: "Кому подойдёт",
       items: AUDIENCES.map((a) => ({ label: a.menu, hint: a.menuHint, href: `/dlya/${a.slug}` })),
+    },
+    {
+      label: "Инструменты",
+      items: TOOLS.map((t) => ({ label: t.menu, hint: t.menuHint, href: `/instrumenty/${t.slug}` })),
     },
     { label: "Цены", href: "/#pricing" },
     { label: "Вопросы", href: "/#faq" },
@@ -100,6 +105,7 @@ function renderHeader(currentPath = "/") {
 function renderFooter() {
   const audiences = AUDIENCES.map((a) => `<a href="/dlya/${a.slug}">${escapeHtml(a.menu)}</a>`).join("");
   const features = FEATURES.map((f) => `<a href="/vozmozhnosti/${f.slug}">${escapeHtml(f.menu)}</a>`).join("");
+  const tools = TOOLS.map((t) => `<a href="/instrumenty/${t.slug}">${escapeHtml(t.menu)}</a>`).join("");
   return `
   <footer class="footer">
     <div class="container footer__inner">
@@ -116,6 +122,9 @@ function renderFooter() {
       <nav class="footer__links footer__links--wide" aria-label="Возможности">
         ${features}
       </nav>
+      <nav class="footer__links footer__links--wide" aria-label="Инструменты">
+        ${tools}
+      </nav>
       <nav class="footer__links footer__links--wide" aria-label="Кому подойдёт">
         ${audiences}
       </nav>
@@ -128,7 +137,7 @@ function absoluteUrl(path) {
   return config.publicUrl ? `${config.publicUrl.replace(/\/$/, "")}${path}` : path;
 }
 
-function renderPage({ path, title, description, body }) {
+function renderPage({ path, title, description, body, scripts = [] }) {
   return `<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -160,6 +169,7 @@ ${renderFooter()}
 
   <script src="/js/landing.js"></script>
   <script src="/js/site.js"></script>
+${scripts.map((src) => `  <script src="${src}"></script>`).join("\n")}
 </body>
 </html>
 `;
@@ -466,6 +476,155 @@ function findFeature(slug) {
   return FEATURES.find((f) => f.slug === slug) || null;
 }
 
+// ---------------------------------------------------------------------------
+// «Инструменты»
+// ---------------------------------------------------------------------------
+
+/** Переключатель из кнопок: [[значение, подпись], ...]. Состояние ведёт скрипт инструмента. */
+function segmented(group, options) {
+  return `<div class="tool__seg" role="group">${options
+    .map(([value, label]) => `<button type="button" data-${group}="${value}" aria-pressed="false">${escapeHtml(label)}</button>`)
+    .join("")}</div>`;
+}
+
+const TOOL_FORMS = {
+  "svobodnye-okoshki": () => `
+    <form class="tool__form" id="okoshki-form" onsubmit="return false" autocomplete="off">
+      <label class="tool__field">
+        <span class="tool__label">Салон или имя мастера</span>
+        <input class="tool__input" name="salon" maxlength="40" placeholder="Aura Beauty">
+      </label>
+
+      <div class="tool__field">
+        <span class="tool__label">Свободное время</span>
+        <div class="tool__presets">
+          <button type="button" data-preset="today">Сегодня</button>
+          <button type="button" data-preset="tomorrow">Завтра</button>
+          <button type="button" data-preset="week">Неделя</button>
+        </div>
+        <div class="okoshki-days" id="okoshki-days"></div>
+        <button type="button" class="tool__add" data-action="add-day">+ Добавить день</button>
+        <p class="tool__hint">Время — через запятую или пробел: 10:00, 13:30, 17</p>
+      </div>
+
+      <label class="tool__field">
+        <span class="tool__label">Подпись внизу</span>
+        <input class="tool__input" name="cta" maxlength="60" placeholder="Запись по ссылке в профиле">
+      </label>
+
+      <label class="tool__field">
+        <span class="tool__label">Ссылка или Instagram</span>
+        <input class="tool__input" name="link" maxlength="44" placeholder="@aura.beauty">
+      </label>
+
+      <div class="tool__pair">
+        <div class="tool__field">
+          <span class="tool__label">Язык картинки</span>
+          ${segmented("lang", [["ru", "Русский"], ["kk", "Қазақша"]])}
+        </div>
+        <div class="tool__field">
+          <span class="tool__label">Формат</span>
+          ${segmented("format", [["story", "Сторис"], ["post", "Пост"]])}
+        </div>
+      </div>
+
+      <div class="tool__field">
+        <span class="tool__label">Фон</span>
+        <div class="okoshki-themes" id="okoshki-themes"></div>
+      </div>
+    </form>
+
+    <div class="tool__preview">
+      <canvas class="tool__canvas" id="okoshki-canvas" width="1080" height="1920" aria-label="Предпросмотр картинки"></canvas>
+      <div class="tool__actions">
+        <button type="button" class="btn btn--primary" id="okoshki-download">Скачать PNG</button>
+        <button type="button" class="btn btn--ghost" id="okoshki-share" hidden>Поделиться</button>
+      </div>
+    </div>`,
+};
+
+function renderTool(tool) {
+  const others = TOOLS.filter((t) => t.slug !== tool.slug);
+  const body = `
+    <section class="page-hero page-hero--tool">
+      <div class="container">
+        <nav class="crumbs" aria-label="Навигация">
+          <a href="/">Главная</a><span>/</span><span>Бесплатные инструменты</span><span>/</span><span>${escapeHtml(tool.menu)}</span>
+        </nav>
+        <p class="eyebrow">Бесплатный инструмент · без регистрации</p>
+        <h1 class="page-hero__title">${escapeHtml(tool.h1)}</h1>
+        <p class="page-hero__lead">${escapeHtml(tool.lead)}</p>
+      </div>
+    </section>
+
+    <section class="section section--tool">
+      <div class="container">
+        <div class="tool">${TOOL_FORMS[tool.slug]()}</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section__header">
+          <p class="eyebrow reveal">Как сделать</p>
+          <h2 class="section__title reveal">Три шага — и картинка готова</h2>
+        </div>
+        <ol class="steps">
+          ${tool.steps
+            .map(
+              ([title, text], i) => `
+          <li class="step reveal${i ? ` reveal--delay-${i}` : ""}">
+            <span class="step__num">${i + 1}</span>
+            <h3>${escapeHtml(title)}</h3>
+            <p>${escapeHtml(text)}</p>
+          </li>`
+            )
+            .join("")}
+        </ol>
+      </div>
+    </section>
+
+    <section class="section section--tight">
+      <div class="container">
+        <div class="tool-promo reveal">
+          <div>
+            <p class="eyebrow">А если клиенты будут записываться сами?</p>
+            <p class="tool-promo__text">Страница записи Jazyl показывает свободное время сама — картинку не нужно обновлять после каждой записи. Бесплатно до 5 мастеров.</p>
+          </div>
+          <a href="/register" class="btn btn--light btn--lg" data-guest>Создать ссылку для записи</a>
+          <a href="/app" class="btn btn--light btn--lg" data-user hidden>Мой кабинет</a>
+        </div>
+      </div>
+    </section>
+
+    ${renderFaq(tool.faq)}
+
+    ${
+      others.length
+        ? `<section class="section section--tight">
+      <div class="container">
+        <p class="eyebrow">Ещё бесплатные инструменты</p>
+        <div class="also">
+          ${others.map((t) => `<a class="also__link" href="/instrumenty/${t.slug}">${escapeHtml(t.menu)} →</a>`).join("")}
+        </div>
+      </div>
+    </section>`
+        : ""
+    }`;
+
+  return renderPage({
+    path: `/instrumenty/${tool.slug}`,
+    title: tool.title,
+    description: tool.description,
+    body,
+    scripts: [tool.script],
+  });
+}
+
+function findTool(slug) {
+  return TOOLS.find((t) => t.slug === slug) || null;
+}
+
 function findAudience(slug) {
   return AUDIENCES.find((a) => a.slug === slug) || null;
 }
@@ -476,6 +635,7 @@ function sitePaths() {
     "/",
     ...FEATURES.map((f) => `/vozmozhnosti/${f.slug}`),
     ...AUDIENCES.map((a) => `/dlya/${a.slug}`),
+    ...TOOLS.map((t) => `/instrumenty/${t.slug}`),
   ];
 }
 
@@ -486,6 +646,8 @@ module.exports = {
   findAudience,
   renderFeature,
   findFeature,
+  renderTool,
+  findTool,
   sitePaths,
   absoluteUrl,
 };

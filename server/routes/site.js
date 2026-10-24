@@ -1,5 +1,5 @@
 /**
- * Jazyl — страницы сайта: главная (с общей шапкой), «Возможности», «Кому подойдёт», sitemap.xml, robots.txt
+ * Jazyl — страницы сайта: главная (с общей шапкой), «Возможности», «Кому подойдёт», «Инструменты», sitemap.xml, robots.txt
  */
 
 const fs = require("fs");
@@ -36,6 +36,12 @@ router.get("/vozmozhnosti/:slug", (req, res, next) => {
   const feature = site.findFeature(req.params.slug);
   if (!feature) return next();
   res.type("html").send(site.renderFeature(feature));
+});
+
+router.get("/instrumenty/:slug", (req, res, next) => {
+  const tool = site.findTool(req.params.slug);
+  if (!tool) return next();
+  res.type("html").send(site.renderTool(tool));
 });
 
 router.get("/sitemap.xml", (req, res) => {
