@@ -137,7 +137,7 @@ function absoluteUrl(path) {
   return config.publicUrl ? `${config.publicUrl.replace(/\/$/, "")}${path}` : path;
 }
 
-function renderPage({ path, title, description, body, scripts = [] }) {
+function renderPage({ path, title, description, body, scripts = [], fonts = "" }) {
   return `<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -154,7 +154,7 @@ function renderPage({ path, title, description, body, scripts = [] }) {
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800${fonts}&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/site.css">
@@ -489,57 +489,87 @@ function segmented(group, options) {
 
 const TOOL_FORMS = {
   "svobodnye-okoshki": () => `
-    <form class="tool__form" id="okoshki-form" onsubmit="return false" autocomplete="off">
-      <label class="tool__field">
-        <span class="tool__label">Салон или имя мастера</span>
-        <input class="tool__input" name="salon" maxlength="40" placeholder="Aura Beauty">
-      </label>
-
+    <form class="tool__form" onsubmit="return false" autocomplete="off">
       <div class="tool__field">
-        <span class="tool__label">Свободное время</span>
+        <span class="tool__label">Когда свободно</span>
         <div class="tool__presets">
           <button type="button" data-preset="today">Сегодня</button>
           <button type="button" data-preset="tomorrow">Завтра</button>
           <button type="button" data-preset="week">Неделя</button>
         </div>
-        <div class="okoshki-days" id="okoshki-days"></div>
+        <div class="ok-days" id="okoshki-days"></div>
         <button type="button" class="tool__add" data-action="add-day">+ Добавить день</button>
-        <p class="tool__hint">Время — через запятую или пробел: 10:00, 13:30, 17</p>
       </div>
 
-      <label class="tool__field">
-        <span class="tool__label">Подпись внизу</span>
-        <input class="tool__input" name="cta" maxlength="60" placeholder="Запись по ссылке в профиле">
-      </label>
-
-      <label class="tool__field">
-        <span class="tool__label">Ссылка или Instagram</span>
-        <input class="tool__input" name="link" maxlength="44" placeholder="@aura.beauty">
-      </label>
-
       <div class="tool__pair">
-        <div class="tool__field">
-          <span class="tool__label">Язык картинки</span>
-          ${segmented("lang", [["ru", "Русский"], ["kk", "Қазақша"]])}
-        </div>
-        <div class="tool__field">
-          <span class="tool__label">Формат</span>
-          ${segmented("format", [["story", "Сторис"], ["post", "Пост"]])}
-        </div>
+        <label class="tool__field">
+          <span class="tool__label">Услуга</span>
+          <select class="tool__input" name="service">
+            <option value="">Без подписи</option>
+            <option value="manicure">Маникюр</option>
+            <option value="pedicure">Педикюр</option>
+            <option value="lashes">Ресницы</option>
+            <option value="brows">Брови</option>
+            <option value="haircut">Стрижка</option>
+            <option value="barber">Барбер</option>
+            <option value="coloring">Окрашивание</option>
+            <option value="hair">Волосы</option>
+            <option value="massage">Массаж</option>
+            <option value="cosmetology">Косметология</option>
+            <option value="sugaring">Шугаринг</option>
+            <option value="tattoo">Тату</option>
+            <option value="custom">Свой вариант…</option>
+          </select>
+        </label>
+        <label class="tool__field" id="okoshki-service-custom" hidden>
+          <span class="tool__label">Своя услуга</span>
+          <input class="tool__input" name="serviceCustom" maxlength="24" placeholder="Педикюр + маникюр">
+        </label>
       </div>
 
       <div class="tool__field">
-        <span class="tool__label">Фон</span>
-        <div class="okoshki-themes" id="okoshki-themes"></div>
+        <span class="tool__label">Фон и стиль</span>
+        <div class="ok-styles" id="okoshki-styles"></div>
       </div>
+
+      <div class="tool__pair">
+        <div class="tool__field">
+          <span class="tool__label">Формат</span>
+          ${segmented("format", [["story", "Сторис 9:16"], ["post", "Пост 4:5"]])}
+        </div>
+        <div class="tool__field">
+          <span class="tool__label">Текст на картинке</span>
+          ${segmented("lang", [["ru", "Русский"], ["kk", "Қазақша"]])}
+        </div>
+      </div>
+
+      <label class="tool__field">
+        <span class="tool__label">Имя или @ник</span>
+        <input class="tool__input" name="nick" maxlength="32" placeholder="@aigerim.nails">
+      </label>
+
+      <div class="tool__field">
+        <span class="tool__label">Как записаться</span>
+        ${segmented("how", [["link", "Ссылка в шапке профиля"], ["direct", "Пишите в директ"], ["whatsapp", "WhatsApp"], ["custom", "Свой текст"]])}
+        <input class="tool__input" id="okoshki-whatsapp" name="whatsapp" maxlength="24" placeholder="+7 701 000 00 00" inputmode="tel" hidden>
+        <input class="tool__input" id="okoshki-custom" name="custom" maxlength="60" placeholder="Запись по телефону +7 701 000 00 00" hidden>
+      </div>
+
+      <label class="tool__field">
+        <span class="tool__label">Акция <span class="tool__optional">— необязательно</span></span>
+        <input class="tool__input" name="promo" maxlength="32" placeholder="−10% на эти окошки">
+      </label>
     </form>
 
     <div class="tool__preview">
+      <p class="tool__preview-title">Предпросмотр</p>
       <canvas class="tool__canvas" id="okoshki-canvas" width="1080" height="1920" aria-label="Предпросмотр картинки"></canvas>
+      <button type="button" class="btn btn--primary btn--full" id="okoshki-download">Скачать картинку</button>
       <div class="tool__actions">
-        <button type="button" class="btn btn--primary" id="okoshki-download">Скачать PNG</button>
         <button type="button" class="btn btn--ghost" id="okoshki-share" hidden>Поделиться</button>
+        <button type="button" class="btn btn--ghost" id="okoshki-copy">Скопировать текст</button>
       </div>
+      <p class="tool__privacy">Картинка собирается прямо в браузере — мы ничего не сохраняем и никуда не отправляем.</p>
     </div>`,
 };
 
@@ -559,9 +589,35 @@ function renderTool(tool) {
 
     <section class="section section--tool">
       <div class="container">
-        <div class="tool">${TOOL_FORMS[tool.slug]()}</div>
+        <div class="tool" id="${escapeHtml(tool.rootId)}">${TOOL_FORMS[tool.slug]()}</div>
       </div>
     </section>
+
+    ${
+      tool.examples
+        ? `<section class="section">
+      <div class="container">
+        <div class="section__header">
+          <p class="eyebrow reveal">Примеры</p>
+          <h2 class="section__title reveal">Готовые варианты — нажмите и поменяйте под себя</h2>
+        </div>
+        <div class="examples">
+          ${tool.examples
+            .map(
+              ([title, text], i) => `
+          <article class="example" data-example="${i}">
+            <canvas class="example__img" width="324" height="576" aria-label="${escapeHtml(title)}"></canvas>
+            <h3 class="example__title">${escapeHtml(title)}</h3>
+            <p class="example__text">${escapeHtml(text)}</p>
+            <button type="button" class="example__use" data-use-example>Сделать такую →</button>
+          </article>`
+            )
+            .join("")}
+        </div>
+      </div>
+    </section>`
+        : ""
+    }
 
     <section class="section">
       <div class="container">
@@ -618,6 +674,8 @@ function renderTool(tool) {
     description: tool.description,
     body,
     scripts: [tool.script],
+    // Шрифт с засечками для стилей картинки (кириллица и казахские буквы)
+    fonts: "&family=Lora:wght@600;700",
   });
 }
 

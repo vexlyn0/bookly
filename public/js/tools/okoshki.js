@@ -1,29 +1,52 @@
 /**
  * Jazyl — инструмент «Свободные окошки»: картинка для сторис/поста со свободным временем.
  * Всё рисуется в браузере на canvas, на сервер ничего не уходит.
+ *
+ * Состояние — в объекте state, форма и картинка собираются из него.
+ * Примеры внизу страницы (EXAMPLES) идут в том же порядке, что подписи в server/site/tools.js.
  */
 (() => {
-  const form = document.getElementById("okoshki-form");
-  const canvas = document.getElementById("okoshki-canvas");
-  if (!form || !canvas) return;
+  const root = document.getElementById("okoshki");
+  if (!root) return;
 
-  const ctx = canvas.getContext("2d");
-  const daysBox = document.getElementById("okoshki-days");
-  const themesBox = document.getElementById("okoshki-themes");
-  const downloadBtn = document.getElementById("okoshki-download");
-  const shareBtn = document.getElementById("okoshki-share");
+  const $ = (sel) => root.querySelector(sel);
+  const canvas = $("#okoshki-canvas");
+  const daysBox = $("#okoshki-days");
   const STORAGE_KEY = "jazyl:tool:okoshki";
 
   const FORMATS = { story: [1080, 1920], post: [1080, 1350] };
+  const QUICK_TIMES = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"];
 
-  const THEMES = [
-    { id: "night", name: "Ночь", bg: ["#2a2550", "#0d0c14"], text: "#ffffff", sub: "#afa9ec", card: "rgba(255,255,255,0.08)", chip: "#7f77dd", chipText: "#ffffff", glow: "rgba(127,119,221,0.35)" },
-    { id: "lavender", name: "Лаванда", bg: ["#f6f5ff", "#cecbf6"], text: "#26215c", sub: "#534ab7", card: "rgba(255,255,255,0.7)", chip: "#534ab7", chipText: "#ffffff", glow: "rgba(127,119,221,0.25)" },
-    { id: "peach", name: "Персик", bg: ["#fff5f0", "#f5c4b3"], text: "#4a1b0c", sub: "#993c1d", card: "rgba(255,255,255,0.65)", chip: "#d85a30", chipText: "#ffffff", glow: "rgba(240,153,123,0.35)" },
-    { id: "mint", name: "Мята", bg: ["#f1fbf7", "#9fe1cb"], text: "#04342c", sub: "#0f6e56", card: "rgba(255,255,255,0.65)", chip: "#0f6e56", chipText: "#ffffff", glow: "rgba(93,202,165,0.35)" },
-    { id: "beige", name: "Беж", bg: ["#fbf7f1", "#e6d6c0"], text: "#3b2a1a", sub: "#8b5e3c", card: "rgba(255,255,255,0.65)", chip: "#8b5e3c", chipText: "#ffffff", glow: "rgba(186,117,23,0.2)" },
-    { id: "pink", name: "Розовый", bg: ["#fff2f7", "#f4c0d1"], text: "#4b1528", sub: "#993556", card: "rgba(255,255,255,0.65)", chip: "#d4537e", chipText: "#ffffff", glow: "rgba(212,83,126,0.3)" },
+  const SANS = '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif';
+  const SERIF = '"Lora", Georgia, "Times New Roman", serif';
+
+  /** Стили картинки. chip: filled — заливка, outline — контур. decor — украшение фона. */
+  const STYLES = [
+    { id: "cream", name: "Крем", bg: ["#f8f1e7", "#efe2d0"], text: "#2b2118", sub: "#b0601f", font: "serif", chip: "outline", chipFill: "#fffaf3", chipLine: "#c27a3a", chipText: "#2b2118", card: "rgba(255,255,255,0.55)", decor: "circles", decorColor: "#ead7bf" },
+    { id: "chocolate", name: "Шоколад", bg: ["#2c2019", "#16100c"], text: "#f6e9d8", sub: "#d9a86c", font: "serif", chip: "outline", chipFill: "rgba(217,168,108,0.12)", chipLine: "#d9a86c", chipText: "#f6e9d8", card: "rgba(255,255,255,0.06)", decor: "rings", decorColor: "rgba(217,168,108,0.35)" },
+    { id: "powder", name: "Пудра", bg: ["#fce6ee", "#f2c4d3"], text: "#4b1528", sub: "#a33a60", font: "serif", chip: "filled", chipFill: "#ffffff", chipText: "#993556", card: "rgba(255,255,255,0.45)", decor: "circles", decorColor: "rgba(255,255,255,0.55)" },
+    { id: "sage", name: "Шалфей", bg: ["#e6ede1", "#d2ddcc"], text: "#1f3a2a", sub: "#4f6b55", font: "sans", chip: "filled", chipFill: "#ffffff", chipText: "#1f3a2a", card: "rgba(255,255,255,0.5)", decor: "blob", decorColor: "#bccdb5" },
+    { id: "minimal", name: "Минимал", bg: ["#ffffff", "#ffffff"], text: "#111111", sub: "#555555", font: "sans", chip: "filled", chipFill: "#111111", chipText: "#ffffff", card: "#f3f3f3", decor: "frame", decorColor: "#111111" },
+    { id: "terracotta", name: "Терракота", bg: ["#d36a42", "#b9512d"], text: "#fff5ee", sub: "#ffe0cf", font: "sans", chip: "filled", chipFill: "#fff1e8", chipText: "#b9512d", card: "rgba(255,255,255,0.12)", decor: "circles", decorColor: "rgba(255,255,255,0.12)" },
+    { id: "night", name: "Ночь", bg: ["#2a2550", "#0d0c14"], text: "#ffffff", sub: "#afa9ec", font: "sans", chip: "filled", chipFill: "#7f77dd", chipText: "#ffffff", card: "rgba(255,255,255,0.08)", decor: "glow", decorColor: "rgba(127,119,221,0.35)" },
+    { id: "lavender", name: "Лаванда", bg: ["#f6f5ff", "#cecbf6"], text: "#26215c", sub: "#534ab7", font: "serif", chip: "filled", chipFill: "#534ab7", chipText: "#ffffff", card: "rgba(255,255,255,0.6)", decor: "circles", decorColor: "rgba(255,255,255,0.6)" },
   ];
+
+  const SERVICES = {
+    "": ["", ""],
+    manicure: ["Маникюр", "Маникюр"],
+    pedicure: ["Педикюр", "Педикюр"],
+    lashes: ["Ресницы", "Кірпік"],
+    brows: ["Брови", "Қас"],
+    haircut: ["Стрижка", "Шаш қию"],
+    barber: ["Барбер", "Барбер"],
+    coloring: ["Окрашивание", "Шаш бояу"],
+    hair: ["Волосы", "Шаш"],
+    massage: ["Массаж", "Массаж"],
+    cosmetology: ["Косметология", "Косметология"],
+    sugaring: ["Шугаринг", "Шугаринг"],
+    tattoo: ["Тату", "Тату"],
+  };
 
   const TEXT = {
     ru: {
@@ -32,8 +55,15 @@
       tomorrow: "завтра",
       forToday: "на сегодня",
       forTomorrow: "на завтра",
-      cta: "Запись по ссылке в профиле",
+      forWeek: "на неделю",
+      on: "на",
+      how: {
+        link: "Запись — по ссылке в шапке профиля",
+        direct: "Пишите в директ",
+        whatsapp: "Запись в WhatsApp",
+      },
       watermark: "сделано в Jazyl",
+      empty: "Отметьте свободное время",
       weekdays: ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"],
       months: ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"],
     },
@@ -43,17 +73,22 @@
       tomorrow: "ертең",
       forToday: "бүгінге",
       forTomorrow: "ертеңге",
-      cta: "Профильдегі сілтеме арқылы жазылыңыз",
+      forWeek: "аптаға",
+      on: "",
+      how: {
+        link: "Жазылу — профильдегі сілтеме арқылы",
+        direct: "Директке жазыңыз",
+        whatsapp: "WhatsApp арқылы жазылу",
+      },
       watermark: "Jazyl арқылы жасалған",
+      empty: "Бос уақытты белгілеңіз",
       weekdays: ["жексенбі", "дүйсенбі", "сейсенбі", "сәрсенбі", "бейсенбі", "жұма", "сенбі"],
       months: ["қаңтар", "ақпан", "наурыз", "сәуір", "мамыр", "маусым", "шілде", "тамыз", "қыркүйек", "қазан", "қараша", "желтоқсан"],
     },
   };
 
-  const state = { theme: "night", lang: "ru", format: "story" };
-
   // ---------------------------------------------------------------------------
-  // Даты
+  // Даты и время
   // ---------------------------------------------------------------------------
 
   const pad = (n) => String(n).padStart(2, "0");
@@ -69,22 +104,9 @@
   };
   const today = () => toDateStr(new Date());
   const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const sortTimes = (times) => [...new Set(times)].sort();
 
-  /** «10, 12.30 15:00» → ["10:00", "12:30", "15:00"], по порядку, без повторов. */
-  function parseTimes(value) {
-    const found = String(value || "").match(/\d{1,2}(?:[:.]\d{2})?/g) || [];
-    const times = found
-      .map((t) => {
-        const [h, m = "00"] = t.split(/[:.]/);
-        const hours = Number(h);
-        if (hours > 23 || Number(m) > 59) return null;
-        return `${pad(hours)}:${m}`;
-      })
-      .filter(Boolean);
-    return [...new Set(times)].sort();
-  }
-
-  function dayLabel(dateStr, t) {
+  function dayName(dateStr, t) {
     const d = parseDate(dateStr);
     const date = `${d.getDate()} ${t.months[d.getMonth()]}`;
     if (dateStr === today()) return `${capitalize(t.today)}, ${date}`;
@@ -92,146 +114,191 @@
     return `${capitalize(t.weekdays[d.getDay()])}, ${date}`;
   }
 
+  /** «на завтра, 25 октября» / «ертеңге, 25 қазан» / «на неделю, 24–30 октября». */
   function subtitle(days, t) {
     if (!days.length) return "";
+    const fmt = (d) => `${d.getDate()} ${t.months[d.getMonth()]}`;
     if (days.length === 1) {
-      const [only] = days;
-      if (only.date === today()) return t.forToday;
-      if (only.date === addDays(today(), 1)) return t.forTomorrow;
-      const d = parseDate(only.date);
-      return `${d.getDate()} ${t.months[d.getMonth()]}`;
+      const date = days[0].date;
+      const d = parseDate(date);
+      if (date === today()) return `${t.forToday}, ${fmt(d)}`;
+      if (date === addDays(today(), 1)) return `${t.forTomorrow}, ${fmt(d)}`;
+      return t.on ? `${t.on} ${fmt(d)}` : fmt(d);
     }
     const first = parseDate(days[0].date);
     const last = parseDate(days[days.length - 1].date);
-    return first.getMonth() === last.getMonth()
-      ? `${first.getDate()} – ${last.getDate()} ${t.months[last.getMonth()]}`
-      : `${first.getDate()} ${t.months[first.getMonth()]} – ${last.getDate()} ${t.months[last.getMonth()]}`;
+    const range =
+      first.getMonth() === last.getMonth()
+        ? `${first.getDate()}–${last.getDate()} ${t.months[last.getMonth()]}`
+        : `${fmt(first)} – ${fmt(last)}`;
+    const span = Math.round((last - first) / 86400000) + 1;
+    return span >= 5 && span <= 7 ? `${t.forWeek}, ${range}` : range;
   }
 
   // ---------------------------------------------------------------------------
-  // Форма
+  // Состояние
   // ---------------------------------------------------------------------------
 
-  function addDayRow(date = today(), times = "") {
-    const row = document.createElement("div");
-    row.className = "okoshki-day";
-    row.innerHTML = `
-      <input class="tool__input" type="date" name="date" value="${date}" aria-label="День">
-      <input class="tool__input" type="text" name="times" value="${times}" placeholder="10:00, 13:30, 17:00" inputmode="numeric" aria-label="Свободное время">
-      <button class="okoshki-day__remove" type="button" data-action="remove-day" aria-label="Убрать день">×</button>`;
-    daysBox.appendChild(row);
-  }
+  const state = {
+    days: [{ date: addDays(today(), 1), times: ["10:00", "13:00", "16:00"] }],
+    service: "",
+    serviceCustom: "",
+    style: "cream",
+    format: "story",
+    lang: "ru",
+    nick: "",
+    how: "link",
+    whatsapp: "",
+    custom: "",
+    promo: "",
+  };
 
-  function readDays() {
-    return [...daysBox.querySelectorAll(".okoshki-day")]
-      .map((row) => ({
-        date: row.querySelector('[name="date"]').value,
-        times: parseTimes(row.querySelector('[name="times"]').value),
-      }))
+  function activeDays(cfg) {
+    return cfg.days
       .filter((day) => day.date && day.times.length)
+      .map((day) => ({ date: day.date, times: sortTimes(day.times) }))
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
-  function readForm() {
-    const value = (name) => String(form.elements.namedItem(name)?.value || "").trim();
-    return { salon: value("salon"), cta: value("cta"), link: value("link"), days: readDays() };
+  function serviceLabel(cfg) {
+    if (cfg.service === "custom") return cfg.serviceCustom.trim();
+    const entry = SERVICES[cfg.service];
+    return entry ? entry[cfg.lang === "kk" ? 1 : 0] : "";
   }
 
-  function preset(kind) {
-    const start = kind === "tomorrow" ? addDays(today(), 1) : today();
-    const count = kind === "week" ? 7 : 1;
-    // Уже вписанное время для этих дат сохраняем.
-    const existing = new Map(
-      [...daysBox.querySelectorAll(".okoshki-day")].map((row) => [
-        row.querySelector('[name="date"]').value,
-        row.querySelector('[name="times"]').value,
-      ])
-    );
-    daysBox.innerHTML = "";
-    for (let i = 0; i < count; i++) {
-      const date = addDays(start, i);
-      addDayRow(date, existing.get(date) || "");
-    }
-    daysBox.querySelector('[name="times"]')?.focus();
-    schedule();
-  }
-
-  function setChoice(group, value) {
-    state[group] = value;
-    form.querySelectorAll(`[data-${group}]`).forEach((btn) => {
-      btn.setAttribute("aria-pressed", String(btn.dataset[group] === value));
-    });
-  }
-
-  function renderThemes() {
-    themesBox.innerHTML = THEMES.map(
-      (theme) => `
-      <button type="button" class="okoshki-theme" data-theme="${theme.id}" aria-pressed="false" title="${theme.name}"
-        style="background:linear-gradient(160deg, ${theme.bg[0]}, ${theme.bg[1]})">
-        <span style="background:${theme.chip}"></span>
-      </button>`
-    ).join("");
+  function howLines(cfg, t) {
+    if (cfg.how === "custom") return cfg.custom.trim() ? [cfg.custom.trim()] : [];
+    if (cfg.how === "whatsapp") return [cfg.whatsapp.trim() ? `${t.how.whatsapp}: ${cfg.whatsapp.trim()}` : t.how.whatsapp];
+    return [t.how[cfg.how] || t.how.link];
   }
 
   // ---------------------------------------------------------------------------
-  // Рисование
+  // Рисование: draw(canvas, cfg, scale) — одна функция и для предпросмотра, и для примеров
   // ---------------------------------------------------------------------------
 
-  const FONT = '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif';
-
-  function setFont(size, weight = 700) {
-    ctx.font = `${weight} ${Math.round(size)}px ${FONT}`;
+  function makePainter(ctx) {
+    return {
+      font(size, weight, family = SANS) {
+        ctx.font = `${weight} ${Math.round(size)}px ${family}`;
+      },
+      spacing(px) {
+        if ("letterSpacing" in ctx) ctx.letterSpacing = `${px}px`;
+      },
+      roundRect(x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      },
+      wrap(text, maxWidth) {
+        const words = String(text).split(/\s+/).filter(Boolean);
+        const lines = [];
+        let line = "";
+        for (const word of words) {
+          const test = line ? `${line} ${word}` : word;
+          if (ctx.measureText(test).width > maxWidth && line) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = test;
+          }
+        }
+        if (line) lines.push(line);
+        return lines;
+      },
+    };
   }
 
-  function setSpacing(px) {
-    if ("letterSpacing" in ctx) ctx.letterSpacing = `${px}px`;
-  }
-
-  function roundRect(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  function wrapText(text, maxWidth) {
-    const words = text.split(/\s+/);
-    const lines = [];
-    let line = "";
-    for (const word of words) {
-      const test = line ? `${line} ${word}` : word;
-      if (ctx.measureText(test).width > maxWidth && line) {
-        lines.push(line);
-        line = word;
-      } else {
-        line = test;
+  function drawDecor(ctx, style, W, H) {
+    ctx.save();
+    ctx.fillStyle = style.decorColor;
+    ctx.strokeStyle = style.decorColor;
+    if (style.decor === "circles") {
+      ctx.beginPath();
+      ctx.arc(W * 0.95, H * 0.03, W * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(W * 0.02, H * 0.97, W * 0.26, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (style.decor === "rings") {
+      ctx.lineWidth = 3;
+      for (const r of [0.34, 0.44, 0.54]) {
+        ctx.beginPath();
+        ctx.arc(W * 1.02, H * 0.05, W * r, 0, Math.PI * 2);
+        ctx.stroke();
       }
+    } else if (style.decor === "blob") {
+      ctx.beginPath();
+      ctx.ellipse(W * 0.92, H * 0.06, W * 0.36, W * 0.2, -0.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(W * 0.06, H * 0.96, W * 0.3, W * 0.16, -0.6, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (style.decor === "frame") {
+      ctx.lineWidth = 3;
+      ctx.strokeRect(40, 40, W - 80, H - 80);
+    } else if (style.decor === "glow") {
+      const glow = ctx.createRadialGradient(W * 0.9, H * 0.08, 0, W * 0.9, H * 0.08, W * 0.8);
+      glow.addColorStop(0, style.decorColor);
+      glow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, H);
     }
-    if (line) lines.push(line);
-    return lines;
+    ctx.restore();
+  }
+
+  function drawChip(ctx, p, style, x, y, w, h, text, size) {
+    ctx.fillStyle = style.chipFill;
+    p.roundRect(x, y, w, h, h / 2);
+    ctx.fill();
+    if (style.chip === "outline") {
+      ctx.lineWidth = Math.max(2, size * 0.06);
+      ctx.strokeStyle = style.chipLine;
+      ctx.stroke();
+    }
+    p.font(size, 700);
+    ctx.fillStyle = style.chipText;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x + w / 2, y + h / 2 + size * 0.04);
+    ctx.textAlign = "left";
   }
 
   /**
-   * Раскладка блока дней при масштабе s. draw=false — только считает высоту.
-   * @returns высота блока
+   * Время. Один день — крупные пилюли столбиком (или в две колонки, если их много).
+   * Несколько дней — карточки «день + время». draw=false — только измерить высоту.
    */
-  function layoutDays(days, t, theme, x, y, width, s, draw) {
-    let cursor = y;
-    const cardPad = 34 * s;
-    const chipH = 82 * s;
-    const chipGap = 16 * s;
-    const chipPadX = 32 * s;
+  function layoutTimes(ctx, p, days, cfg, style, t, x, y, width, s, draw) {
+    if (days.length === 1) {
+      const times = days[0].times;
+      const cols = times.length > 6 ? 2 : 1;
+      const gap = 22 * s;
+      const h = 100 * s;
+      const w = cols === 1 ? Math.min(470 * s, width) : (width - gap) / 2;
+      const rows = Math.ceil(times.length / cols);
+      if (draw) {
+        times.forEach((time, i) => {
+          const col = cols === 1 ? 0 : i % cols;
+          const row = cols === 1 ? i : Math.floor(i / cols);
+          drawChip(ctx, p, style, x + col * (w + gap), y + row * (h + gap), w, h, time, 52 * s);
+        });
+      }
+      return rows * h + (rows - 1) * gap;
+    }
 
+    let cursor = y;
+    const cardPad = 32 * s;
+    const chipH = 78 * s;
+    const chipGap = 14 * s;
+    const chipPadX = 30 * s;
     for (const day of days) {
       const top = cursor;
       const labelTop = top + cardPad;
-      const chipsTop = labelTop + 52 * s + 18 * s;
-
-      // Сначала раскладываем время по строкам — так известна высота карточки.
-      setFont(42 * s, 700);
+      const chipsTop = labelTop + 50 * s + 16 * s;
+      p.font(40 * s, 700);
       const chips = [];
       let cx = x + cardPad;
       let rowTop = chipsTop;
@@ -245,165 +312,261 @@
         cx += w + chipGap;
       }
       const bottom = rowTop + chipH + cardPad;
-
       if (draw) {
-        ctx.fillStyle = theme.card;
-        roundRect(x, top, width, bottom - top, 40 * s);
+        ctx.fillStyle = style.card;
+        p.roundRect(x, top, width, bottom - top, 36 * s);
         ctx.fill();
-
-        ctx.fillStyle = theme.text;
+        p.font(40 * s, 700);
+        ctx.fillStyle = style.text;
         ctx.textBaseline = "top";
-        ctx.fillText(dayLabel(day.date, t), x + cardPad, labelTop);
-
-        ctx.textBaseline = "middle";
-        for (const chip of chips) {
-          ctx.fillStyle = theme.chip;
-          roundRect(chip.x, chip.y, chip.w, chipH, chipH / 2);
-          ctx.fill();
-          ctx.fillStyle = theme.chipText;
-          ctx.fillText(chip.time, chip.x + chipPadX, chip.y + chipH / 2 + 2 * s);
-        }
+        ctx.fillText(dayName(day.date, t), x + cardPad, labelTop);
+        chips.forEach((chip) => drawChip(ctx, p, style, chip.x, chip.y, chip.w, chipH, chip.time, 40 * s));
       }
-      cursor = bottom + 24 * s;
+      cursor = bottom + 22 * s;
     }
-    return cursor - y;
+    return cursor - y - 22 * s;
   }
 
-  function draw() {
-    const [W, H] = FORMATS[state.format];
-    if (canvas.width !== W || canvas.height !== H) {
-      canvas.width = W;
-      canvas.height = H;
+  function draw(target, cfg, scale = 1) {
+    const [W, H] = FORMATS[cfg.format] || FORMATS.story;
+    const pw = Math.round(W * scale);
+    const ph = Math.round(H * scale);
+    if (target.width !== pw || target.height !== ph) {
+      target.width = pw;
+      target.height = ph;
     }
-    const theme = THEMES.find((th) => th.id === state.theme) || THEMES[0];
-    const t = TEXT[state.lang];
-    const data = readForm();
-    const padX = 84;
+    const ctx = target.getContext("2d");
+    const p = makePainter(ctx);
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.textAlign = "left";
 
-    // Фон
+    const style = STYLES.find((st) => st.id === cfg.style) || STYLES[0];
+    const t = TEXT[cfg.lang] || TEXT.ru;
+    const titleFamily = style.font === "serif" ? SERIF : SANS;
+    const days = activeDays(cfg);
+    const padX = 84;
+    const width = W - padX * 2;
+
+    // Фон и украшения
     const gradient = ctx.createLinearGradient(0, 0, W * 0.4, H);
-    gradient.addColorStop(0, theme.bg[0]);
-    gradient.addColorStop(1, theme.bg[1]);
-    ctx.globalCompositeOperation = "source-over";
+    gradient.addColorStop(0, style.bg[0]);
+    gradient.addColorStop(1, style.bg[1]);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, W, H);
+    drawDecor(ctx, style, W, H);
 
-    const glow = ctx.createRadialGradient(W * 0.9, H * 0.08, 0, W * 0.9, H * 0.08, W * 0.75);
-    glow.addColorStop(0, theme.glow);
-    glow.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, W, H);
-
-    // Низ: подпись, ссылка, водяной знак — фиксированно у нижнего края
-    const footerLines = [];
-    const cta = data.cta || t.cta;
-    let footerTop = H - 70;
-    setFont(26, 500);
-    setSpacing(1);
-    ctx.fillStyle = theme.sub;
-    ctx.globalAlpha = 0.75;
+    // Низ — ник, как записаться, подпись Jazyl. Прижат к нижнему краю.
     ctx.textBaseline = "alphabetic";
+    p.font(24, 500);
+    p.spacing(1);
+    ctx.fillStyle = style.sub;
+    ctx.globalAlpha = 0.7;
     ctx.textAlign = "center";
-    ctx.fillText(t.watermark, W / 2, H - 56);
+    ctx.fillText(t.watermark, W / 2, H - 70);
     ctx.globalAlpha = 1;
-    setSpacing(0);
-
-    if (data.link) {
-      setFont(52, 800);
-      footerLines.push({ text: data.link, size: 52, weight: 800, color: theme.text });
-    }
-    setFont(38, 600);
-    wrapText(cta, W - padX * 2)
-      .reverse()
-      .forEach((line) => footerLines.unshift({ text: line, size: 38, weight: 600, color: theme.sub }));
-
-    footerTop -= 40;
-    for (let i = footerLines.length - 1; i >= 0; i--) {
-      const line = footerLines[i];
-      setFont(line.size, line.weight);
-      ctx.fillStyle = line.color;
-      ctx.fillText(line.text, W / 2, footerTop);
-      footerTop -= line.size * 1.3;
-    }
     ctx.textAlign = "left";
-    const contentBottom = footerTop - 30;
+    p.spacing(0);
 
-    // Верх: салон, заголовок, период. Подбираем масштаб, чтобы всё влезло.
-    const days = data.days;
-    const sub = subtitle(days, t);
-    const width = W - padX * 2;
-    const topStart = state.format === "story" ? 150 : 96;
-
-    // Мало окошек — крупнее (до 1.35), много — мельче (до 0.45).
-    let s = 1.35;
-    let headerH = 0;
-    let titleLines = [];
-    for (; s >= 0.45; s -= 0.05) {
-      setFont(124 * s, 800);
-      titleLines = wrapText(t.title, width);
-      headerH = (data.salon ? 64 * s : 0) + titleLines.length * 124 * s * 1.02 + (sub ? 78 * s : 0) + 50 * s;
-      const daysH = days.length ? layoutDays(days, t, theme, padX, 0, width, s, false) : 120;
-      setFont(124 * s, 800);
-      const titleFits = titleLines.every((line) => ctx.measureText(line).width <= width);
-      if (titleFits && topStart + headerH + daysH <= contentBottom) break;
+    let bottomY = H - 140;
+    p.font(34, 500);
+    const how = howLines(cfg, t).flatMap((line) => p.wrap(line, width));
+    for (let i = how.length - 1; i >= 0; i--) {
+      p.font(34, 500);
+      ctx.fillStyle = style.sub;
+      ctx.fillText(how[i], padX, bottomY);
+      bottomY -= 46;
     }
-    s = Math.max(s, 0.45);
+    if (cfg.nick.trim()) {
+      p.font(48, 800);
+      ctx.fillStyle = style.text;
+      ctx.fillText(cfg.nick.trim(), padX, bottomY - 4);
+      bottomY -= 70;
+    }
+    const contentBottom = bottomY - 30;
+
+    // Верх: услуга, заголовок, дата, акция, время. Подбираем масштаб, чтобы всё влезло.
+    const label = serviceLabel(cfg);
+    const sub = subtitle(days, t);
+    const promo = cfg.promo.trim();
+    const topStart = cfg.format === "story" ? 150 : 100;
+    const titleSize = style.font === "serif" ? 132 : 124;
+
+    let s = 1.3;
+    let titleLines = [];
+    for (; s > 0.45; s -= 0.05) {
+      p.font(titleSize * s, style.font === "serif" ? 700 : 800, titleFamily);
+      titleLines = p.wrap(t.title, width);
+      const titleFits = titleLines.every((line) => ctx.measureText(line).width <= width);
+      const headerH =
+        (label ? 64 * s : 0) +
+        titleLines.length * titleSize * s * 1.02 +
+        (sub ? 74 * s : 0) +
+        (promo ? 110 * s : 0) +
+        48 * s;
+      const timesH = days.length ? layoutTimes(ctx, p, days, cfg, style, t, padX, 0, width, s, false) : 80;
+      if (titleFits && topStart + headerH + timesH <= contentBottom) break;
+    }
 
     let y = topStart;
     ctx.textBaseline = "top";
-    if (data.salon) {
-      setFont(34 * s, 700);
-      setSpacing(6 * s);
-      ctx.fillStyle = theme.sub;
-      ctx.fillText(data.salon.toUpperCase(), padX, y);
-      setSpacing(0);
+    if (label) {
+      p.font(30 * s, 700);
+      p.spacing(7 * s);
+      ctx.fillStyle = style.sub;
+      ctx.fillText(label.toUpperCase(), padX, y);
+      p.spacing(0);
       y += 64 * s;
     }
 
-    setFont(124 * s, 800);
-    setSpacing(-3 * s);
-    ctx.fillStyle = theme.text;
+    p.font(titleSize * s, style.font === "serif" ? 700 : 800, titleFamily);
+    p.spacing(style.font === "serif" ? 0 : -3 * s);
+    ctx.fillStyle = style.text;
     for (const line of titleLines) {
       ctx.fillText(line, padX, y);
-      y += 124 * s * 1.02;
+      y += titleSize * s * 1.02;
     }
-    setSpacing(0);
+    p.spacing(0);
 
     if (sub) {
-      y += 10 * s;
-      setFont(50 * s, 500);
-      ctx.fillStyle = theme.sub;
+      y += 12 * s;
+      p.font(44 * s, 600);
+      ctx.fillStyle = style.sub;
       ctx.fillText(sub, padX, y);
-      y += 68 * s;
+      y += 62 * s;
     }
-    y += 40 * s;
+
+    if (promo) {
+      y += 18 * s;
+      p.font(40 * s, 700);
+      const promoW = Math.min(ctx.measureText(promo).width + 56 * s, width);
+      const promoH = 76 * s;
+      ctx.fillStyle = style.sub;
+      p.roundRect(padX, y, promoW, promoH, promoH / 2);
+      ctx.fill();
+      ctx.fillStyle = style.bg[1];
+      ctx.textBaseline = "middle";
+      ctx.fillText(promo, padX + 28 * s, y + promoH / 2 + 2 * s, width - 56 * s);
+      ctx.textBaseline = "top";
+      y += promoH + 16 * s;
+    }
+    y += 48 * s;
 
     if (days.length) {
-      layoutDays(days, t, theme, padX, y, width, s, true);
+      layoutTimes(ctx, p, days, cfg, style, t, padX, y, width, s, true);
     } else {
-      setFont(40, 500);
-      ctx.fillStyle = theme.sub;
-      ctx.fillText(state.lang === "kk" ? "Бос уақытты енгізіңіз" : "Впишите свободное время", padX, y);
+      p.font(40, 500);
+      ctx.fillStyle = style.sub;
+      ctx.fillText(t.empty, padX, y);
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Форма
+  // ---------------------------------------------------------------------------
+
+  function renderDays() {
+    daysBox.innerHTML = state.days
+      .map((day, index) => {
+        const extra = day.times.filter((time) => !QUICK_TIMES.includes(time));
+        const chip = (time) =>
+          `<button type="button" class="ok-time" data-time="${time}" aria-pressed="${day.times.includes(time)}">${time}</button>`;
+        return `
+        <div class="ok-day" data-index="${index}">
+          <div class="ok-day__head">
+            <input class="tool__input ok-day__date" type="date" value="${day.date}" aria-label="День">
+            ${state.days.length > 1 ? `<button type="button" class="ok-day__remove" data-action="remove-day" aria-label="Убрать день">×</button>` : ""}
+          </div>
+          <div class="ok-times">${[...QUICK_TIMES, ...sortTimes(extra)].map(chip).join("")}</div>
+          <div class="ok-day__custom">
+            <input class="tool__input" type="time" aria-label="Своё время">
+            <button type="button" class="tool__chip-btn" data-action="add-time">Добавить</button>
+          </div>
+        </div>`;
+      })
+      .join("");
+  }
+
+  function setChoice(group, value) {
+    state[group] = value;
+    root.querySelectorAll(`[data-${group}]`).forEach((btn) => {
+      btn.setAttribute("aria-pressed", String(btn.dataset[group] === value));
+    });
+    if (group === "how") {
+      $("#okoshki-whatsapp").hidden = value !== "whatsapp";
+      $("#okoshki-custom").hidden = value !== "custom";
+    }
+  }
+
+  function renderStyles() {
+    $("#okoshki-styles").innerHTML = STYLES.map(
+      (st) => `
+      <button type="button" class="ok-style" data-style="${st.id}" aria-pressed="false" title="${st.name}">
+        <span class="ok-style__bg" style="background:linear-gradient(160deg, ${st.bg[0]}, ${st.bg[1]})"></span>
+        <span class="ok-style__dot" style="background:${st.chip === "outline" ? st.chipLine : st.chipFill}"></span>
+        <span class="ok-style__name">${st.name}</span>
+      </button>`
+    ).join("");
+  }
+
+  function syncInputs() {
+    const set = (name, value) => {
+      const el = root.querySelector(`[name="${name}"]`);
+      if (el) el.value = value;
+    };
+    set("nick", state.nick);
+    set("whatsapp", state.whatsapp);
+    set("custom", state.custom);
+    set("promo", state.promo);
+    set("service", state.service);
+    set("serviceCustom", state.serviceCustom);
+    $("#okoshki-service-custom").hidden = state.service !== "custom";
+    ["style", "lang", "format", "how"].forEach((group) => setChoice(group, state[group]));
+    renderDays();
   }
 
   let frame = 0;
   function schedule() {
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
-      draw();
+      draw(canvas, state);
       save();
     });
   }
 
+  function preset(kind) {
+    const start = kind === "tomorrow" ? addDays(today(), 1) : today();
+    const count = kind === "week" ? 7 : 1;
+    const previous = new Map(state.days.map((day) => [day.date, day.times]));
+    state.days = Array.from({ length: count }, (_, i) => {
+      const date = addDays(start, i);
+      return { date, times: previous.get(date) || [] };
+    });
+    renderDays();
+    schedule();
+  }
+
   // ---------------------------------------------------------------------------
-  // Сохранение настроек в браузере и скачивание
+  // Текст для мессенджеров, сохранение, скачивание
   // ---------------------------------------------------------------------------
+
+  function plainText() {
+    const t = TEXT[state.lang];
+    const days = activeDays(state);
+    const label = serviceLabel(state);
+    const lines = [`${t.title}${label ? ` (${label.toLowerCase()})` : ""} ${subtitle(days, t)}`.trim()];
+    if (days.length === 1) lines.push(days[0].times.join(", "));
+    else days.forEach((day) => lines.push(`${dayName(day.date, t)}: ${day.times.join(", ")}`));
+    if (state.promo.trim()) lines.push(state.promo.trim());
+    lines.push(...howLines(state, t));
+    if (state.nick.trim()) lines.push(state.nick.trim());
+    return lines.join("\n");
+  }
 
   function save() {
     try {
-      const { salon, cta, link } = readForm();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ salon, cta, link, theme: state.theme, lang: state.lang, format: state.format }));
+      const { nick, how, whatsapp, custom, style, lang, format, service, serviceCustom } = state;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ nick, how, whatsapp, custom, style, lang, format, service, serviceCustom }));
     } catch {
       // приватный режим — не страшно
     }
@@ -413,27 +576,26 @@
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (!saved) return;
-      ["salon", "cta", "link"].forEach((name) => {
-        if (saved[name]) form.elements.namedItem(name).value = saved[name];
-      });
-      if (THEMES.some((th) => th.id === saved.theme)) state.theme = saved.theme;
+      for (const key of ["nick", "whatsapp", "custom", "serviceCustom"]) {
+        if (typeof saved[key] === "string") state[key] = saved[key];
+      }
+      if (STYLES.some((st) => st.id === saved.style)) state.style = saved.style;
       if (TEXT[saved.lang]) state.lang = saved.lang;
       if (FORMATS[saved.format]) state.format = saved.format;
+      if (["link", "direct", "whatsapp", "custom"].includes(saved.how)) state.how = saved.how;
+      if (saved.service in SERVICES || saved.service === "custom") state.service = saved.service;
     } catch {
-      // нет сохранённого — начинаем с чистого листа
+      // сохранённого нет — начинаем с чистого листа
     }
   }
 
-  function fileName() {
-    return `${state.lang === "kk" ? "bos-oryndar" : "svobodnye-okoshki"}-${today()}.png`;
-  }
-
-  function toBlob() {
+  const fileName = () => `${state.lang === "kk" ? "bos-oryndar" : "svobodnye-okoshki"}-${today()}.png`;
+  const toBlob = () => {
+    draw(canvas, state);
     return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-  }
+  };
 
-  downloadBtn?.addEventListener("click", async () => {
-    draw();
+  $("#okoshki-download").addEventListener("click", async () => {
     const blob = await toBlob();
     if (!blob) return;
     const url = URL.createObjectURL(blob);
@@ -446,66 +608,144 @@
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   });
 
-  // На телефоне — «Поделиться»: сразу в Instagram, WhatsApp, Telegram.
-  if (shareBtn && navigator.canShare) {
-    const probe = new File([new Blob()], "x.png", { type: "image/png" });
-    if (navigator.canShare({ files: [probe] })) {
-      shareBtn.hidden = false;
-      shareBtn.addEventListener("click", async () => {
-        draw();
-        const blob = await toBlob();
-        if (!blob) return;
-        try {
-          await navigator.share({ files: [new File([blob], fileName(), { type: "image/png" })] });
-        } catch {
-          // пользователь закрыл окно «Поделиться»
-        }
-      });
+  const shareBtn = $("#okoshki-share");
+  if (navigator.canShare && navigator.canShare({ files: [new File([new Blob()], "x.png", { type: "image/png" })] })) {
+    shareBtn.hidden = false;
+    shareBtn.addEventListener("click", async () => {
+      const blob = await toBlob();
+      if (!blob) return;
+      try {
+        await navigator.share({ files: [new File([blob], fileName(), { type: "image/png" })] });
+      } catch {
+        // окно «Поделиться» закрыли
+      }
+    });
+  }
+
+  const copyBtn = $("#okoshki-copy");
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(plainText());
+      copyBtn.textContent = "Скопировано ✓";
+      setTimeout(() => {
+        copyBtn.textContent = "Скопировать текст";
+      }, 1800);
+    } catch {
+      window.prompt("Скопируйте текст:", plainText());
     }
+  });
+
+  // ---------------------------------------------------------------------------
+  // События формы
+  // ---------------------------------------------------------------------------
+
+  root.addEventListener("input", (event) => {
+    const el = event.target;
+    const dayEl = el.closest(".ok-day");
+    if (dayEl && el.classList.contains("ok-day__date")) {
+      state.days[Number(dayEl.dataset.index)].date = el.value;
+    } else if (el.name && el.name in state) {
+      state[el.name] = el.value;
+      if (el.name === "service") $("#okoshki-service-custom").hidden = el.value !== "custom";
+    }
+    schedule();
+  });
+
+  root.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button || !root.contains(button)) return;
+    const dayEl = button.closest(".ok-day");
+    const day = dayEl ? state.days[Number(dayEl.dataset.index)] : null;
+
+    if (button.dataset.time && day) {
+      const time = button.dataset.time;
+      day.times = day.times.includes(time) ? day.times.filter((x) => x !== time) : sortTimes([...day.times, time]);
+      button.setAttribute("aria-pressed", String(day.times.includes(time)));
+    } else if (button.dataset.action === "add-time" && day) {
+      const input = dayEl.querySelector('input[type="time"]');
+      if (!input.value) return input.focus();
+      day.times = sortTimes([...day.times, input.value.slice(0, 5)]);
+      renderDays();
+    } else if (button.dataset.action === "remove-day" && day) {
+      state.days.splice(Number(dayEl.dataset.index), 1);
+      renderDays();
+    } else if (button.dataset.action === "add-day") {
+      const last = state.days.length ? state.days[state.days.length - 1].date : today();
+      state.days.push({ date: state.days.length ? addDays(last, 1) : today(), times: [] });
+      renderDays();
+    } else if (button.dataset.preset) {
+      preset(button.dataset.preset);
+      return;
+    } else {
+      const group = ["style", "lang", "format", "how"].find((g) => button.dataset[g]);
+      if (!group) return;
+      setChoice(group, button.dataset[group]);
+    }
+    schedule();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Примеры: те же картинки уменьшенно + «Сделать такую»
+  // ---------------------------------------------------------------------------
+
+  const tomorrow = addDays(today(), 1);
+  const base = { days: [], service: "", serviceCustom: "", style: "cream", format: "story", lang: "ru", nick: "@vash.nik", how: "link", whatsapp: "", custom: "", promo: "" };
+  const EXAMPLES = [
+    { ...base, service: "manicure", style: "cream", days: [{ date: tomorrow, times: ["10:00", "12:00", "15:00", "18:00"] }] },
+    { ...base, service: "massage", style: "chocolate", how: "direct", days: [{ date: tomorrow, times: ["12:00", "15:00", "18:00"] }] },
+    { ...base, service: "lashes", style: "powder", days: [{ date: tomorrow, times: ["11:00", "14:00", "17:00"] }] },
+    { ...base, service: "brows", style: "sage", promo: "−10% на эти окошки", days: [{ date: tomorrow, times: ["10:00", "13:00", "16:00", "19:00"] }] },
+    { ...base, service: "sugaring", style: "minimal", how: "whatsapp", whatsapp: "+7 701 000 00 00", days: [{ date: tomorrow, times: ["10:00", "11:00", "14:00", "16:00", "20:00"] }] },
+    { ...base, service: "cosmetology", style: "terracotta", days: [{ date: tomorrow, times: ["11:00", "13:00", "17:00"] }] },
+    { ...base, service: "barber", style: "night", how: "direct", days: [{ date: today(), times: ["15:00", "16:30", "18:00", "19:30"] }] },
+    {
+      ...base,
+      service: "hair",
+      style: "lavender",
+      lang: "kk",
+      days: [0, 1, 2, 3, 4].map((i) => ({ date: addDays(today(), i), times: [["10:00", "14:00"], ["12:00"], ["11:00", "16:00", "18:00"], ["15:00"], ["10:00", "13:00"]][i] })),
+    },
+  ];
+
+  function renderExamples() {
+    root.ownerDocument.querySelectorAll("[data-example]").forEach((card) => {
+      const cfg = EXAMPLES[Number(card.dataset.example)];
+      const holder = card.querySelector("canvas");
+      if (!cfg || !holder) return;
+      draw(holder, cfg, 0.3);
+      card.querySelector("[data-use-example]")?.addEventListener("click", () => {
+        // Свой ник оставляем, остальное — как в примере.
+        const nick = state.nick;
+        Object.assign(state, JSON.parse(JSON.stringify(cfg)));
+        state.nick = nick;
+        syncInputs();
+        schedule();
+        root.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   }
 
   // ---------------------------------------------------------------------------
   // Старт
   // ---------------------------------------------------------------------------
 
-  renderThemes();
   restore();
-  setChoice("theme", state.theme);
-  setChoice("lang", state.lang);
-  setChoice("format", state.format);
-  addDayRow(today(), "");
-  addDayRow(addDays(today(), 1), "");
+  renderStyles();
+  syncInputs();
+  draw(canvas, state);
 
-  form.addEventListener("input", schedule);
-  form.addEventListener("click", (event) => {
-    const button = event.target.closest("button");
-    if (!button) return;
-    if (button.dataset.preset) preset(button.dataset.preset);
-    else if (button.dataset.action === "add-day") {
-      const rows = readDays();
-      const last = rows.length ? rows[rows.length - 1].date : today();
-      addDayRow(rows.length ? addDays(last, 1) : today(), "");
-      schedule();
-    } else if (button.dataset.action === "remove-day") {
-      button.closest(".okoshki-day")?.remove();
-      schedule();
-    } else {
-      for (const group of ["theme", "lang", "format"]) {
-        if (button.dataset[group]) {
-          setChoice(group, button.dataset[group]);
-          schedule();
-        }
-      }
-    }
-  });
-
-  // Рисуем, когда загрузится шрифт Inter, — иначе первый кадр будет системным шрифтом.
-  draw();
-  (document.fonts?.ready || Promise.resolve()).then(() => {
-    Promise.all([
-      document.fonts?.load?.(`800 124px "Inter"`),
-      document.fonts?.load?.(`700 42px "Inter"`),
-      document.fonts?.load?.(`500 50px "Inter"`),
-    ]).finally(schedule);
+  // Рисуем заново, когда загрузятся шрифты, — иначе первый кадр будет системным шрифтом.
+  const fonts = document.fonts;
+  const fontsReady = fonts
+    ? Promise.all([
+        fonts.load(`800 124px "Inter"`),
+        fonts.load(`700 52px "Inter"`),
+        fonts.load(`700 132px "Lora"`),
+        fonts.load(`700 132px "Lora"`, "әғқңөұүһі"),
+      ]).catch(() => null)
+    : Promise.resolve();
+  fontsReady.then(() => {
+    schedule();
+    renderExamples();
   });
 })();
