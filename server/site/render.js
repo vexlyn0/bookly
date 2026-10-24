@@ -572,6 +572,97 @@ const TOOL_FORMS = {
       <p class="tool__privacy">Картинка собирается прямо в браузере — мы ничего не сохраняем и никуда не отправляем.</p>
     </div>`,
 
+  "podarochnyy-sertifikat": () => `
+    <form class="tool__form" onsubmit="return false" autocomplete="off">
+      <label class="tool__field">
+        <span class="tool__label">Название салона или мастера</span>
+        <input class="tool__input" name="salon" maxlength="40" placeholder="Nail studio Aru">
+      </label>
+
+      <div class="tool__field">
+        <span class="tool__label">Что дарят</span>
+        ${segmented("kind", [["amount", "Сумму"], ["service", "Услугу"]])}
+        <input class="tool__input" id="sertifikat-amount" name="amount" maxlength="9" placeholder="10000" inputmode="numeric" aria-label="Сумма, ₸">
+        <input class="tool__input" id="sertifikat-service" name="service" maxlength="60" placeholder="Маникюр + покрытие" aria-label="Услуга" hidden>
+      </div>
+
+      <div class="tool__pair">
+        <label class="tool__field">
+          <span class="tool__label">Кому <span class="tool__optional">— необязательно</span></span>
+          <input class="tool__input" name="to" maxlength="30" placeholder="Айгерим">
+        </label>
+        <label class="tool__field">
+          <span class="tool__label">От кого <span class="tool__optional">— необязательно</span></span>
+          <input class="tool__input" name="from" maxlength="30" placeholder="Данияр">
+        </label>
+      </div>
+
+      <label class="tool__field">
+        <span class="tool__label">Пожелание <span class="tool__optional">— необязательно</span></span>
+        <input class="tool__input" name="wish" maxlength="100" placeholder="С днём рождения!">
+      </label>
+
+      <div class="tool__pair">
+        <div class="tool__field">
+          <span class="tool__label">Действует до</span>
+          <input class="tool__input" type="date" name="until" aria-label="Действует до">
+          <div class="tool__presets">
+            <button type="button" data-months="1">1 мес</button>
+            <button type="button" data-months="3">3 мес</button>
+            <button type="button" data-months="6">6 мес</button>
+            <button type="button" data-months="12">Год</button>
+            <button type="button" data-months="0">Без срока</button>
+          </div>
+        </div>
+        <div class="tool__field">
+          <span class="tool__label">Номер сертификата</span>
+          <div class="ok-day__custom">
+            <input class="tool__input" name="number" maxlength="12" aria-label="Номер сертификата">
+            <button type="button" class="tool__chip-btn" data-action="new-number">Новый</button>
+          </div>
+          <span class="tool__hint">Запишите номер у себя — так видно, какой сертификат уже использовали.</span>
+        </div>
+      </div>
+
+      <label class="tool__field">
+        <span class="tool__label">Куда ведёт QR-код</span>
+        <input class="tool__input" name="qr" maxlength="200" placeholder="Ссылка на запись, @instagram или номер WhatsApp">
+        <span class="tool__hint" id="sertifikat-qr-hint"></span>
+      </label>
+
+      <label class="tool__field">
+        <span class="tool__label">Адрес и телефон <span class="tool__optional">— необязательно</span></span>
+        <input class="tool__input" name="contacts" maxlength="80" placeholder="Алматы, Абая 10 · +7 701 000 00 00">
+      </label>
+
+      <div class="tool__field">
+        <span class="tool__label">Фон и стиль</span>
+        <div class="ok-styles" id="sertifikat-styles"></div>
+      </div>
+
+      <div class="tool__pair">
+        <div class="tool__field">
+          <span class="tool__label">Формат</span>
+          ${segmented("format", [["wide", "Для печати 2:1"], ["post", "WhatsApp / пост"], ["story", "Сторис"]])}
+        </div>
+        <div class="tool__field">
+          <span class="tool__label">Текст на сертификате</span>
+          ${segmented("lang", [["ru", "Русский"], ["kk", "Қазақша"]])}
+        </div>
+      </div>
+    </form>
+
+    <div class="tool__preview">
+      <p class="tool__preview-title">Предпросмотр</p>
+      <canvas class="tool__canvas tool__canvas--auto" id="sertifikat-canvas" width="2000" height="1000" aria-label="Предпросмотр сертификата"></canvas>
+      <button type="button" class="btn btn--primary btn--full" id="sertifikat-download">Скачать сертификат</button>
+      <div class="tool__actions">
+        <button type="button" class="btn btn--ghost" id="sertifikat-share" hidden>Поделиться</button>
+        <button type="button" class="btn btn--ghost" id="sertifikat-copy">Скопировать текст</button>
+      </div>
+      <p class="tool__privacy">Сертификат собирается прямо в браузере — мы ничего не сохраняем и никуда не отправляем. Печать: формат 2:1 — это 21 × 10,5 см.</p>
+    </div>`,
+
   "prays-list": () => `
     <form class="tool__form" onsubmit="return false" autocomplete="off">
       <div class="tool__pair">
@@ -666,15 +757,15 @@ function renderTool(tool) {
           <p class="eyebrow reveal">Примеры</p>
           <h2 class="section__title reveal">Готовые варианты — нажмите и поменяйте под себя</h2>
         </div>
-        <div class="examples">
+        <div class="examples${tool.examplesWide ? " examples--wide" : ""}">
           ${tool.examples
             .map(
               ([title, text], i) => `
           <article class="example" data-example="${i}">
-            <canvas class="example__img" width="324" height="576" aria-label="${escapeHtml(title)}"></canvas>
+            <canvas class="example__img" width="${tool.examplesWide ? 600 : 324}" height="${tool.examplesWide ? 300 : 576}" aria-label="${escapeHtml(title)}"></canvas>
             <h3 class="example__title">${escapeHtml(title)}</h3>
             <p class="example__text">${escapeHtml(text)}</p>
-            <button type="button" class="example__use" data-use-example>Сделать такую →</button>
+            <button type="button" class="example__use" data-use-example>${tool.useLabel || "Сделать такую"} →</button>
           </article>`
             )
             .join("")}
@@ -738,7 +829,7 @@ function renderTool(tool) {
     title: tool.title,
     description: tool.description,
     body,
-    scripts: ["/js/tools/kit.js", tool.script],
+    scripts: ["/js/tools/kit.js", ...(tool.vendor || []), tool.script],
     // Шрифт с засечками для стилей картинки (кириллица и казахские буквы)
     fonts: "&family=Lora:wght@600;700",
   });

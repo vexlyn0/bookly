@@ -1763,3 +1763,29 @@
     grid-row: 1;
   }
 }
+
+/* Подарочный сертификат: холст любой пропорции, горизонтальные примеры */
+.tool__canvas--auto {
+  aspect-ratio: auto;
+  height: auto;
+}
+
+.examples--wide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.examples--wide .example__img {
+  aspect-ratio: 2 / 1;
+}
+
+@media (max-width: 900px) {
+  .examples--wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .examples--wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
