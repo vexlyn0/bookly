@@ -84,6 +84,7 @@ function renderHeader(currentPath = "/") {
 
       <nav class="nav" id="nav" aria-label="Основная навигация">
         ${nav}
+        <a href="/register" class="nav__link nav__link--mobile nav__link--cta" data-guest>Начать бесплатно</a>
         <a href="/login" class="nav__link nav__link--mobile" data-guest>Войти</a>
         <a href="/app" class="nav__link nav__link--mobile" data-user hidden>Мой кабинет</a>
       </nav>
@@ -95,8 +96,8 @@ function renderHeader(currentPath = "/") {
       </div>
 
       <button class="burger" id="burger" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="nav">
-        <span class="burger__line"></span>
-        <span class="burger__line"></span>
+        <span class="burger__icon" aria-hidden="true"><span class="burger__line"></span><span class="burger__line"></span></span>
+        <span class="burger__text">Меню</span>
       </button>
     </div>
   </header>`;

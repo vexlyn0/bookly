@@ -109,3 +109,18 @@ button {
     transition: none;
   }
 }
+
+/* Атрибут hidden скрывает всегда — даже у кнопок и flex-блоков со своим display. */
+[hidden] {
+  display: none !important;
+}
+
+/* iPhone сам увеличивает страницу, если у поля ввода шрифт меньше 16px, и не уменьшает обратно.
+   На телефонах и планшетах держим в полях 16px. */
+@media (max-width: 768px), (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

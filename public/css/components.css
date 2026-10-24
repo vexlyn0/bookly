@@ -83,6 +83,9 @@
 
 .btn--full {
   width: 100%;
+  /* Длинная подпись переносится, а не растягивает страницу на телефоне */
+  white-space: normal;
+  text-align: center;
 }
 
 .btn:disabled {

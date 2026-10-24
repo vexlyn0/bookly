@@ -84,6 +84,7 @@
 
 .auth-card {
   width: 100%;
+  min-width: 0;
   max-width: 400px;
 }
 
@@ -184,6 +185,10 @@
 @media (max-width: 480px) {
   .auth-form__row {
     grid-template-columns: 1fr;
+  }
+
+  .auth-page__main {
+    padding: var(--space-6) var(--space-4);
   }
 }
 

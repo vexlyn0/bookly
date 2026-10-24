@@ -1837,3 +1837,43 @@
   border-color: var(--violet);
   color: var(--text);
 }
+
+/* iPhone сам увеличивает страницу, если у поля ввода шрифт меньше 16px, и не уменьшает обратно.
+   На телефонах и планшетах держим в полях 16px. */
+@media (max-width: 768px), (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Блок «А если клиенты будут записываться сами?» — кнопка не шире экрана */
+@media (max-width: 560px) {
+  .tool-promo .btn {
+    width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+/* Примеры на телефоне: 2 колонки (правило выше для ≤900px иначе перебивает), горизонтальные — по одному */
+@media (max-width: 560px) {
+  .examples {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 14px;
+  }
+
+  .examples--wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .example {
+    min-width: 0;
+  }
+
+  .example__title,
+  .example__text {
+    overflow-wrap: anywhere;
+  }
+}
