@@ -95,9 +95,12 @@ function ok(message) {
   console.log("[OK]", message);
 }
 
+/** «Сейчас» — полдень по Алматы: записи в тестах не переходят через полночь. */
+const NOW = new Date(`${formatDateInTimezone(new Date(), TZ)}T12:00:00+05:00`);
+
 /** Запись, закончившаяся `minutesAgo` минут назад (по Алматы). */
 function bookingEndedAgo(minutesAgo, overrides = {}) {
-  const end = new Date(Date.now() - minutesAgo * 60000);
+  const end = new Date(NOW.getTime() - minutesAgo * 60000);
   const start = new Date(end.getTime() - 60 * 60000);
   const hhmm = (d) =>
     new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
@@ -146,11 +149,11 @@ function text(value) {
 async function testSchedule() {
   // Не наступило время окончания (запись «закончится» через 10 мин) — не шлём
   reset(bookingEndedAgo(-10));
-  assert.strictEqual(await visit.sendDueVisitChecks(), 0);
+  assert.strictEqual(await visit.sendDueVisitChecks(NOW), 0);
 
   // Закончилась 3 минуты назад — шлём один раз
   reset(bookingEndedAgo(3));
-  assert.strictEqual(await visit.sendDueVisitChecks(), 1);
+  assert.strictEqual(await visit.sendDueVisitChecks(NOW), 1);
   const message = sent()[0];
   assert.strictEqual(message.chat_id, CHAT);
   assert.ok(message.text.includes("Визит завершён?"));
@@ -159,15 +162,15 @@ async function testSchedule() {
   assert.deepStrictEqual(buttons, [`bk:done:${BOOKING}`, `bk:sum:${BOOKING}`, `bk:noshow:${BOOKING}`]);
   assert.ok(tables.bookings[0].visit_check_sent_at);
   api.length = 0;
-  assert.strictEqual(await visit.sendDueVisitChecks(), 0, "повторно не отправляется");
+  assert.strictEqual(await visit.sendDueVisitChecks(NOW), 0, "повторно не отправляется");
 
   // Закончилась больше суток назад — не тревожим задним числом
   reset(bookingEndedAgo(26 * 60));
-  assert.strictEqual(await visit.sendDueVisitChecks(), 0);
+  assert.strictEqual(await visit.sendDueVisitChecks(NOW), 0);
 
   // Отменённая — не спрашиваем
   reset(bookingEndedAgo(3, { status: "canceled" }));
-  assert.strictEqual(await visit.sendDueVisitChecks(), 0);
+  assert.strictEqual(await visit.sendDueVisitChecks(NOW), 0);
   ok("«Визит завершён?» приходит мастеру, когда закончилось время записи, один раз");
 }
 
@@ -229,10 +232,59 @@ async function testCustomAmount() {
   ok("Разбор суммы");
 }
 
+async function testPrepay() {
+  const paid = { price: 8000, prepay_amount: 3000, prepay_status: "paid", staff_reminder_sent_at: null };
+
+  // Начало через 20 минут — мастеру напоминание: предоплата и остаток
+  reset(bookingEndedAgo(-80, paid));
+  assert.strictEqual(await visit.sendDueStaffReminders(NOW), 1);
+  const reminder = sent()[0];
+  assert.strictEqual(reminder.chat_id, CHAT);
+  assert.ok(/Через (19|20) мин клиент/.test(reminder.text));
+  assert.ok(reminder.text.includes("внёс предоплату <b>3 000 ₸</b>"));
+  assert.ok(reminder.text.includes("Остаток после услуги: <b>5 000 ₸</b>"));
+  api.length = 0;
+  assert.strictEqual(await visit.sendDueStaffReminders(NOW), 0, "один раз");
+
+  // Рано (через 2 часа), без предоплаты, уже началось — не шлём
+  reset(bookingEndedAgo(-180, paid));
+  assert.strictEqual(await visit.sendDueStaffReminders(NOW), 0);
+  reset(bookingEndedAgo(-80, { ...paid, prepay_status: null, prepay_amount: null }));
+  assert.strictEqual(await visit.sendDueStaffReminders(NOW), 0);
+  reset(bookingEndedAgo(30, paid));
+  assert.strictEqual(await visit.sendDueStaffReminders(NOW), 0);
+  ok("За 30 минут до записи с предоплатой — мастеру «внёс N ₸, остаток M ₸», один раз");
+
+  // «Визит завершён?» — сколько взять на месте; в выручку полная цена
+  reset(bookingEndedAgo(3, paid));
+  await visit.sendDueVisitChecks(NOW);
+  assert.ok(sent()[0].text.includes("Возьмите с клиента: <b>5 000 ₸</b>"));
+  assert.ok(sent()[0].reply_markup.inline_keyboard[0][0].text.includes("доплатил 5 000 ₸"));
+  await telegram.handleUpdate(callback("done"));
+  assert.strictEqual(tables.bookings[0].status, "completed");
+  assert.strictEqual(tables.bookings[0].paid_amount, null, "выручка — полная цена записи");
+
+  // «Другая сумма» при предоплате — мастер пишет, сколько взял на месте
+  reset(bookingEndedAgo(3, paid));
+  await telegram.handleUpdate(callback("sum"));
+  assert.ok(sent()[0].text.includes("без предоплаты 3 000 ₸"));
+  api.length = 0;
+  await telegram.handleUpdate(text("4000"));
+  assert.strictEqual(tables.bookings[0].paid_amount, 7000);
+  assert.ok(sent()[0].text.includes("предоплата 3 000 ₸ + на месте 4 000 ₸"));
+
+  // Оплачено полностью
+  reset(bookingEndedAgo(3, { ...paid, prepay_amount: 8000 }));
+  await visit.sendDueVisitChecks(NOW);
+  assert.ok(sent()[0].text.includes("Оплачено полностью"));
+  ok("«Визит завершён?» при предоплате: остаток к оплате, «Другая сумма» — без предоплаты");
+}
+
 (async () => {
   await testSchedule();
   await testButtons();
   await testCustomAmount();
+  await testPrepay();
   console.log("\nВсе unit-тесты «Визит завершён?» пройдены.");
 })().catch((error) => {
   console.error(error);

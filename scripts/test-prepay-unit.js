@@ -137,7 +137,7 @@ function reset(overrides = {}) {
   assert.strictEqual(tables.bookings[0].status, "confirmed");
   assert.strictEqual(tables.bookings[0].prepay_status, "paid");
   const toStaff = sent.find((m) => m.to === "777");
-  assert.ok(toStaff && toStaff.text.includes("Новая запись") && toStaff.text.includes("Предоплата 3 000 ₸ получена"));
+  assert.ok(toStaff && toStaff.text.includes("Новая запись") && toStaff.text.includes("внёс предоплату <b>3 000 ₸</b>") && toStaff.text.includes("Остаток после услуги: <b>5 000 ₸</b>"));
   assert.ok(!toStaff.extra?.reply_markup);
   ok("«Деньги пришли» → запись подтверждена, мастеру «Новая запись» без кнопок");
 

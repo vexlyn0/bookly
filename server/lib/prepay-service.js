@@ -187,7 +187,7 @@ async function notifyStaffOfPaidBooking(booking) {
     tg.formatBookingMessage({
       ...tg.viewFromBookingRow(booking),
       organizationName: org.public_name || org.name || "",
-    }) + `\n💳 Предоплата ${formatAmount(booking.prepay_amount)} получена`;
+    }) + `\n\n${require("./visit-check-service").prepayLines(booking).join("\n")}`;
   await tg.sendToStaff(booking.staff, text);
 }
 

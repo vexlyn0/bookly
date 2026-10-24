@@ -27,12 +27,14 @@ async function runReminders(req, res) {
   const received = req.get("x-cron-secret") || req.query.secret;
   if (!secretMatches(received)) return res.sendStatus(401);
 
-  const [sent, visitChecks, prepayExpired] = await Promise.all([
+  const visitCheck = require("../lib/visit-check-service");
+  const [sent, visitChecks, staffReminders, prepayExpired] = await Promise.all([
     clientBot.sendDueReminders(),
-    require("../lib/visit-check-service").sendDueVisitChecks(),
+    visitCheck.sendDueVisitChecks(),
+    visitCheck.sendDueStaffReminders(),
     require("../lib/prepay-service").expireUnpaid(),
   ]);
-  return res.json({ ok: true, sent, visit_checks: visitChecks, prepay_expired: prepayExpired });
+  return res.json({ ok: true, sent, visit_checks: visitChecks, staff_reminders: staffReminders, prepay_expired: prepayExpired });
 }
 
 router.post("/reminders", runReminders);

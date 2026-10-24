@@ -567,6 +567,7 @@ function startReminderScheduler() {
   const tick = () => {
     void sendDueReminders();
     void require("./visit-check-service").sendDueVisitChecks();
+    void require("./visit-check-service").sendDueStaffReminders();
   };
   reminderTimer = setInterval(tick, 5 * 60 * 1000);
   reminderTimer.unref?.();
