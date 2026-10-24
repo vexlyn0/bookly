@@ -572,6 +572,87 @@ const TOOL_FORMS = {
       <p class="tool__privacy">Картинка собирается прямо в браузере — мы ничего не сохраняем и никуда не отправляем.</p>
     </div>`,
 
+  "zapis-otkryta": () => `
+    <form class="tool__form" onsubmit="return false" autocomplete="off">
+      <label class="tool__field">
+        <span class="tool__label">Месяц</span>
+        <select class="tool__input" name="month"></select>
+      </label>
+
+      <div class="tool__field">
+        <span class="tool__label">Рабочие дни</span>
+        <div class="tool__presets">
+          <button type="button" data-days="weekdays" aria-pressed="false">Пн–Пт</button>
+          <button type="button" data-days="six" aria-pressed="false">Пн–Сб</button>
+          <button type="button" data-days="all" aria-pressed="false">Каждый день</button>
+          <button type="button" data-days="twotwo" aria-pressed="false">2 через 2</button>
+          <button type="button" data-days="none" aria-pressed="false">Очистить</button>
+        </div>
+        <div class="zc" id="zapis-calendar"></div>
+        <span class="tool__hint">Нажмите на день, чтобы отметить или убрать его.</span>
+      </div>
+
+      <div class="tool__pair">
+        <label class="tool__field">
+          <span class="tool__label">Услуга или имя</span>
+          <input class="tool__input" name="label" maxlength="40" placeholder="Маникюр">
+        </label>
+        <label class="tool__field">
+          <span class="tool__label">Заголовок</span>
+          <input class="tool__input" name="title" maxlength="40" placeholder="Запись открыта">
+        </label>
+      </div>
+
+      <label class="tool__field">
+        <span class="tool__label">Акция <span class="tool__optional">— необязательно</span></span>
+        <input class="tool__input" name="promo" maxlength="40" placeholder="−10% на первые 3 записи">
+      </label>
+
+      <div class="tool__field">
+        <span class="tool__label">Фон и стиль</span>
+        <div class="ok-styles" id="zapis-styles"></div>
+      </div>
+
+      <div class="tool__pair">
+        <div class="tool__field">
+          <span class="tool__label">Формат</span>
+          ${segmented("format", [["story", "Сторис 9:16"], ["post", "Пост 4:5"]])}
+        </div>
+        <div class="tool__field">
+          <span class="tool__label">Текст на картинке</span>
+          ${segmented("lang", [["ru", "Русский"], ["kk", "Қазақша"]])}
+        </div>
+      </div>
+
+      <label class="tool__field">
+        <span class="tool__label">Имя или @ник</span>
+        <input class="tool__input" name="nick" maxlength="32" placeholder="@aigerim.nails">
+      </label>
+
+      <div class="tool__field">
+        <span class="tool__label">Как записаться</span>
+        ${segmented("how", [["link", "Ссылка в шапке профиля"], ["direct", "Пишите в директ"], ["whatsapp", "WhatsApp"], ["custom", "Свой текст"]])}
+        <input class="tool__input" id="zapis-whatsapp" name="whatsapp" maxlength="24" placeholder="+7 701 000 00 00" inputmode="tel" hidden>
+        <input class="tool__input" id="zapis-custom" name="custom" maxlength="60" placeholder="Запись по телефону +7 701 000 00 00" hidden>
+      </div>
+
+      <label class="tool__field">
+        <span class="tool__label">QR-код на запись <span class="tool__optional">— необязательно</span></span>
+        <input class="tool__input" name="qr" maxlength="200" placeholder="Ссылка на запись, @instagram или номер WhatsApp">
+      </label>
+    </form>
+
+    <div class="tool__preview">
+      <p class="tool__preview-title">Предпросмотр</p>
+      <canvas class="tool__canvas" id="zapis-canvas" width="1080" height="1920" aria-label="Предпросмотр картинки"></canvas>
+      <button type="button" class="btn btn--primary btn--full" id="zapis-download">Скачать картинку</button>
+      <div class="tool__actions">
+        <button type="button" class="btn btn--ghost" id="zapis-share" hidden>Поделиться</button>
+        <button type="button" class="btn btn--ghost" id="zapis-copy">Скопировать текст</button>
+      </div>
+      <p class="tool__privacy">Картинка собирается прямо в браузере — мы ничего не сохраняем и никуда не отправляем.</p>
+    </div>`,
+
   "podarochnyy-sertifikat": () => `
     <form class="tool__form" onsubmit="return false" autocomplete="off">
       <label class="tool__field">

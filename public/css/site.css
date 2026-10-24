@@ -1789,3 +1789,51 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* «Запись открыта»: календарь месяца */
+.zc {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg-2);
+}
+
+.zc-head {
+  padding-bottom: 4px;
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.zc-day {
+  aspect-ratio: 1;
+  min-height: 36px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.zc-day:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.zc-day[aria-pressed="true"] {
+  border-color: var(--violet);
+  background: var(--violet-strong);
+  color: #fff;
+}
+
+.tool__presets button[aria-pressed="true"] {
+  border-color: var(--violet);
+  color: var(--text);
+}
