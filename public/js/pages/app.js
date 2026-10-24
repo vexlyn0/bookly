@@ -1,5 +1,5 @@
 /**
- * Bookly — панель управления (защищена авторизацией и компанией)
+ * Jazyl — панель управления (защищена авторизацией и компанией)
  */
 
 (async () => {
@@ -35,7 +35,7 @@
     workspaceNameEl.textContent = org.name;
     workspaceTypeEl.textContent = BooklyOrgConstants.getBusinessTypeLabel(org.business_type);
     topbarOrgEl.textContent = org.name;
-    document.title = `${org.name} — Bookly`;
+    document.title = `${org.name} — Jazyl`;
   };
 
   BooklyAuth.log("app: init start");

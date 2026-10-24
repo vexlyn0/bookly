@@ -1,5 +1,5 @@
 /**
- * Bookly — раздел «Сотрудники»
+ * Jazyl — раздел «Сотрудники»
  */
 window.BooklyStaffUI = (() => {
   let organization = null;
@@ -337,7 +337,7 @@ window.BooklyStaffUI = (() => {
   }
 
   function buildInviteMessage(member, link) {
-    const orgName = organization?.public_name || organization?.name || "Bookly";
+    const orgName = organization?.public_name || organization?.name || "Jazyl";
     return (
       `Здравствуйте, ${member.name}! Подключите уведомления о ваших записях в «${orgName}». ` +
       `Откройте ссылку и нажмите Start в Telegram-боте: ${link}`

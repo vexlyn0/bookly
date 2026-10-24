@@ -288,9 +288,9 @@
   height: 28px;
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);
-  color: var(--color-text-inverse);
-  background: var(--color-text);
-  border-radius: var(--radius-sm);
+  color: #fff;
+  background: #534ab7; /* фирменный цвет Jazyl */
+  border-radius: 8px;
 }
 
 /* ========== Алерты ========== */
@@ -336,4 +336,9 @@
 
 .btn.is-loading {
   pointer-events: none;
+}
+
+.logo__mark svg {
+  width: 72%;
+  height: 72%;
 }

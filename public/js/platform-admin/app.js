@@ -1,5 +1,5 @@
 /**
- * Точка входа глобальной админ-панели Bookly
+ * Точка входа глобальной админ-панели Jazyl
  */
 (async function initPlatformAdmin() {
   const loader = document.getElementById("admin-loader");
@@ -567,7 +567,7 @@
     }
 
     if (!session) {
-      showGate({ title: "Войдите в аккаунт", message: "Чтобы открыть админ-панель, войдите в аккаунт Bookly.", showLogin: true });
+      showGate({ title: "Войдите в аккаунт", message: "Чтобы открыть админ-панель, войдите в аккаунт Jazyl.", showLogin: true });
       return;
     }
 

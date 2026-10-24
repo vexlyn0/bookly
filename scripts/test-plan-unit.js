@@ -105,7 +105,7 @@ function testBrandingAndErrors() {
   const pro = toPublicOrganization({ slug: "b", name: "B", show_branding: false });
   assert.strictEqual(free.show_branding, true);
   assert.strictEqual(pro.show_branding, false);
-  ok("Публичная организация: подпись Bookly только на Free");
+  ok("Публичная организация: подпись Jazyl только на Free");
 
   const limit = mapSubscriptionError({ message: "STAFF_LIMIT_REACHED" });
   assert.strictEqual(limit.code, "STAFF_LIMIT_REACHED");

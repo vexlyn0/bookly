@@ -129,7 +129,8 @@
   border-radius: 8px;
   display: grid;
   place-items: center;
-  background: var(--pa-accent);
+  background: #534ab7;
+  color: #fff;
   font-size: var(--text-sm);
 }
 
@@ -1071,4 +1072,9 @@ button.pa-table__row:hover {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+.pa-side__mark svg {
+  width: 72%;
+  height: 72%;
 }

@@ -80,7 +80,7 @@ async function main() {
 
   await callApi("setMyCommands", {
     commands: [
-      { command: "start", description: "Подключить уведомления Bookly" },
+      { command: "start", description: "Подключить уведомления Jazyl" },
       { command: "stop", description: "Отключить уведомления" },
     ],
   });

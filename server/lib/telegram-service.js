@@ -1,5 +1,5 @@
 /**
- * Telegram-бот Bookly
+ * Telegram-бот Jazyl
  *
  *   - уведомление сотрудника о новой онлайн-записи;
  *   - привязка сотрудника: /start <telegram_link_token> (ссылка из кабинета);
@@ -408,11 +408,11 @@ async function sendToStaff(staff, text, extra = {}) {
 // -----------------------------------------------------------------------------
 
 const HELP_TEXT = [
-  "🤖 <b>Bookly</b> — онлайн-запись.",
+  "🤖 <b>Jazyl</b> — онлайн-запись.",
   "",
   "<b>Клиентам:</b> поделитесь номером телефона — и здесь будут ваши записи, изменения и напоминания. Кнопка «📋 Мои записи» покажет предстоящие визиты.",
   "",
-  "<b>Мастерам:</b> чтобы получать записи, откройте ссылку из кабинета Bookly (раздел «Сотрудники» → «Telegram»).",
+  "<b>Мастерам:</b> чтобы получать записи, откройте ссылку из кабинета Jazyl (раздел «Сотрудники» → «Telegram»).",
   "",
   "/stop — отключить уведомления мастера в этом чате",
 ].join("\n");
@@ -428,7 +428,7 @@ function visitCheck() {
 
 async function linkStaff(chatId, token) {
   if (!LINK_TOKEN_PATTERN.test(token)) {
-    return "❌ Ссылка недействительна. Откройте свежую ссылку в кабинете Bookly.";
+    return "❌ Ссылка недействительна. Откройте свежую ссылку в кабинете Jazyl.";
   }
 
   const supabase = getSupabaseAdmin();
@@ -444,7 +444,7 @@ async function linkStaff(chatId, token) {
   }
 
   if (!staff) {
-    return "❌ Ссылка недействительна или уже использована. Откройте свежую ссылку в кабинете Bookly.";
+    return "❌ Ссылка недействительна или уже использована. Откройте свежую ссылку в кабинете Jazyl.";
   }
 
   // Ссылка одноразовая: после привязки токен меняется.
@@ -459,7 +459,7 @@ async function linkStaff(chatId, token) {
     return "⚠️ Не удалось привязать аккаунт. Попробуйте позже.";
   }
 
-  const orgName = staff.organizations?.public_name || staff.organizations?.name || "Bookly";
+  const orgName = staff.organizations?.public_name || staff.organizations?.name || "Jazyl";
   return [
     `✅ Готово, ${escapeHtml(staff.name)}!`,
     `Уведомления о записях (новые, переносы, отмены) в «${escapeHtml(orgName)}» будут приходить сюда.`,
@@ -484,7 +484,7 @@ async function unlinkChat(chatId) {
     return "К этому чату не привязан ни один сотрудник.";
   }
 
-  return "🔕 Уведомления отключены. Чтобы включить снова, используйте ссылку из кабинета Bookly.";
+  return "🔕 Уведомления отключены. Чтобы включить снова, используйте ссылку из кабинета Jazyl.";
 }
 
 const SHARE_PHONE_KEYBOARD = {

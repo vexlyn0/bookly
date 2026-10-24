@@ -218,7 +218,7 @@ async function testCustomAmount() {
   // Обычный текст без ожидания суммы — справка, а не сумма
   api.length = 0;
   await telegram.handleUpdate(text("5000"));
-  assert.ok(sent()[0].text.includes("Bookly"), "без «Другая сумма» число не трогает записи");
+  assert.ok(sent()[0].text.includes("Jazyl"), "без «Другая сумма» число не трогает записи");
   ok("«Другая сумма»: бот ждёт число, понимает «4 500 тг», не понимает «четыре тысячи»");
 
   assert.strictEqual(visit.parseAmount("4500"), 4500);

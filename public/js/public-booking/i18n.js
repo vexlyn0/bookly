@@ -1,5 +1,5 @@
 /**
- * Bookly — язык страниц клиента (онлайн-запись и «Моя запись»): русский и казахский.
+ * Jazyl — язык страниц клиента (онлайн-запись и «Моя запись»): русский и казахский.
  *
  * Язык: ?lang=kk|ru → сохранённый выбор → язык телефона (kk*) → русский.
  * Статичный текст в HTML помечается data-i18n="ключ" (и data-i18n-html для разметки).
@@ -32,7 +32,7 @@ window.PublicBookingI18n = (() => {
       whatsapp_message: "Моя запись{org}: {service}, {date} в {time}. Перенести или отменить: {url}",
       whatsapp_org: " в «{org}»",
       book_again: "Записаться ещё раз",
-      powered: 'Онлайн-запись через <a href="/?utm_source=booking_page" target="_blank" rel="noopener">Bookly</a> — создайте свою бесплатно',
+      powered: 'Онлайн-запись через <a href="/?utm_source=booking_page" target="_blank" rel="noopener">Jazyl</a> — создайте свою бесплатно',
 
       step_service: "Услуга",
       step_staff: "Мастер",
@@ -96,7 +96,7 @@ window.PublicBookingI18n = (() => {
 
       // «Моя запись»
       my_booking: "Моя запись",
-      manage_title: "Моя запись — Bookly",
+      manage_title: "Моя запись — Jazyl",
       not_found_title: "Запись не найдена",
       not_found_text: "Проверьте ссылку или свяжитесь с салоном.",
       status: "Статус",
@@ -158,7 +158,7 @@ window.PublicBookingI18n = (() => {
       whatsapp_message: "Менің жазылуым{org}: {service}, {date}, {time}. Ауыстыру немесе бас тарту: {url}",
       whatsapp_org: " («{org}»)",
       book_again: "Тағы жазылу",
-      powered: '<a href="/?utm_source=booking_page" target="_blank" rel="noopener">Bookly</a> арқылы онлайн жазылу — өзіңіздікін тегін жасаңыз',
+      powered: '<a href="/?utm_source=booking_page" target="_blank" rel="noopener">Jazyl</a> арқылы онлайн жазылу — өзіңіздікін тегін жасаңыз',
 
       step_service: "Қызмет",
       step_staff: "Шебер",
@@ -221,7 +221,7 @@ window.PublicBookingI18n = (() => {
       duration_m: "{m} мин",
 
       my_booking: "Менің жазылуым",
-      manage_title: "Менің жазылуым — Bookly",
+      manage_title: "Менің жазылуым — Jazyl",
       not_found_title: "Жазылу табылмады",
       not_found_text: "Сілтемені тексеріңіз немесе салонға хабарласыңыз.",
       status: "Күйі",

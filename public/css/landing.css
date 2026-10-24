@@ -1489,3 +1489,8 @@ p {
     font-size: 11px;
   }
 }
+
+.logo__mark svg {
+  width: 72%;
+  height: 72%;
+}
