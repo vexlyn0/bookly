@@ -3,7 +3,8 @@
  *
  * День: колонки по активным мастерам. Неделя: 7 дней выбранного мастера.
  * Клик по свободному времени — новая запись (мастер, дата и время подставляются),
- * клик по записи — редактирование. Нерабочее время и выходные затенены.
+ * клик по записи — редактирование. Нерабочее время, выходные, отпуска,
+ * перерывы и блоки «занято» затенены.
  */
 window.BooklyCalendarUI = (() => {
   const PX_PER_MINUTE = 1.2;
@@ -25,6 +26,7 @@ window.BooklyCalendarUI = (() => {
   let staff = [];
   let schedules = [];
   let bookings = [];
+  let timeOff = [];
   let loaded = false;
   let loadToken = 0;
   let nowTimer = null;
@@ -138,6 +140,9 @@ window.BooklyCalendarUI = (() => {
     document.addEventListener("bookly:bookings-changed", () => {
       if (loaded) loadBookings();
     });
+    document.addEventListener("bookly:time-off-changed", () => {
+      if (loaded) loadBookings();
+    });
 
     // Загружаем при первом открытии раздела и обновляем при каждом возврате.
     document
@@ -216,9 +221,16 @@ window.BooklyCalendarUI = (() => {
     renderToolbar();
 
     try {
-      const rows = await BooklyBookings.listRange(organization.id, from, to);
+      const [rows, timeOffRows] = await Promise.all([
+        BooklyBookings.listRange(organization.id, from, to),
+        BooklySchedules.listTimeOff(organization.id, { from, to }).catch((error) => {
+          BooklyBookingsErrors.logError("calendar:time-off", error);
+          return [];
+        }),
+      ]);
       if (token !== loadToken) return;
       bookings = rows.filter((item) => !HIDDEN_STATUSES.includes(item.status));
+      timeOff = timeOffRows;
       render();
     } catch (error) {
       BooklyBookingsErrors.logError("calendar:bookings", error);
@@ -236,6 +248,15 @@ window.BooklyCalendarUI = (() => {
 
   function schedulesFor(staffId) {
     return schedules.filter((row) => row.staff_id === staffId);
+  }
+
+  /** Фактический день мастера: график + выходные, другие часы, перерыв, блоки. */
+  function dayFor(staffId, date) {
+    return BooklyBookingsSlots.resolveDay(
+      BooklyBookingsSlots.findScheduleForDate(schedulesFor(staffId), date),
+      date,
+      timeOff.filter((row) => row.staff_id === staffId)
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -266,7 +287,7 @@ window.BooklyCalendarUI = (() => {
           title: `${WEEKDAYS_SHORT[index]}, ${day.getDate()}`,
           subtitle: MONTHS_GENITIVE[day.getMonth()],
           isToday: date === todayStr(),
-          schedule: BooklyBookingsSlots.findScheduleForDate(schedulesFor(member.id), date),
+          ...columnDay(member.id, date),
         };
       });
     }
@@ -277,8 +298,13 @@ window.BooklyCalendarUI = (() => {
       title: member.name,
       subtitle: member.position || "",
       isToday: currentDate === todayStr(),
-      schedule: BooklyBookingsSlots.findScheduleForDate(schedulesFor(member.id), currentDate),
+      ...columnDay(member.id, currentDate),
     }));
+  }
+
+  function columnDay(staffId, date) {
+    const day = dayFor(staffId, date);
+    return { schedule: day.schedule, blocked: day.blocked, offLabel: day.off };
   }
 
   function computeTimeRange(columns, columnBookings) {
@@ -421,6 +447,16 @@ window.BooklyCalendarUI = (() => {
       )
       .join("");
 
+    const blocks = (column.blocked || [])
+      .map((block) => {
+        const from = Math.max(block.start, range.start);
+        const to = Math.min(block.end, range.end);
+        if (to <= from) return "";
+        return `<div class="cal__block" style="top:${(from - range.start) * PX_PER_MINUTE}px;height:${(to - from) * PX_PER_MINUTE}px"
+          title="${escapeHtml(`${block.label}: ${toTime(block.start)}–${toTime(block.end)}`)}"><span>${escapeHtml(block.label)}</span></div>`;
+      })
+      .join("");
+
     const events = layoutEvents(items)
       .map(({ item, lane, lanes }) => {
         const start = toMinutes(item.start_time);
@@ -447,7 +483,8 @@ window.BooklyCalendarUI = (() => {
         data-staff-id="${column.staffId}" data-date="${column.date}"
         data-range-start="${range.start}" style="height:${height}px">
         ${zones}
-        ${dayOff ? '<span class="cal__off-label">Выходной</span>' : ""}
+        ${blocks}
+        ${dayOff ? `<span class="cal__off-label">${escapeHtml(column.offLabel || "Выходной")}</span>` : ""}
         ${events}
         <div class="cal__ghost" hidden></div>
       </div>`;
@@ -499,8 +536,7 @@ window.BooklyCalendarUI = (() => {
 
   function isWorkingAt(column, minutes) {
     if (column.classList.contains("is-off")) return false;
-    const date = column.dataset.date;
-    const schedule = BooklyBookingsSlots.findScheduleForDate(schedulesFor(column.dataset.staffId), date);
+    const { schedule } = dayFor(column.dataset.staffId, column.dataset.date);
     if (!schedule || schedule.is_working !== true) return false;
     return minutes >= toMinutes(schedule.start_time) && minutes < toMinutes(schedule.end_time);
   }

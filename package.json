@@ -47,6 +47,7 @@
     "test:visit-check-unit": "node scripts/test-visit-check-unit.js",
     "test:admin-stats-unit": "node scripts/test-admin-stats-unit.js",
     "test:admin-manage-unit": "node scripts/test-admin-manage-unit.js",
+    "test:slots-unit": "node scripts/test-slots-unit.js",
     "db:freemium": "node scripts/setup-freemium.js",
     "test:migrations": "node scripts/test-migrations.mjs",
     "test:plan-unit": "node scripts/test-plan-unit.js"

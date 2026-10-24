@@ -58,7 +58,7 @@ async function attachAvailability(supabase, organization, durationMinutes, membe
   const today = formatDateInTimezone(new Date(), organization.timezone);
   const lastDate = addDays(today, NEXT_AVAILABLE_DAYS - 1);
 
-  const [schedulesResult, bookingsResult] = await Promise.all([
+  const [schedulesResult, bookingsResult, timeOffResult] = await Promise.all([
     supabase.from("staff_schedules").select("*").eq("organization_id", organization.id).in("staff_id", ids),
     supabase
       .from("bookings")
@@ -68,18 +68,27 @@ async function attachAvailability(supabase, organization, durationMinutes, membe
       .in("status", ["pending", "confirmed"])
       .gte("booking_date", today)
       .lte("booking_date", lastDate),
+    supabase
+      .from("staff_time_off")
+      .select("staff_id, kind, date_from, date_to, start_time, end_time, note, created_at")
+      .eq("organization_id", organization.id)
+      .in("staff_id", ids)
+      .lte("date_from", lastDate)
+      .gte("date_to", today),
   ]);
 
-  if (schedulesResult.error || bookingsResult.error) {
-    logQueryError("staff:availability", schedulesResult.error || bookingsResult.error);
+  if (schedulesResult.error || bookingsResult.error || timeOffResult.error) {
+    logQueryError("staff:availability", schedulesResult.error || bookingsResult.error || timeOffResult.error);
     return members.map((member) => ({ ...member, work_days: null, next_available: null }));
   }
 
   const schedules = schedulesResult.data || [];
   const bookings = bookingsResult.data || [];
+  const timeOff = timeOffResult.data || [];
 
   return members.map((member) => {
     const own = schedules.filter((row) => row.staff_id === member.id);
+    const ownTimeOff = timeOff.filter((row) => row.staff_id === member.id);
     const workDays = own.filter((row) => row.is_working === true).map((row) => row.day_of_week);
     let nextAvailable = null;
 
@@ -91,6 +100,7 @@ async function attachAvailability(supabase, organization, durationMinutes, membe
         bookings: bookings.filter((row) => row.staff_id === member.id && row.booking_date === date),
         dateStr: date,
         timeZone: organization.timezone,
+        timeOff: ownTimeOff,
       });
       if (slots.length) nextAvailable = { date, start_time: slots[0].start_time };
     }
@@ -411,7 +421,7 @@ async function getPublicSlots(slug, { serviceId, staffId, date }) {
     throw appError("Сотрудник не оказывает эту услугу", "STAFF_SERVICE_MISMATCH", 400);
   }
 
-  const [schedulesResult, bookingsResult] = await Promise.all([
+  const [schedulesResult, bookingsResult, timeOffResult] = await Promise.all([
     supabase
       .from("staff_schedules")
       .select("*")
@@ -423,10 +433,18 @@ async function getPublicSlots(slug, { serviceId, staffId, date }) {
       .eq("organization_id", organization.id)
       .eq("staff_id", staffId)
       .eq("booking_date", date),
+    supabase
+      .from("staff_time_off")
+      .select("kind, date_from, date_to, start_time, end_time, note, created_at")
+      .eq("organization_id", organization.id)
+      .eq("staff_id", staffId)
+      .lte("date_from", date)
+      .gte("date_to", date),
   ]);
 
   const schedules = assertSupabaseResult(schedulesResult, "staff_schedules");
   const bookings = assertSupabaseResult(bookingsResult, "bookings");
+  const timeOff = assertSupabaseResult(timeOffResult, "staff_time_off");
 
   const schedule = findScheduleForDate(schedules || [], date);
   const slots = computeSlots({
@@ -435,6 +453,7 @@ async function getPublicSlots(slug, { serviceId, staffId, date }) {
     bookings: bookings || [],
     dateStr: date,
     timeZone: organization.timezone,
+    timeOff: timeOff || [],
   });
 
   return { date, slots };

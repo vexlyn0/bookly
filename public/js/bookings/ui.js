@@ -497,22 +497,29 @@ window.BooklyBookingsUI = (() => {
     if (!service) return;
 
     try {
-      const [schedules, dayBookings] = await Promise.all([
+      const [schedules, dayBookings, timeOff] = await Promise.all([
         getSchedules(staffId),
         BooklyBookings.listForStaffDate(staffId, date),
+        BooklySchedules.listTimeOff(organization.id, { staffId, from: date, to: date }).catch(() => []),
       ]);
 
       const schedule = BooklyBookingsSlots.findScheduleForDate(schedules, date);
+      const day = BooklyBookingsSlots.resolveDay(schedule, date, timeOff);
       const slots = BooklyBookingsSlots.computeSlots({
         schedule,
         durationMinutes: service.duration_minutes,
         bookings: dayBookings,
         excludeBookingId: editingId,
         dateStr: date,
+        timeOff,
       });
 
-      if (!schedule || schedule.is_working !== true) {
-        if (els.slotsHint) els.slotsHint.textContent = "Сотрудник не работает в этот день.";
+      if (!day.schedule) {
+        if (els.slotsHint) {
+          els.slotsHint.textContent = day.off
+            ? `Сотрудник не работает в этот день: ${day.off}.`
+            : "Сотрудник не работает в этот день.";
+        }
         return;
       }
 

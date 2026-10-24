@@ -100,6 +100,8 @@ window.BooklySchedules = (() => {
         is_working: day.is_working,
         start_time: day.is_working ? day.start_time : null,
         end_time: day.is_working ? day.end_time : null,
+        break_start: day.is_working && day.break_start ? day.break_start : null,
+        break_end: day.is_working && day.break_end ? day.break_end : null,
       };
 
       if (current?.id) {
@@ -135,10 +137,65 @@ window.BooklySchedules = (() => {
     return sortByDay(results);
   }
 
+  // ---------------------------------------------------------------------------
+  // Исключения графика: выходные/отпуска (off), блоки (block), другие часы (hours)
+  // ---------------------------------------------------------------------------
+
+  /** Исключения, пересекающие период [from, to]; staffId — необязательно. */
+  async function listTimeOff(organizationId, { staffId = "", from, to } = {}) {
+    const supabase = await BooklyAuth.getClient();
+    let query = supabase
+      .from("staff_time_off")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .order("date_from", { ascending: true })
+      .order("start_time", { ascending: true });
+    if (staffId) query = query.eq("staff_id", staffId);
+    if (to) query = query.lte("date_from", to);
+    if (from) query = query.gte("date_to", from);
+
+    const { data, error } = await query;
+    if (error) {
+      log("listTimeOff error:", error.message);
+      throw error;
+    }
+    return data || [];
+  }
+
+  async function addTimeOff(organizationId, payload) {
+    const supabase = await BooklyAuth.getClient();
+    const kind = payload.kind;
+    const row = {
+      organization_id: organizationId,
+      staff_id: payload.staff_id,
+      kind,
+      date_from: payload.date_from,
+      date_to: kind === "off" ? payload.date_to || payload.date_from : payload.date_from,
+      start_time: kind === "off" ? null : payload.start_time,
+      end_time: kind === "off" ? null : payload.end_time,
+      note: String(payload.note || "").trim().slice(0, 200) || null,
+    };
+    const { data, error } = await supabase.from("staff_time_off").insert([row]).select().single();
+    if (error) {
+      log("addTimeOff error:", error.message);
+      throw error;
+    }
+    return data;
+  }
+
+  async function removeTimeOff(id) {
+    const supabase = await BooklyAuth.getClient();
+    const { error } = await supabase.from("staff_time_off").delete().eq("id", id);
+    if (error) throw error;
+  }
+
   return {
     listForStaff,
     listForOrganization,
     ensureDefaults,
     save,
+    listTimeOff,
+    addTimeOff,
+    removeTimeOff,
   };
 })();

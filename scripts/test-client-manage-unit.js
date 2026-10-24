@@ -7,7 +7,7 @@ const assert = require("assert");
 
 // --- Подмена Supabase: таблицы в памяти --------------------------------------
 
-const tables = { bookings: [], organizations: [], staff_schedules: [] };
+const tables = { bookings: [], organizations: [], staff_schedules: [], staff_time_off: [] };
 const updates = [];
 
 function fakeSupabase() {
@@ -30,6 +30,14 @@ function fakeSupabase() {
         },
         in(column, values) {
           filters.push((row) => values.includes(row[column]));
+          return builder;
+        },
+        lte(column, value) {
+          filters.push((row) => row[column] <= value);
+          return builder;
+        },
+        gte(column, value) {
+          filters.push((row) => row[column] >= value);
           return builder;
         },
         maybeSingle() {
@@ -191,6 +199,16 @@ async function testReschedule() {
 
   const { slots } = await manage.getManageSlots(TOKEN, target);
   assert.ok(slots.some((s) => s.start_time === "15:00"));
+
+  // Перерыв и отпуск закрывают время для переноса
+  tables.staff_schedules.forEach((row) => Object.assign(row, { break_start: "13:00:00", break_end: "14:00:00" }));
+  let checked = await manage.getManageSlots(TOKEN, target);
+  assert.ok(!checked.slots.some((s) => s.start_time === "13:00" || s.start_time === "12:30"), "перерыв");
+  tables.staff_time_off = [{ organization_id: ORG, staff_id: STAFF, kind: "off", date_from: target, date_to: target, note: "Отпуск" }];
+  checked = await manage.getManageSlots(TOKEN, target);
+  assert.strictEqual(checked.slots.length, 0, "отпуск");
+  tables.staff_time_off = [];
+  tables.staff_schedules.forEach((row) => Object.assign(row, { break_start: null, break_end: null }));
 
   const info = await manage.rescheduleByToken(TOKEN, { booking_date: target, start_time: "15:00" });
   assert.strictEqual(info.booking.booking_date, target);

@@ -52,7 +52,47 @@ window.BooklyBookingsSlots = (() => {
     return (schedules || []).find((row) => row.day_of_week === dayIndex) || null;
   }
 
-  function computeSlots({ schedule, durationMinutes, bookings, excludeBookingId, dateStr }) {
+  /**
+   * Рабочий день с учётом исключений (то же, что resolveDay на сервере).
+   * @returns {{ schedule: object|null, blocked: {start:number,end:number,label:string}[], off: string|null }}
+   */
+  function resolveDay(schedule, dateStr, timeOff = []) {
+    const entries = (timeOff || []).filter((t) => dateStr >= t.date_from && dateStr <= t.date_to);
+
+    const off = entries.find((t) => t.kind === "off");
+    if (off) return { schedule: null, blocked: [], off: off.note || "Выходной" };
+
+    const hours = entries
+      .filter((t) => t.kind === "hours")
+      .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))[0];
+
+    const blocked = [];
+    let effective = schedule && schedule.is_working === true ? schedule : null;
+
+    if (hours) {
+      effective = { is_working: true, start_time: hours.start_time, end_time: hours.end_time };
+    } else if (effective && effective.break_start && effective.break_end) {
+      blocked.push({
+        start: timeToMinutes(effective.break_start),
+        end: timeToMinutes(effective.break_end),
+        label: "Перерыв",
+      });
+    }
+
+    for (const block of entries.filter((t) => t.kind === "block")) {
+      blocked.push({
+        start: timeToMinutes(block.start_time),
+        end: timeToMinutes(block.end_time),
+        label: block.note || "Занято",
+      });
+    }
+
+    return { schedule: effective, blocked: blocked.filter((b) => b.start !== null && b.end !== null), off: null };
+  }
+
+  function computeSlots({ schedule: weeklySchedule, durationMinutes, bookings, excludeBookingId, dateStr, timeOff = [] }) {
+    const day = resolveDay(weeklySchedule, dateStr, timeOff);
+    const schedule = day.schedule;
     if (!schedule || schedule.is_working !== true) return [];
 
     const workStart = timeToMinutes(schedule.start_time);
@@ -71,7 +111,8 @@ window.BooklyBookingsSlots = (() => {
         start: timeToMinutes(item.start_time),
         end: timeToMinutes(item.end_time),
       }))
-      .filter((item) => item.start !== null && item.end !== null);
+      .filter((item) => item.start !== null && item.end !== null)
+      .concat(day.blocked);
 
     const slots = [];
 
@@ -101,6 +142,7 @@ window.BooklyBookingsSlots = (() => {
     getScheduleDayIndex,
     findScheduleForDate,
     computeSlots,
+    resolveDay,
     isPastSlot,
   };
 })();

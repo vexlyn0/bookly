@@ -212,7 +212,7 @@ async function getManageSlots(token, date) {
   }
 
   const supabase = getSupabaseAdmin();
-  const [schedulesResult, bookingsResult] = await Promise.all([
+  const [schedulesResult, bookingsResult, timeOffResult] = await Promise.all([
     supabase
       .from("staff_schedules")
       .select("*")
@@ -224,10 +224,18 @@ async function getManageSlots(token, date) {
       .eq("organization_id", organization.id)
       .eq("staff_id", booking.staff_id)
       .eq("booking_date", dateStr),
+    supabase
+      .from("staff_time_off")
+      .select("kind, date_from, date_to, start_time, end_time, note, created_at")
+      .eq("organization_id", organization.id)
+      .eq("staff_id", booking.staff_id)
+      .lte("date_from", dateStr)
+      .gte("date_to", dateStr),
   ]);
 
   if (schedulesResult.error) throw internalError("schedules", schedulesResult.error);
   if (bookingsResult.error) throw internalError("bookings", bookingsResult.error);
+  if (timeOffResult.error) throw internalError("time_off", timeOffResult.error);
 
   const slots = computeSlots({
     schedule: findScheduleForDate(schedulesResult.data || [], dateStr),
@@ -236,6 +244,7 @@ async function getManageSlots(token, date) {
     excludeBookingId: booking.id,
     dateStr,
     timeZone: organization.timezone,
+    timeOff: timeOffResult.data || [],
   }).filter(
     // Текущее время записи не предлагаем как «новое».
     (slot) =>

@@ -54,6 +54,22 @@ window.BooklyScheduleValidation = (() => {
       return { valid: false, errors, data: day };
     }
 
+    // Перерыв — необязателен, но если указан, то целиком и внутри рабочего дня
+    const breakStart = formatTimeForInput(day.break_start);
+    const breakEnd = formatTimeForInput(day.break_end);
+    if (breakStart || breakEnd) {
+      const bs = timeToMinutes(breakStart);
+      const be = timeToMinutes(breakEnd);
+      if (bs === null || be === null) {
+        errors.time = `Укажите начало и конец перерыва для «${label}» — или очистите оба поля.`;
+        return { valid: false, errors, data: day };
+      }
+      if (be <= bs || bs < startMinutes || be > endMinutes) {
+        errors.time = `Перерыв должен быть внутри рабочего дня («${label}»).`;
+        return { valid: false, errors, data: day };
+      }
+    }
+
     return {
       valid: true,
       errors,
@@ -61,6 +77,8 @@ window.BooklyScheduleValidation = (() => {
         ...day,
         start_time: start,
         end_time: end,
+        break_start: breakStart || null,
+        break_end: breakEnd || null,
       },
     };
   }

@@ -76,14 +76,59 @@ function findScheduleForDate(schedules, dateStr) {
   return (schedules || []).find((row) => row.day_of_week === dayIndex) || null;
 }
 
+/**
+ * Рабочий день мастера с учётом исключений (staff_time_off) и перерыва.
+ * @returns {{ schedule: object|null, blocked: {start:number,end:number,label:string}[], off: string|null }}
+ *   schedule — фактические часы работы (или null — не работает),
+ *   blocked  — занятые интервалы в минутах (перерыв, блоки),
+ *   off      — причина выходного («Отпуск», «Выходной»…).
+ */
+function resolveDay(schedule, dateStr, timeOff = []) {
+  const entries = (timeOff || []).filter((t) => dateStr >= t.date_from && dateStr <= t.date_to);
+
+  const off = entries.find((t) => t.kind === "off");
+  if (off) return { schedule: null, blocked: [], off: off.note || "Выходной" };
+
+  const hours = entries
+    .filter((t) => t.kind === "hours")
+    .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))[0];
+
+  const blocked = [];
+  let effective = schedule && schedule.is_working === true ? schedule : null;
+
+  if (hours) {
+    // «Другие часы» заменяют график целиком, перерыв из графика не действует.
+    effective = { is_working: true, start_time: hours.start_time, end_time: hours.end_time };
+  } else if (effective && effective.break_start && effective.break_end) {
+    blocked.push({
+      start: timeToMinutes(effective.break_start),
+      end: timeToMinutes(effective.break_end),
+      label: "Перерыв",
+    });
+  }
+
+  for (const block of entries.filter((t) => t.kind === "block")) {
+    blocked.push({
+      start: timeToMinutes(block.start_time),
+      end: timeToMinutes(block.end_time),
+      label: block.note || "Занято",
+    });
+  }
+
+  return { schedule: effective, blocked: blocked.filter((b) => b.start !== null && b.end !== null), off: null };
+}
+
 function computeSlots({
-  schedule,
+  schedule: weeklySchedule,
   durationMinutes,
   bookings,
   excludeBookingId,
   dateStr,
   timeZone,
+  timeOff = [],
 }) {
+  const day = resolveDay(weeklySchedule, dateStr, timeOff);
+  const schedule = day.schedule;
   if (!schedule || schedule.is_working !== true) return [];
 
   const workStart = timeToMinutes(schedule.start_time);
@@ -102,7 +147,8 @@ function computeSlots({
       start: timeToMinutes(item.start_time),
       end: timeToMinutes(item.end_time),
     }))
-    .filter((item) => item.start !== null && item.end !== null);
+    .filter((item) => item.start !== null && item.end !== null)
+    .concat(day.blocked);
 
   const slots = [];
 
@@ -152,6 +198,7 @@ module.exports = {
   getScheduleDayIndex,
   findScheduleForDate,
   computeSlots,
+  resolveDay,
   isPastSlot,
   isDateTooFarAhead,
   formatDateInTimezone,
