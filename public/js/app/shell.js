@@ -3,7 +3,7 @@
  */
 window.BooklyAppShell = (() => {
   const SECTIONS = {
-    dashboard: { title: "Обзор", subtitle: "Обзор" },
+    dashboard: { title: "Сегодня", subtitle: "Сегодня" },
     services: { title: "Услуги", subtitle: "Услуги" },
     staff: { title: "Сотрудники", subtitle: "Сотрудники" },
     bookings: { title: "Записи", subtitle: "Записи" },

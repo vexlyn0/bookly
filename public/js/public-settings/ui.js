@@ -144,6 +144,7 @@ window.BooklyPublicSettingsUI = (() => {
     try {
       const updated = await BooklyOrg.updatePublicBookingSettings(organization.id, result.data);
       organization = { ...organization, ...updated };
+      document.dispatchEvent(new CustomEvent("bookly:organization-changed", { detail: updated }));
       populateForm();
       updatePublicLink();
       showSuccess("Настройки онлайн-записи сохранены.");

@@ -39,7 +39,7 @@
         <p class="sidebar__section-title">Основное</p>
         <button class="sidebar__link is-active" type="button" data-section="dashboard">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-          Обзор
+          Сегодня
         </button>
         <button class="sidebar__link" type="button" data-section="services">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
@@ -118,7 +118,7 @@
       </button>
       <div class="topbar__info">
         <span class="topbar__org" id="topbar-org-name">—</span>
-        <h1 class="topbar__title" id="page-title">Обзор</h1>
+        <h1 class="topbar__title" id="page-title">Сегодня</h1>
       </div>
       <div class="topbar__actions">
         <button class="badge badge--muted plan-badge" type="button" id="plan-badge">Free</button>
@@ -131,39 +131,64 @@
     </div>
 
     <div class="content">
-      <!-- Обзор -->
-      <section class="panel dashboard-panel" id="dashboard-section" data-section="dashboard">
-        <div class="dashboard-stats">
-          <article class="stat-card">
-            <p class="stat-card__label">Активных услуг</p>
-            <p class="stat-card__value" id="dashboard-active-services">0</p>
+      <!-- Сегодня -->
+      <section class="panel today-panel" id="dashboard-section" data-section="dashboard">
+        <header class="today-head">
+          <div>
+            <h2 class="today-head__title" id="today-greeting">Добрый день</h2>
+            <p class="today-head__date" id="today-date"></p>
+          </div>
+          <div class="today-head__actions">
+            <button class="btn btn--outline" type="button" id="today-copy-link">Ссылка на запись</button>
+            <button class="btn btn--primary" type="button" id="today-add">+ Запись</button>
+          </div>
+        </header>
+
+        <div class="today-setup" id="today-setup" hidden>
+          <div class="today-setup__head">
+            <h3 class="today-setup__title">Настройте Bookly за 4 шага</h3>
+            <span class="today-setup__progress" id="today-setup-progress">0 из 4</span>
+          </div>
+          <ol class="today-setup__list" id="today-setup-list"></ol>
+        </div>
+
+        <div class="today-kpis">
+          <article class="kpi-card">
+            <p class="kpi-card__label">Записей сегодня</p>
+            <p class="kpi-card__value" id="dashboard-today-bookings">0</p>
           </article>
-          <article class="stat-card">
-            <p class="stat-card__label">Активных сотрудников</p>
-            <p class="stat-card__value" id="dashboard-active-staff">0</p>
+          <article class="kpi-card kpi-card--warn" id="today-pending-card">
+            <p class="kpi-card__label">Ждут подтверждения</p>
+            <p class="kpi-card__value" id="today-pending">0</p>
           </article>
-          <article class="stat-card">
-            <p class="stat-card__label">Записей сегодня</p>
-            <p class="stat-card__value" id="dashboard-today-bookings">0</p>
+          <article class="kpi-card">
+            <p class="kpi-card__label">Предстоящих</p>
+            <p class="kpi-card__value" id="dashboard-upcoming-bookings">0</p>
           </article>
-          <article class="stat-card">
-            <p class="stat-card__label">Предстоящих записей</p>
-            <p class="stat-card__value" id="dashboard-upcoming-bookings">0</p>
+          <article class="kpi-card">
+            <p class="kpi-card__label">Активных мастеров</p>
+            <p class="kpi-card__value" id="dashboard-active-staff">0</p>
+            <span id="dashboard-active-services" hidden>0</span>
           </article>
         </div>
 
-        <div class="dashboard-welcome">
-          <div class="dashboard-empty__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <div class="today-board">
+          <div class="today-card">
+            <div class="today-card__head">
+              <h3 class="today-card__title">Расписание на сегодня</h3>
+              <button class="today-card__link" type="button" data-open-section="calendar">Календарь →</button>
+            </div>
+            <div class="today-list" id="today-list">
+              <p class="today-empty">Загрузка…</p>
+            </div>
           </div>
-          <h2 class="dashboard-empty__title">Добро пожаловать в Bookly</h2>
-          <p class="dashboard-empty__text">
-            Начните с добавления услуг и сотрудников — они понадобятся для онлайн-записи и расписания.
-          </p>
-          <div class="dashboard-welcome__actions">
-            <button class="btn btn--primary" type="button" id="dashboard-go-services">Перейти к услугам</button>
-            <button class="btn btn--outline" type="button" id="dashboard-go-staff">Перейти к сотрудникам</button>
-            <button class="btn btn--outline" type="button" id="dashboard-go-bookings">Перейти к записям</button>
+
+          <div class="today-card">
+            <div class="today-card__head">
+              <h3 class="today-card__title">Ближайшие дни</h3>
+              <button class="today-card__link" type="button" data-open-section="bookings">Все записи →</button>
+            </div>
+            <div class="today-list today-list--compact" id="today-next"></div>
           </div>
         </div>
       </section>
@@ -983,6 +1008,7 @@
   <script src="/js/bookings/client.js"></script>
   <script src="/js/bookings/ui.js"></script>
   <script src="/js/calendar/ui.js"></script>
+  <script src="/js/dashboard/ui.js"></script>
   <script src="/js/public-settings/validation.js"></script>
   <script src="/js/public-settings/ui.js"></script>
   <script src="/js/blacklist/ui.js"></script>

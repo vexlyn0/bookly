@@ -88,21 +88,10 @@
   BooklyScheduleUI.init(organization);
   BooklyBookingsUI.init(organization);
   BooklyCalendarUI.init(organization);
+  BooklyDashboardUI.init(organization);
   BooklyPublicSettingsUI.init(organization);
   BooklyBlacklist.init(organization);
   BooklySubscriptionUI.init(organization);
-
-  document.getElementById("dashboard-go-services")?.addEventListener("click", () => {
-    document.querySelector('.sidebar__link[data-section="services"]')?.click();
-  });
-
-  document.getElementById("dashboard-go-staff")?.addEventListener("click", () => {
-    document.querySelector('.sidebar__link[data-section="staff"]')?.click();
-  });
-
-  document.getElementById("dashboard-go-bookings")?.addEventListener("click", () => {
-    document.querySelector('.sidebar__link[data-section="bookings"]')?.click();
-  });
 
   const closeSidebar = () => {
     sidebar?.classList.remove("is-open");
