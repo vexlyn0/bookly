@@ -20,6 +20,7 @@ const config = require("../server/config");
 config.publicUrl = SITE_URL;
 const site = require("../server/site/render");
 const studio = require("../server/site/studio");
+const { versionAssets } = require("../server/site/assets");
 
 const ROOT = path.join(__dirname, "..");
 const OUT = path.join(ROOT, "dist", "landing");
@@ -44,11 +45,11 @@ function copyDir(rel) {
 
 function renderPath(p) {
   if (p === "/") {
-    return fs
+    return versionAssets(fs
       .readFileSync(path.join(config.publicDir, "index.html"), "utf8")
       .replace("<!--SITE_HEADER-->", site.renderHeader("/"))
       .replace("<!--STUDIO_SECTION-->", studio.renderStudioSection())
-      .replace("<!--SITE_FOOTER-->", site.renderFooter());
+      .replace("<!--SITE_FOOTER-->", site.renderFooter()));
   }
   const [, section, slug] = p.split("/");
   if (section === "vozmozhnosti") return site.renderFeature(site.findFeature(slug));

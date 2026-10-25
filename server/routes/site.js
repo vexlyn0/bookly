@@ -8,6 +8,7 @@ const express = require("express");
 const config = require("../config");
 const site = require("../site/render");
 const studio = require("../site/studio");
+const { versionAssets } = require("../site/assets");
 
 const router = express.Router();
 
@@ -15,11 +16,11 @@ const router = express.Router();
 let landingHtml = null;
 function landing() {
   if (!landingHtml || process.env.NODE_ENV !== "production") {
-    landingHtml = fs
+    landingHtml = versionAssets(fs
       .readFileSync(path.join(config.publicDir, "index.html"), "utf8")
       .replace("<!--SITE_HEADER-->", site.renderHeader("/"))
       .replace("<!--STUDIO_SECTION-->", studio.renderStudioSection())
-      .replace("<!--SITE_FOOTER-->", site.renderFooter());
+      .replace("<!--SITE_FOOTER-->", site.renderFooter()));
   }
   return landingHtml;
 }

@@ -11,6 +11,7 @@ const { AUDIENCES } = require("./audiences");
 const { FEATURES } = require("./features");
 const { TOOLS } = require("./tools");
 const { findLegal, LEGAL_PATHS, CONTACTS } = require("./legal");
+const { versionAssets } = require("./assets");
 
 const LOGO_MARK =
   '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
@@ -160,7 +161,7 @@ function absoluteUrl(path) {
 }
 
 function renderPage({ path, title, description, body, scripts = [], fonts = "", styles = [] }) {
-  return `<!DOCTYPE html>
+  return versionAssets(`<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -195,7 +196,7 @@ ${renderFooter()}
 ${scripts.map((src) => `  <script src="${src}"></script>`).join("\n")}
 </body>
 </html>
-`;
+`);
 }
 
 // ---------------------------------------------------------------------------
