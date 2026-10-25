@@ -14,10 +14,10 @@ const path = require("path");
 const SITE_URL = (process.env.SITE_URL || "https://vibesales.kz").replace(/\/+$/, "");
 const APP_URL = (process.env.APP_URL || "https://app.vibesales.kz").replace(/\/+$/, "");
 
-// canonical и sitemap должны указывать на сайт, а не на Render
-process.env.PUBLIC_APP_URL = SITE_URL;
-
 const config = require("../server/config");
+
+// canonical и sitemap должны указывать на сайт, а не на Render (после загрузки .env, который мог задать свой адрес)
+config.publicUrl = SITE_URL;
 const site = require("../server/site/render");
 
 const ROOT = path.join(__dirname, "..");
