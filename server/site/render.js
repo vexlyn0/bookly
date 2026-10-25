@@ -160,9 +160,9 @@ function absoluteUrl(path) {
   return config.publicUrl ? `${config.publicUrl.replace(/\/$/, "")}${path}` : path;
 }
 
-function renderPage({ path, title, description, body, scripts = [], fonts = "", styles = [] }) {
+function renderPage({ path, title, description, body, scripts = [], fonts = "", styles = [], lang = "ru" }) {
   return versionAssets(`<!DOCTYPE html>
-<html lang="ru">
+<html lang="${lang}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -560,8 +560,7 @@ function sitePaths() {
     "/",
     ...FEATURES.map((f) => `/vozmozhnosti/${f.slug}`),
     ...AUDIENCES.map((a) => `/dlya/${a.slug}`),
-    "/studiya",
-    ...TOOLS.map((t) => `/studiya/${t.slug}`),
+    ...require("./studio").studioPaths(),
     ...LEGAL_PATHS,
   ];
 }

@@ -51,6 +51,13 @@ router.get("/studiya/:slug", (req, res, next) => {
   res.type("html").send(studio.renderStudioTool(tool));
 });
 
+router.get("/studiya/:slug/:variant", (req, res, next) => {
+  const tool = studio.findTool(req.params.slug);
+  const variant = tool && studio.findVariant(tool, req.params.variant);
+  if (!variant) return next();
+  res.type("html").send(studio.renderStudioTool(tool, variant));
+});
+
 // Старые адреса «Инструментов» → Студия (ссылки уже могли разойтись)
 router.get(["/instrumenty", "/instrumenty/:slug"], (req, res) => {
   const slug = req.params.slug ? studio.slugFromOld(req.params.slug) : null;

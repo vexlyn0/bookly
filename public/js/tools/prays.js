@@ -320,9 +320,10 @@
     save();
   });
 
+  /** Возвращает true, если у человека уже есть свой прайс (не пример). */
   function restore() {
     const saved = store.load();
-    if (!saved) return;
+    if (!saved) return false;
     for (const [key, max] of [["text", 4000], ["name", 40], ["title", 30], ["note", 100], ["nick", 32], ["whatsapp", 24], ["custom", 60]]) {
       if (typeof saved[key] === "string") state[key] = saved[key].slice(0, max);
     }
@@ -330,6 +331,7 @@
     if (FORMATS[saved.format]) state.format = saved.format;
     if (TEXT[saved.lang]) state.lang = saved.lang;
     if (["link", "direct", "whatsapp", "custom"].includes(saved.how)) state.how = saved.how;
+    return typeof saved.text === "string" && saved.text.trim() && saved.text !== SAMPLE;
   }
 
   function plainText() {
@@ -378,7 +380,8 @@
   // ---------------------------------------------------------------------------
 
   const base = { name: "", title: "", note: "", nick: "@vash.nik", how: "link", whatsapp: "", custom: "", format: "story", lang: "ru" };
-  const TEMPLATES = [
+  const page = kit.pageConfig(root);
+  const TEMPLATES = page.templates ? page.templates.map((t) => ({ ...base, style: "milk", ...t })) : [
     { ...base, style: "milk", name: "Nail studio", text: SAMPLE + "\nСмарт-педикюр — 8000" },
     {
       ...base,
@@ -427,7 +430,15 @@
   // Старт
   // ---------------------------------------------------------------------------
 
-  restore();
+  const hadOwnPrice = restore();
+  // Страница под запрос («прайс на маникюр»): пример страницы — только если своего прайса ещё нет,
+  // иначе сохранённые цены человека затёрлись бы примером
+  if (page.preset) {
+    const nick = state.nick;
+    if (hadOwnPrice) Object.assign(state, { style: page.preset.style || state.style });
+    else Object.assign(state, { ...base, ...page.preset });
+    if (nick.trim()) state.nick = nick;
+  }
   $("#prays-styles").innerHTML = kit.styleButtons();
   syncInputs();
   draw(canvas, state);

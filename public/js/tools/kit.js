@@ -453,6 +453,21 @@ window.JazylToolKit = (() => {
     };
   }
 
+  /**
+   * Страница-вариант (/studiya/<инструмент>/<вариант>): стартовый шаблон и лента примеров
+   * приходят с сервера в data-preset / data-templates. На главной странице инструмента их нет.
+   */
+  function pageConfig(root) {
+    const parse = (value) => {
+      try {
+        return value ? JSON.parse(value) : null;
+      } catch {
+        return null;
+      }
+    };
+    return { preset: parse(root.dataset.preset), templates: parse(root.dataset.templates) };
+  }
+
   /** Перерисовка не чаще кадра. */
   function scheduler(fn) {
     let frame = 0;
@@ -494,6 +509,7 @@ window.JazylToolKit = (() => {
     setPressed,
     bindActions,
     storage,
+    pageConfig,
     scheduler,
     fontsReady,
   };

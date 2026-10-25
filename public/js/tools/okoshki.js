@@ -402,7 +402,16 @@
 
   const tomorrow = addDays(today(), 1);
   const base = { label: "", promo: "", nick: "@vash.nik", how: "link", whatsapp: "", custom: "", format: "story", lang: "ru" };
-  const TEMPLATES = [
+  /** Шаблон со страницы-варианта: days: [{ in: 1, text }] → дата «через N дней». */
+  const fromPage = (t) => ({
+    ...base,
+    style: "violet",
+    ...t,
+    days: (t.days || []).map((d) => (d.in != null ? { date: addDays(today(), d.in), text: d.text } : d)),
+  });
+  const page = kit.pageConfig(root);
+
+  const TEMPLATES = page.templates ? page.templates.map(fromPage) : [
     { ...base, style: "violet", label: "Маникюр", days: [{ date: tomorrow, text: "10, 12:30, 15, 18" }] },
     { ...base, style: "graphite", label: "Barber", how: "direct", days: [{ date: today(), text: "15-19" }] },
     {
@@ -429,6 +438,12 @@
   // ---------------------------------------------------------------------------
 
   restore();
+  // Страница под запрос («окошки на маникюр»): стартуем с её шаблона, свой @ник сохраняем
+  if (page.preset) {
+    const nick = state.nick;
+    Object.assign(state, fromPage(page.preset));
+    if (nick.trim()) state.nick = nick;
+  }
   $("#okoshki-styles").innerHTML = kit.styleButtons();
   syncInputs();
   draw(canvas, state);

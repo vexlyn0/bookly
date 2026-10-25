@@ -6,6 +6,7 @@
  */
 
 const { TOOLS } = require("./tools");
+const { VARIANTS } = require("./studio-variants");
 
 function site() {
   return require("./render");
@@ -184,34 +185,75 @@ const FORMS = {
 // Страница редактора
 // ---------------------------------------------------------------------------
 
-function renderStudioTool(tool) {
+/** Варианты инструмента (страницы под конкретные запросы). */
+function variantsOf(tool) {
+  return VARIANTS[tool.slug] || [];
+}
+
+/** Ссылки «Популярные шаблоны»: главная инструмента и все его варианты. */
+function renderVariantLinks(tool, current) {
+  const links = [{ href: `/studiya/${tool.slug}`, name: "Все шаблоны", active: !current }, ...variantsOf(tool).map((v) => ({
+    href: `/studiya/${tool.slug}/${v.slug}`,
+    name: v.name,
+    active: current?.slug === v.slug,
+  }))];
+  if (links.length < 2) return "";
+  return `
+    <section class="section section--tight">
+      <div class="container">
+        <p class="eyebrow">Популярные шаблоны · ${escapeHtml(tool.menu)}</p>
+        <nav class="st-variants" aria-label="Шаблоны">
+          ${links
+            .map((l) => (l.active ? `<span class="st-variant is-current">${escapeHtml(l.name)}</span>` : `<a class="st-variant" href="${l.href}">${escapeHtml(l.name)}</a>`))
+            .join("")}
+        </nav>
+      </div>
+    </section>`;
+}
+
+/**
+ * Страница редактора. variant — страница под конкретный запрос (studio-variants.js):
+ * свои заголовок, текст, вопросы, стартовый шаблон (data-preset) и лента примеров (data-templates).
+ */
+function renderStudioTool(tool, variant = null) {
   const { renderPage, renderFaq } = site();
   const others = TOOLS.filter((t) => t.slug !== tool.slug);
   const thumb = tool.wide ? 'width="240" height="120"' : 'width="120" height="214"';
+  const page = variant || tool;
+  const ribbon = variant ? variant.templates.map((t) => t.tpl) : tool.templates;
+  const pageData = variant
+    ? ` data-preset="${escapeHtml(JSON.stringify(variant.preset || {}))}" data-templates="${escapeHtml(
+        JSON.stringify(variant.templates.map(({ tpl, ...preset }) => preset))
+      )}"`
+    : "";
 
   const body = `
     <section class="st-hero">
       <div class="container">
         <nav class="crumbs" aria-label="Навигация">
-          <a href="/">Главная</a><span>/</span><a href="/studiya">Студия</a><span>/</span><span>${escapeHtml(tool.menu)}</span>
+          <a href="/">Главная</a><span>/</span><a href="/studiya">Студия</a><span>/</span>${
+            variant
+              ? `<a href="/studiya/${tool.slug}">${escapeHtml(tool.menu)}</a><span>/</span><span>${escapeHtml(variant.name)}</span>`
+              : `<span>${escapeHtml(tool.menu)}</span>`
+          }
         </nav>
         <div class="st-hero__row">
           <span class="st-hero__icon" aria-hidden="true">${ICONS[tool.icon] || ""}</span>
           <div>
             <p class="eyebrow">Студия Jazyl · бесплатно, без регистрации</p>
-            <h1 class="st-hero__title">${escapeHtml(tool.h1)}</h1>
+            <h1 class="st-hero__title">${escapeHtml(page.h1)}</h1>
           </div>
         </div>
-        <p class="st-hero__lead">${escapeHtml(tool.lead)}</p>
+        <p class="st-hero__lead">${escapeHtml(page.lead)}</p>
       </div>
     </section>
 
-    <section class="st-editor" id="${escapeHtml(tool.rootId)}">
+    <section class="st-editor" id="${escapeHtml(tool.rootId)}"${pageData}>
       <div class="container">
         <div class="st-templates">
           <p class="st-step"><b>1</b> Выберите шаблон</p>
           <div class="st-ribbon${tool.wide ? " st-ribbon--wide" : ""}">
-            ${tool.templates
+            ${ribbon
               .map(
                 (name, i) => `
             <button type="button" class="st-template" data-template="${i}" aria-pressed="false">
@@ -255,7 +297,20 @@ function renderStudioTool(tool) {
       </div>
     </section>
 
-    ${renderFaq(tool.faq)}
+    ${
+      variant?.about
+        ? `<section class="section section--tight">
+      <div class="container st-about">
+        <h2 class="st-about__title">${escapeHtml(variant.h1)}: как сделать</h2>
+        ${variant.about.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+      </div>
+    </section>`
+        : ""
+    }
+
+    ${renderFaq(page.faq || tool.faq)}
+
+    ${renderVariantLinks(tool, variant)}
 
     <section class="section section--tight">
       <div class="container">
@@ -278,13 +333,15 @@ function renderStudioTool(tool) {
     </section>`;
 
   return renderPage({
-    path: `/studiya/${tool.slug}`,
-    title: tool.title,
-    description: tool.description,
+    path: variant ? `/studiya/${tool.slug}/${variant.slug}` : `/studiya/${tool.slug}`,
+    title: page.title,
+    description: page.description,
     body,
     scripts: ["/js/tools/kit.js", ...(tool.vendor || []), tool.script],
     fonts: ";900",
     styles: ["/css/studio.css"],
+    // Казахская страница («Сыйлық сертификаты») — lang="kk" для поисковиков
+    lang: variant?.preset?.lang === "kk" ? "kk" : "ru",
   });
 }
 
@@ -355,6 +412,18 @@ function findTool(slug) {
   return TOOLS.find((t) => t.slug === slug) || null;
 }
 
+function findVariant(tool, slug) {
+  return variantsOf(tool).find((v) => v.slug === slug) || null;
+}
+
+/** Все адреса Студии — для sitemap. */
+function studioPaths() {
+  return [
+    "/studiya",
+    ...TOOLS.flatMap((t) => [`/studiya/${t.slug}`, ...variantsOf(t).map((v) => `/studiya/${t.slug}/${v.slug}`)]),
+  ];
+}
+
 /** Старый адрес /instrumenty/<old> → новый slug. */
 function slugFromOld(oldSlug) {
   return TOOLS.find((t) => t.oldSlug === oldSlug)?.slug || null;
@@ -366,6 +435,8 @@ module.exports = {
   renderStudioSection,
   renderStudioCards,
   findTool,
+  findVariant,
+  studioPaths,
   slugFromOld,
   TOOLS,
 };

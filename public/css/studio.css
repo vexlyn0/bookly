@@ -698,3 +698,52 @@ select.st-input {
     padding: 8px 16px;
   }
 }
+
+/* Варианты под запросы: ссылки «Популярные шаблоны» и текст «как сделать» */
+.st-variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.st-variant {
+  padding: 9px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.st-variant:hover {
+  border-style: solid;
+  border-color: var(--coral);
+  color: var(--text);
+}
+
+.st-variant.is-current {
+  border-style: solid;
+  border-color: var(--coral);
+  background: rgba(240, 153, 123, 0.14);
+  color: var(--text);
+}
+
+.st-about {
+  max-width: 760px;
+}
+
+.st-about__title {
+  margin: 0 0 12px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.st-about p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.7;
+}

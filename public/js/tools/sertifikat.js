@@ -375,7 +375,8 @@
   // ---------------------------------------------------------------------------
 
   const base = { kind: "amount", amount: "", service: "", to: "Айгерим", from: "", wish: "", number: "A7K2QF", until: monthsFromNow(3), qr: "@vash.salon", salon: "", contacts: "", format: "wide", lang: "ru" };
-  const TEMPLATES = [
+  const page = kit.pageConfig(root);
+  const TEMPLATES = page.templates ? page.templates.map((t) => ({ ...base, style: "violet", ...t })) : [
     { ...base, style: "violet", salon: "Nail studio", amount: "10000", from: "Данияр", wish: "С днём рождения!" },
     { ...base, style: "graphite", salon: "Массажный кабинет", kind: "service", service: "Массаж спины, 60 минут", to: "Маме", from: "Дочка" },
     { ...base, style: "coral", salon: "Brow & lash", amount: "15000", to: "Лучшей подруге", wish: "С 8 Марта!" },
@@ -397,6 +398,12 @@
   // ---------------------------------------------------------------------------
 
   restore();
+  // Страница под запрос («сертификат на маникюр»): стартуем с её шаблона
+  if (page.preset) {
+    const own = { salon: state.salon, qr: state.qr, contacts: state.contacts };
+    Object.assign(state, { ...base, to: "", qr: "", ...page.preset, number: newNumber(), until: monthsFromNow(3) });
+    for (const [key, value] of Object.entries(own)) if (value.trim()) state[key] = value;
+  }
   $("#sertifikat-styles").innerHTML = kit.styleButtons();
   syncInputs();
   draw(canvas, state);

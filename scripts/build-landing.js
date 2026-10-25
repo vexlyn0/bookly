@@ -51,10 +51,14 @@ function renderPath(p) {
       .replace("<!--STUDIO_SECTION-->", studio.renderStudioSection())
       .replace("<!--SITE_FOOTER-->", site.renderFooter()));
   }
-  const [, section, slug] = p.split("/");
+  const [, section, slug, variant] = p.split("/");
   if (section === "vozmozhnosti") return site.renderFeature(site.findFeature(slug));
   if (section === "dlya") return site.renderAudience(site.findAudience(slug));
-  if (section === "studiya") return slug ? studio.renderStudioTool(studio.findTool(slug)) : studio.renderStudioHub();
+  if (section === "studiya") {
+    if (!slug) return studio.renderStudioHub();
+    const tool = studio.findTool(slug);
+    return studio.renderStudioTool(tool, variant ? studio.findVariant(tool, variant) : null);
+  }
   return site.renderLegal(site.findLegal(p));
 }
 

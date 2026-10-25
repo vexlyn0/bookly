@@ -182,7 +182,9 @@
     p.spacing(0);
 
     let s = 1.2;
-    const headH = (k) => (label ? 92 * k : 0) + 66 * k + monthSize * Math.min(1, k) * 0.9 + (promo ? 30 * k : 0) + 46 * k;
+    // Верхний ряд: подпись слева, акция справа — не налезают на крупный месяц
+    const topRow = label || promo ? 92 : 0;
+    const headH = (k) => topRow * k + 66 * k + monthSize * Math.min(1, k) * 0.9 + 46 * k;
     for (; s > 0.45; s -= 0.05) {
       if (top + headH(s) + drawCalendar(ctx, p, cfg, style, t, padX, 0, width, s, false) <= bottom) break;
     }
@@ -190,8 +192,11 @@
     let y = top;
     if (label) {
       kit.sticker(ctx, p, { text: label.toUpperCase(), x: padX, y, size: 30 * s, angle: -0.05, fill: style.ticket, color: style.ticketText });
-      y += 92 * s;
     }
+    if (promo) {
+      kit.sticker(ctx, p, { text: promo, x: W - padX, y: y + 4 * s, size: 30 * s, angle: 0.07, fill: style.accent, color: style.accentText, align: "right" });
+    }
+    y += topRow * s;
     ctx.textBaseline = "alphabetic";
     p.font(54 * s, 800);
     ctx.fillStyle = style.sub;
@@ -204,10 +209,7 @@
     ctx.fillStyle = style.text;
     ctx.fillText(monthName, padX - ms * 0.03, y + ms * 0.78);
     p.spacing(0);
-    if (promo) {
-      kit.sticker(ctx, p, { text: promo, x: W - padX, y: y + ms * 0.62, size: 32 * s, angle: 0.08, fill: style.accent, color: style.accentText, align: "right" });
-    }
-    y += ms * 0.9 + (promo ? 30 * s : 0) + 46 * s;
+    y += ms * 0.9 + 46 * s;
 
     // Лишнее место — половину над календарём
     const calH = drawCalendar(ctx, p, cfg, style, t, padX, y, width, s, false);
@@ -349,7 +351,24 @@
 
   const next = monthKey(1);
   const base = { month: next, label: "", title: "", promo: "", qr: "", nick: "@vash.nik", how: "link", whatsapp: "", custom: "", format: "story", lang: "ru" };
-  const TEMPLATES = [
+  /** Ключ ближайшего месяца с номером n (1–12): декабрь в октябре — этого года, в январе — следующего. */
+  function nearestMonth(n) {
+    for (let i = 0; i < 12; i += 1) {
+      const key = monthKey(i);
+      if (parseMonth(key).month === n - 1) return key;
+    }
+    return next;
+  }
+
+  /** Шаблон со страницы-варианта: monthNum и preset → month и days. */
+  function fromPage(t) {
+    const month = t.monthNum ? nearestMonth(t.monthNum) : t.month || next;
+    const { monthNum, ...rest } = t;
+    return { ...base, style: "graphite", preset: "six", ...rest, month, days: t.days || presetDays(month, t.preset || "six") };
+  }
+  const page = kit.pageConfig(root);
+
+  const TEMPLATES = page.templates ? page.templates.map(fromPage) : [
     { ...base, style: "graphite", label: "Маникюр", preset: "six", days: presetDays(next, "six") },
     { ...base, style: "violet", label: "Ресницы", promo: "−10% на первую неделю", preset: "twotwo", days: presetDays(next, "twotwo") },
     { ...base, style: "milk", label: "Barbershop", how: "direct", preset: "all", days: presetDays(next, "all") },
@@ -372,6 +391,12 @@
   // ---------------------------------------------------------------------------
 
   restore();
+  if (page.preset) {
+    const own = { nick: state.nick, qr: state.qr };
+    Object.assign(state, fromPage(page.preset));
+    if (own.nick.trim()) state.nick = own.nick;
+    if (own.qr.trim() && state.qr) state.qr = own.qr;
+  }
   renderMonths();
   $("#zapis-styles").innerHTML = kit.styleButtons();
   syncInputs();
