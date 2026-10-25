@@ -466,7 +466,8 @@ window.BooklyPlatformAdminUI = (() => {
   function renderEditForm(org, stats = {}) {
     const types = window.BooklyOrgConstants?.BUSINESS_TYPES || [];
     const current = stats.business_type || org.business_type || "";
-    const options = types.some((t) => t.value === current) ? types : [...types, { value: current, label: current }];
+    // Старый вид бизнеса (стоматология, автосервис…) не предлагается, но у салона сохраняется
+    const options = types.some((t) => t.value === current) ? types : [...types, { value: current, label: businessType(current) }];
     return `
       <label class="field"><span class="field__label">Название на странице записи</span><input class="field__input" id="pa-edit-public-name" maxlength="80" value="${escapeHtml(org.public_name || org.name || "")}"></label>
       <label class="field"><span class="field__label">Юр. название</span><input class="field__input" id="pa-edit-name" maxlength="120" value="${escapeHtml(org.name || "")}"></label>

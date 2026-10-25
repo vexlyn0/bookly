@@ -2,26 +2,28 @@
  * Bookly — типы бизнеса и часовые пояса
  */
 window.BooklyOrgConstants = (() => {
-  // Типы, которые предлагаются при регистрации
+  // Типы, которые предлагаются при регистрации: только бьюти-сфера, для неё сделан Jazyl.
+  // brows_lashes — миграция 030.
   const BUSINESS_TYPES = [
     { value: "beauty_salon", label: "Салон красоты" },
+    { value: "nail_studio", label: "Маникюр и педикюр" },
     { value: "barbershop", label: "Барбершоп" },
-    { value: "nail_studio", label: "Ногтевая студия" },
+    { value: "brows_lashes", label: "Брови и ресницы" },
     { value: "cosmetology", label: "Косметология" },
     { value: "massage", label: "Массаж и SPA" },
-    { value: "tattoo", label: "Тату-студия" },
-    { value: "dental", label: "Стоматология" },
-    { value: "clinic", label: "Клиника" },
-    { value: "fitness", label: "Фитнес и йога" },
-    { value: "education", label: "Обучение и репетиторы" },
-    { value: "auto_service", label: "Автосервис" },
-    { value: "other", label: "Другое" },
+    { value: "tattoo", label: "Тату и пирсинг" },
+    { value: "other", label: "Другие бьюти-услуги" },
   ];
 
   // Устаревшие типы: не предлагаются, но подписываются у уже созданных компаний
   const LEGACY_BUSINESS_TYPES = [
     { value: "coffee_shop", label: "Кофейня" },
     { value: "restaurant", label: "Ресторан" },
+    { value: "dental", label: "Стоматология" },
+    { value: "clinic", label: "Клиника" },
+    { value: "fitness", label: "Фитнес и йога" },
+    { value: "education", label: "Обучение и репетиторы" },
+    { value: "auto_service", label: "Автосервис" },
   ];
 
   const TIMEZONES = [
