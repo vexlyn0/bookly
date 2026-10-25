@@ -48,30 +48,17 @@
         <div class="auth-card__divider">или по почте</div>
 
         <form class="auth-form" id="register-form" novalidate>
-          <div class="auth-form__row">
-            <label class="field">
-              <span class="field__label">Имя</span>
-              <input
-                class="field__input"
-                type="text"
-                name="firstName"
-                required
-                autocomplete="given-name"
-                placeholder="Иван"
-              >
-            </label>
-
-            <label class="field">
-              <span class="field__label">Фамилия</span>
-              <input
-                class="field__input"
-                type="text"
-                name="lastName"
-                autocomplete="family-name"
-                placeholder="Иванов"
-              >
-            </label>
-          </div>
+          <label class="field">
+            <span class="field__label">Как вас зовут</span>
+            <input
+              class="field__input"
+              type="text"
+              name="firstName"
+              required
+              autocomplete="given-name"
+              placeholder="Айгерим"
+            >
+          </label>
 
           <label class="field">
             <span class="field__label">Email</span>
@@ -86,30 +73,19 @@
           </label>
 
           <label class="field">
-            <span class="field__label">Пароль</span>
-            <input
-              class="field__input"
-              type="password"
-              name="password"
-              required
-              autocomplete="new-password"
-              placeholder="Минимум 8 символов"
-              minlength="8"
-            >
-            <span class="field__hint">Не менее 8 символов</span>
-          </label>
-
-          <label class="field">
-            <span class="field__label">Повторите пароль</span>
-            <input
-              class="field__input"
-              type="password"
-              name="passwordConfirm"
-              required
-              autocomplete="new-password"
-              placeholder="Ещё раз тот же пароль"
-              minlength="8"
-            >
+            <span class="field__label">Придумайте пароль</span>
+            <span class="field__password">
+              <input
+                class="field__input"
+                type="password"
+                name="password"
+                required
+                autocomplete="new-password"
+                placeholder="Минимум 8 символов"
+                minlength="8"
+              >
+              <button class="field__eye" type="button" data-toggle-password aria-label="Показать пароль" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </span>
           </label>
 
           <p class="alert alert--error" id="register-error" role="alert" hidden></p>

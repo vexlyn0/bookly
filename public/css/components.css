@@ -345,3 +345,41 @@
   width: 72%;
   height: 72%;
 }
+
+/* Поле пароля с кнопкой «показать» */
+.field__password {
+  position: relative;
+  display: block;
+}
+
+.field__password .field__input {
+  padding-right: 44px;
+}
+
+.field__eye {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.field__eye:hover,
+.field__eye[aria-pressed="true"] {
+  color: var(--color-text);
+  background: var(--color-bg-muted);
+}
+
+.field__eye svg {
+  width: 18px;
+  height: 18px;
+}

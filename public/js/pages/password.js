@@ -82,7 +82,7 @@
   const errorEl = document.getElementById("reset-error");
   const submitBtn = document.getElementById("reset-submit");
   const passwordInput = resetForm.elements.namedItem("password");
-  const confirmInput = resetForm.elements.namedItem("password_confirm");
+  BooklyAuthUI.bindPasswordToggles(resetForm);
 
   const showInvalid = (message) => {
     subtitle.textContent = "Ссылка не сработала";
@@ -128,14 +128,11 @@
     BooklyAuthUI.clearFieldErrors(resetForm);
 
     const password = String(passwordInput.value || "");
-    const confirm = String(confirmInput.value || "");
 
-    if (password.length < 6) {
-      BooklyAuthUI.setFieldError(passwordInput, "Минимум 6 символов.");
-      return;
-    }
-    if (password !== confirm) {
-      BooklyAuthUI.setFieldError(confirmInput, "Пароли не совпадают.");
+    // Те же правила, что при регистрации
+    const passwordError = BooklyAuthUI.validatePassword(password, 8);
+    if (passwordError) {
+      BooklyAuthUI.setFieldError(passwordInput, passwordError);
       return;
     }
 

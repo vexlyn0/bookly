@@ -965,6 +965,32 @@ function renderLegal(page) {
   return renderPage({ path: page.path, title: page.title, description: page.description, body });
 }
 
+/** 404 и «что-то пошло не так» — в общем оформлении сайта. */
+function renderNotFound({ error = false } = {}) {
+  const body = `
+    <section class="page-hero page-hero--legal">
+      <div class="container">
+        <p class="eyebrow">${error ? "Ошибка" : "404"}</p>
+        <h1 class="page-hero__title">${error ? "Что-то пошло не так" : "Такой страницы нет"}</h1>
+        <p class="page-hero__lead">${
+          error
+            ? "Мы уже видим ошибку. Обновите страницу через минуту или вернитесь на главную."
+            : "Возможно, ссылка устарела или в адресе опечатка. Если вы искали страницу записи салона — попросите у салона свежую ссылку."
+        }</p>
+        <div class="page-hero__actions">
+          <a href="/" class="btn btn--light btn--lg">На главную</a>
+          <a href="/app" class="btn btn--ghost btn--lg">Мой кабинет</a>
+        </div>
+      </div>
+    </section>`;
+  return renderPage({
+    path: "/",
+    title: error ? "Что-то пошло не так | Jazyl" : "Страница не найдена | Jazyl",
+    description: "Онлайн-запись для салонов и мастеров Казахстана.",
+    body,
+  });
+}
+
 function findTool(slug) {
   return TOOLS.find((t) => t.slug === slug) || null;
 }
@@ -995,6 +1021,7 @@ module.exports = {
   findTool,
   renderLegal,
   findLegal,
+  renderNotFound,
   sitePaths,
   absoluteUrl,
 };

@@ -1,6 +1,6 @@
 /**
  * Bookly — страница регистрации
- *   - по почте: пароль дважды, затем письмо для подтверждения почты;
+ *   - по почте: имя, почта, пароль (с кнопкой «показать»), затем письмо для подтверждения почты;
  *   - через Google: почта уже подтверждена Google.
  */
 
@@ -22,10 +22,9 @@
   if (!form) return;
 
   const firstNameInput = form.elements.namedItem("firstName");
-  const lastNameInput = form.elements.namedItem("lastName");
   const emailInput = form.elements.namedItem("email");
   const passwordInput = form.elements.namedItem("password");
-  const confirmInput = form.elements.namedItem("passwordConfirm");
+  BooklyAuthUI.bindPasswordToggles(form);
 
   const RESEND_COOLDOWN_SEC = 60;
   let pendingEmail = "";
@@ -132,21 +131,17 @@
     BooklyAuthUI.clearFieldErrors(form);
 
     const firstName = String(firstNameInput.value || "").trim();
-    const lastName = String(lastNameInput.value || "").trim();
     const email = String(emailInput.value || "").trim().toLowerCase();
     const password = String(passwordInput.value || "");
-    const confirm = String(confirmInput.value || "");
 
     const firstNameError = BooklyAuthUI.validateRequired(firstName, "Имя");
     const emailError = BooklyAuthUI.validateEmail(email);
     const passwordError = BooklyAuthUI.validatePassword(password, 8);
-    const confirmError = !passwordError && password !== confirm ? "Пароли не совпадают." : "";
 
     if (firstNameError) BooklyAuthUI.setFieldError(firstNameInput, firstNameError);
     if (emailError) BooklyAuthUI.setFieldError(emailInput, emailError);
     if (passwordError) BooklyAuthUI.setFieldError(passwordInput, passwordError);
-    if (confirmError) BooklyAuthUI.setFieldError(confirmInput, confirmError);
-    if (firstNameError || emailError || passwordError || confirmError) return;
+    if (firstNameError || emailError || passwordError) return;
 
     BooklyAuthUI.setFormDisabled(form, true);
     BooklyAuthUI.setButtonLoading(submitBtn, true, "Создание…", "Создать аккаунт");
@@ -154,8 +149,7 @@
     try {
       const { data, error } = await BooklyAuth.signUp(email, password, {
         first_name: firstName,
-        last_name: lastName,
-        full_name: [firstName, lastName].filter(Boolean).join(" "),
+        full_name: firstName,
       });
 
       if (error) {

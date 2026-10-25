@@ -103,8 +103,24 @@ window.BooklyAuthUI = (() => {
     return null;
   }
 
+  /** Кнопки «показать пароль» ([data-toggle-password]) внутри .field__password. */
+  function bindPasswordToggles(root = document) {
+    root.querySelectorAll("[data-toggle-password]").forEach((button) => {
+      const input = button.closest(".field__password")?.querySelector("input");
+      if (!input) return;
+      button.addEventListener("click", () => {
+        const show = input.type === "password";
+        input.type = show ? "text" : "password";
+        button.setAttribute("aria-pressed", String(show));
+        button.setAttribute("aria-label", show ? "Скрыть пароль" : "Показать пароль");
+        input.focus();
+      });
+    });
+  }
+
   return {
     setPageReady,
+    bindPasswordToggles,
     setFormDisabled,
     setButtonLoading,
     showAlert,

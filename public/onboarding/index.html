@@ -31,46 +31,49 @@
               <path d="M9 21v-6h6v6"/>
             </svg>
           </div>
-          <h1 class="onboarding-card__title">Создайте компанию</h1>
+          <h1 class="onboarding-card__title">Как называется ваш салон?</h1>
           <p class="onboarding-card__subtitle">
-            Укажите данные вашего бизнеса. Это рабочее пространство для бронирований и управления.
+            Это название увидят клиенты на странице записи. Поменять его можно в любой момент.
           </p>
         </header>
 
         <form class="onboarding-form" id="onboarding-form" novalidate>
           <label class="field">
-            <span class="field__label">Название компании</span>
+            <span class="field__label">Название салона или ваше имя</span>
             <input
               class="field__input"
               type="text"
               name="name"
               required
               autocomplete="organization"
-              placeholder="Например, Coffee Lab"
+              placeholder="Например, Nail studio Aru"
               minlength="2"
             >
           </label>
 
           <label class="field">
-            <span class="field__label">Тип бизнеса</span>
+            <span class="field__label">Чем занимаетесь</span>
             <select class="field__select" name="businessType" id="business-type" required></select>
           </label>
 
-          <label class="field">
-            <span class="field__label">Часовой пояс</span>
-            <select class="field__select" name="timezone" id="timezone" required></select>
-            <span class="field__hint">Используется для расписания и записей</span>
-          </label>
+          <details class="onboarding-tz">
+            <summary>Часовой пояс: Казахстан (UTC+5) · изменить</summary>
+            <label class="field">
+              <span class="field__label">Часовой пояс</span>
+              <select class="field__select" name="timezone" id="timezone" required></select>
+              <span class="field__hint">По нему считается время записей и напоминаний</span>
+            </label>
+          </details>
 
           <p class="alert alert--error" id="onboarding-error" role="alert" hidden></p>
 
           <button class="btn btn--primary btn--full btn--lg" type="submit" id="onboarding-submit">
-            Создать компанию
+            Продолжить
           </button>
         </form>
 
         <footer class="onboarding-card__footer">
-          <p class="onboarding-card__hint">Один аккаунт — одна компания. Приглашение сотрудников появится позже.</p>
+          <p class="onboarding-card__hint">Дальше — услуги, мастера и ссылка для записи. Это займёт пару минут.</p>
         </footer>
       </div>
     </main>

@@ -3,6 +3,7 @@
  */
 
 (async () => {
+  BooklyAuthUI.bindPasswordToggles(document);
   const page = document.querySelector(".auth-page");
   const form = document.getElementById("login-form");
   const errorEl = document.getElementById("login-error");

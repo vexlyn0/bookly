@@ -88,11 +88,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           Тариф и оплата
         </button>
-        <button class="sidebar__link" type="button" data-section="settings" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          Настройки
-          <span class="sidebar__badge">скоро</span>
-        </button>
       </div>
     </nav>
 
@@ -150,8 +145,8 @@
 
         <div class="today-setup" id="today-setup" hidden>
           <div class="today-setup__head">
-            <h3 class="today-setup__title">Настройте Jazyl за 4 шага</h3>
-            <span class="today-setup__progress" id="today-setup-progress">0 из 4</span>
+            <h3 class="today-setup__title">Настройте Jazyl — пара минут</h3>
+            <span class="today-setup__progress" id="today-setup-progress"></span>
           </div>
           <ol class="today-setup__list" id="today-setup-list"></ol>
         </div>
@@ -282,12 +277,12 @@
             <form class="public-booking-form" id="public-booking-form" novalidate>
               <label class="field">
                 <span class="field__label">Публичное название</span>
-                <input class="field__input" type="text" name="public_name" required minlength="2" placeholder="Например, Mora Coffee">
+                <input class="field__input" type="text" name="public_name" required minlength="2" placeholder="Например, Nail studio Aru">
               </label>
 
               <label class="field">
-                <span class="field__label">Slug (адрес страницы)</span>
-                <input class="field__input" type="text" name="slug" required minlength="3" maxlength="60" placeholder="mora-coffee">
+                <span class="field__label">Адрес страницы записи</span>
+                <input class="field__input" type="text" name="slug" required minlength="3" maxlength="60" placeholder="aru-nails">
                 <span class="field__hint">Только латиница, цифры и дефисы.</span>
               </label>
 

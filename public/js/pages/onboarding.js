@@ -47,7 +47,7 @@
     const businessType = String(form.elements.namedItem("businessType").value || "");
     const timezone = String(form.elements.namedItem("timezone").value || "Asia/Almaty");
 
-    const nameError = BooklyAuthUI.validateRequired(name, "Название компании");
+    const nameError = BooklyAuthUI.validateRequired(name, "Название салона");
     if (name.length > 0 && name.length < 2) {
       BooklyAuthUI.setFieldError(nameInput, "Название должно содержать минимум 2 символа.");
     } else if (nameError) {
@@ -57,7 +57,7 @@
     if (nameError || name.length < 2) return;
 
     BooklyAuthUI.setFormDisabled(form, true);
-    BooklyAuthUI.setButtonLoading(submitBtn, true, "Создание…", "Создать компанию");
+    BooklyAuthUI.setButtonLoading(submitBtn, true, "Создаём…", "Продолжить");
 
     try {
       const { data, error } = await BooklyOrg.createOrganization({
@@ -87,7 +87,7 @@
       BooklyAuthUI.showAlert(errorEl, BooklyAuthErrors.fromError(error));
     } finally {
       BooklyAuthUI.setFormDisabled(form, false);
-      BooklyAuthUI.setButtonLoading(submitBtn, false, "Создание…", "Создать компанию");
+      BooklyAuthUI.setButtonLoading(submitBtn, false, "Создаём…", "Продолжить");
     }
   });
 })();
