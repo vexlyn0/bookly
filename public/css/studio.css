@@ -565,15 +565,89 @@ select.st-input {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* Телефон: превью — компактная полоса, закреплённая под шапкой сайта;
+     настройки прокручиваются под ней, картинку видно всё время */
   .st-stage {
-    position: static;
-    max-width: 420px;
-    width: 100%;
-    margin: 0 auto;
+    position: sticky;
+    top: 68px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 -24px;
+    padding: 10px 24px;
+    background: rgba(13, 12, 20, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
   }
 
+  .st-device {
+    flex: none;
+    padding: 5px;
+    border-radius: 18px;
+    box-shadow: 0 0 0 1px #2b2838;
+  }
+
+  .st-canvas {
+    width: auto;
+    height: 30vh;
+    max-width: 48vw;
+    border-radius: 13px;
+  }
+
+  .st-actions {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .st-actions .btn {
+    padding-inline: 10px;
+    white-space: normal;
+  }
+
+  .st-actions__row {
+    flex-direction: column;
+  }
+
+  .st-privacy {
+    display: none;
+  }
+
+  /* Сертификат 2:1 — превью на всю ширину, кнопки под ним в ряд */
   .st-workspace--wide .st-stage {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .st-workspace--wide .st-canvas {
+    width: 100%;
+    height: auto;
     max-width: none;
+    max-height: 26vh;
+    object-fit: contain;
+  }
+
+  .st-workspace--wide .st-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .st-workspace--wide .st-actions > .btn {
+    flex: 1;
+  }
+
+  .st-workspace--wide .st-actions__row {
+    flex: 1;
+    flex-direction: row;
+    margin-top: 0;
+  }
+
+  .st-workspace--wide .st-actions__row .btn[hidden] + .btn,
+  .st-workspace--wide .st-actions__row .btn {
+    flex: 1;
   }
 
   .st-how {
@@ -614,5 +688,13 @@ select.st-input {
     width: 100%;
     white-space: normal;
     text-align: center;
+  }
+}
+
+/* У .container на узком экране отступы 16px — полоса превью от края до края */
+@media (max-width: 480px) {
+  .st-stage {
+    margin: 0 -16px;
+    padding: 8px 16px;
   }
 }
