@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "build:landing": "node scripts/build-landing.js",
     "env:check": "node scripts/check-production-env.js",
     "env:render-template": "node scripts/print-render-env-template.js",
     "test:env-config": "node scripts/test-env-config.js",
