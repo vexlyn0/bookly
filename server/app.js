@@ -18,6 +18,8 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(require("./middleware/canonical-host"));
+
 app.use(cors());
 app.use(express.json({ limit: "32kb" }));
 

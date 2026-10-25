@@ -40,6 +40,10 @@ const config = {
   publicUrl: String(process.env.PUBLIC_APP_URL || process.env.RENDER_EXTERNAL_URL || "")
     .trim()
     .replace(/\/+$/, ""),
+  /** Адрес сайта (Cloudflare Pages), например https://vibesales.kz. Задан — страницы сайта на Render переадресуются туда. */
+  siteUrl: String(process.env.PUBLIC_SITE_URL || "")
+    .trim()
+    .replace(/\/+$/, ""),
   supabase: {
     url: supabase.url,
     anonKey: supabase.anonKey,

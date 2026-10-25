@@ -79,6 +79,7 @@ write(
   "_redirects",
   APP_PATHS.flatMap((p) => [`/${p} ${APP_URL}/${p} 301`, `/${p}/* ${APP_URL}/${p}/:splat 301`]).join("\n") + "\n"
 );
+write("404.html", toApp(site.renderNotFound()));
 write("robots.txt", ["User-agent: *", "Allow: /", `Sitemap: ${SITE_URL}/sitemap.xml`, ""].join("\n"));
 
 console.log(`Сайт собран: ${paths.length} страниц → ${path.relative(ROOT, OUT)} (приложение: ${APP_URL})`);
