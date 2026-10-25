@@ -74,6 +74,11 @@ write(
   "sitemap.xml",
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
 );
+// Набрали vibesales.kz/app и т.п. — переадресуем в приложение (иначе Pages покажет главную)
+write(
+  "_redirects",
+  APP_PATHS.flatMap((p) => [`/${p} ${APP_URL}/${p} 301`, `/${p}/* ${APP_URL}/${p}/:splat 301`]).join("\n") + "\n"
+);
 write("robots.txt", ["User-agent: *", "Allow: /", `Sitemap: ${SITE_URL}/sitemap.xml`, ""].join("\n"));
 
 console.log(`Сайт собран: ${paths.length} страниц → ${path.relative(ROOT, OUT)} (приложение: ${APP_URL})`);
