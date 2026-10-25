@@ -41,10 +41,7 @@ function menu() {
       label: "Кому подойдёт",
       items: AUDIENCES.map((a) => ({ label: a.menu, hint: a.menuHint, href: `/dlya/${a.slug}` })),
     },
-    {
-      label: "Инструменты",
-      items: TOOLS.map((t) => ({ label: t.menu, hint: t.menuHint, href: `/instrumenty/${t.slug}` })),
-    },
+    { label: "Студия", href: "/studiya" },
     { label: "Цены", href: "/#pricing" },
     { label: "Вопросы", href: "/#faq" },
   ];
@@ -123,7 +120,7 @@ function footerContacts() {
 function renderFooter() {
   const audiences = AUDIENCES.map((a) => `<a href="/dlya/${a.slug}">${escapeHtml(a.menu)}</a>`).join("");
   const features = FEATURES.map((f) => `<a href="/vozmozhnosti/${f.slug}">${escapeHtml(f.menu)}</a>`).join("");
-  const tools = TOOLS.map((t) => `<a href="/instrumenty/${t.slug}">${escapeHtml(t.menu)}</a>`).join("");
+  const tools = [`<a href="/studiya">Студия Jazyl</a>`, ...TOOLS.map((t) => `<a href="/studiya/${t.slug}">${escapeHtml(t.menu)}</a>`)].join("");
   return `
   <footer class="footer">
     <div class="container footer__inner">
@@ -140,7 +137,7 @@ function renderFooter() {
       <nav class="footer__links footer__links--wide" aria-label="Возможности">
         ${features}
       </nav>
-      <nav class="footer__links footer__links--wide" aria-label="Инструменты">
+      <nav class="footer__links footer__links--wide" aria-label="Студия">
         ${tools}
       </nav>
       <nav class="footer__links footer__links--wide" aria-label="Кому подойдёт">
@@ -162,7 +159,7 @@ function absoluteUrl(path) {
   return config.publicUrl ? `${config.publicUrl.replace(/\/$/, "")}${path}` : path;
 }
 
-function renderPage({ path, title, description, body, scripts = [], fonts = "" }) {
+function renderPage({ path, title, description, body, scripts = [], fonts = "", styles = [] }) {
   return `<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -183,6 +180,7 @@ function renderPage({ path, title, description, body, scripts = [], fonts = "" }
 
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/site.css">
+${styles.map((href) => `  <link rel="stylesheet" href="${href}">`).join("\n")}
 </head>
 <body>
 ${renderHeader(path)}
@@ -501,446 +499,6 @@ function findFeature(slug) {
   return FEATURES.find((f) => f.slug === slug) || null;
 }
 
-// ---------------------------------------------------------------------------
-// «Инструменты»
-// ---------------------------------------------------------------------------
-
-/** Переключатель из кнопок: [[значение, подпись], ...]. Состояние ведёт скрипт инструмента. */
-function segmented(group, options) {
-  return `<div class="tool__seg" role="group">${options
-    .map(([value, label]) => `<button type="button" data-${group}="${value}" aria-pressed="false">${escapeHtml(label)}</button>`)
-    .join("")}</div>`;
-}
-
-const TOOL_FORMS = {
-  "svobodnye-okoshki": () => `
-    <form class="tool__form" onsubmit="return false" autocomplete="off">
-      <div class="tool__field">
-        <span class="tool__label">Когда свободно</span>
-        <div class="tool__presets">
-          <button type="button" data-preset="today">Сегодня</button>
-          <button type="button" data-preset="tomorrow">Завтра</button>
-          <button type="button" data-preset="week">Неделя</button>
-        </div>
-        <div class="ok-days" id="okoshki-days"></div>
-        <button type="button" class="tool__add" data-action="add-day">+ Добавить день</button>
-      </div>
-
-      <div class="tool__pair">
-        <label class="tool__field">
-          <span class="tool__label">Услуга</span>
-          <select class="tool__input" name="service">
-            <option value="">Без подписи</option>
-            <option value="manicure">Маникюр</option>
-            <option value="pedicure">Педикюр</option>
-            <option value="lashes">Ресницы</option>
-            <option value="brows">Брови</option>
-            <option value="haircut">Стрижка</option>
-            <option value="barber">Барбер</option>
-            <option value="coloring">Окрашивание</option>
-            <option value="hair">Волосы</option>
-            <option value="massage">Массаж</option>
-            <option value="cosmetology">Косметология</option>
-            <option value="sugaring">Шугаринг</option>
-            <option value="tattoo">Тату</option>
-            <option value="custom">Свой вариант…</option>
-          </select>
-        </label>
-        <label class="tool__field" id="okoshki-service-custom" hidden>
-          <span class="tool__label">Своя услуга</span>
-          <input class="tool__input" name="serviceCustom" maxlength="24" placeholder="Педикюр + маникюр">
-        </label>
-      </div>
-
-      <div class="tool__field">
-        <span class="tool__label">Фон и стиль</span>
-        <div class="ok-styles" id="okoshki-styles"></div>
-      </div>
-
-      <div class="tool__pair">
-        <div class="tool__field">
-          <span class="tool__label">Формат</span>
-          ${segmented("format", [["story", "Сторис 9:16"], ["post", "Пост 4:5"]])}
-        </div>
-        <div class="tool__field">
-          <span class="tool__label">Текст на картинке</span>
-          ${segmented("lang", [["ru", "Русский"], ["kk", "Қазақша"]])}
-        </div>
-      </div>
-
-      <label class="tool__field">
-        <span class="tool__label">Имя или @ник</span>
-        <input class="tool__input" name="nick" maxlength="32" placeholder="@aigerim.nails">
-      </label>
-
-      <div class="tool__field">
-        <span class="tool__label">Как записаться</span>
-        ${segmented("how", [["link", "Ссылка в шапке профиля"], ["direct", "Пишите в директ"], ["whatsapp", "WhatsApp"], ["custom", "Свой текст"]])}
-        <input class="tool__input" id="okoshki-whatsapp" name="whatsapp" maxlength="24" placeholder="+7 701 000 00 00" inputmode="tel" hidden>
-        <input class="tool__input" id="okoshki-custom" name="custom" maxlength="60" placeholder="Запись по телефону +7 701 000 00 00" hidden>
-      </div>
-
-      <label class="tool__field">
-        <span class="tool__label">Акция <span class="tool__optional">— необязательно</span></span>
-        <input class="tool__input" name="promo" maxlength="32" placeholder="−10% на эти окошки">
-      </label>
-    </form>
-
-    <div class="tool__preview">
-      <p class="tool__preview-title">Предпросмотр</p>
-      <canvas class="tool__canvas" id="okoshki-canvas" width="1080" height="1920" aria-label="Предпросмотр картинки"></canvas>
-      <button type="button" class="btn btn--primary btn--full" id="okoshki-download">Скачать картинку</button>
-      <div class="tool__actions">
-        <button type="button" class="btn btn--ghost" id="okoshki-share" hidden>Поделиться</button>
-        <button type="button" class="btn btn--ghost" id="okoshki-copy">Скопировать текст</button>
-      </div>
-      <p class="tool__privacy">Картинка собирается прямо в браузере — мы ничего не сохраняем и никуда не отправляем.</p>
-    </div>`,
-
-  "zapis-otkryta": () => `
-    <form class="tool__form" onsubmit="return false" autocomplete="off">
-      <label class="tool__field">
-        <span class="tool__label">Месяц</span>
-        <select class="tool__input" name="month"></select>
-      </label>
-
-      <div class="tool__field">
-        <span class="tool__label">Рабочие дни</span>
-        <div class="tool__presets">
-          <button type="button" data-days="weekdays" aria-pressed="false">Пн–Пт</button>
-          <button type="button" data-days="six" aria-pressed="false">Пн–Сб</button>
-          <button type="button" data-days="all" aria-pressed="false">Каждый день</button>
-          <button type="button" data-days="twotwo" aria-pressed="false">2 через 2</button>
-          <button type="button" data-days="none" aria-pressed="false">Очистить</button>
-        </div>
-        <div class="zc" id="zapis-calendar"></div>
-        <span class="tool__hint">Нажмите на день, чтобы отметить или убрать его.</span>
-      </div>
-
-      <div class="tool__pair">
-        <label class="tool__field">
-          <span class="tool__label">Услуга или имя</span>
-          <input class="tool__input" name="label" maxlength="40" placeholder="Маникюр">
-        </label>
-        <label class="tool__field">
-          <span class="tool__label">Заголовок</span>
-          <input class="tool__input" name="title" maxlength="40" placeholder="Запись открыта">
-        </label>
-      </div>
-
-      <label class="tool__field">
-        <span class="tool__label">Акция <span class="tool__optional">— необязательно</span></span>
-        <input class="tool__input" name="promo" maxlength="40" placeholder="−10% на первые 3 записи">
-      </label>
-
-      <div class="tool__field">
-        <span class="tool__label">Фон и стиль</span>
-        <div class="ok-styles" id="zapis-styles"></div>
-      </div>
-
-      <div class="tool__pair">
-        <div class="tool__field">
-          <span class="tool__label">Формат</span>
-          ${segmented("format", [["story", "Сторис 9:16"], ["post", "Пост 4:5"]])}
-        </div>
-        <div class="tool__field">
-          <span class="tool__label">Текст на картинке</span>
-          ${segmented("lang", [["ru", "Русский"], ["kk", "Қазақша"]])}
-        </div>
-      </div>
-
-      <label class="tool__field">
-        <span class="tool__label">Имя или @ник</span>
-        <input class="tool__input" name="nick" maxlength="32" placeholder="@aigerim.nails">
-      </label>
-
-      <div class="tool__field">
-        <span class="tool__label">Как записаться</span>
-        ${segmented("how", [["link", "Ссылка в шапке профиля"], ["direct", "Пишите в директ"], ["whatsapp", "WhatsApp"], ["custom", "Свой текст"]])}
-        <input class="tool__input" id="zapis-whatsapp" name="whatsapp" maxlength="24" placeholder="+7 701 000 00 00" inputmode="tel" hidden>
-        <input class="tool__input" id="zapis-custom" name="custom" maxlength="60" placeholder="Запись по телефону +7 701 000 00 00" hidden>
-      </div>
-
-      <label class="tool__field">
-        <span class="tool__label">QR-код на запись <span class="tool__optional">— необязательно</span></span>
-        <input class="tool__input" name="qr" maxlength="200" placeholder="Ссылка на запись, @instagram или номер WhatsApp">
-      </label>
-    </form>
-
-    <div class="tool__preview">
-      <p class="tool__preview-title">Предпросмотр</p>
-      <canvas class="tool__canvas" id="zapis-canvas" width="1080" height="1920" aria-label="Предпросмотр картинки"></canvas>
-      <button type="button" class="btn btn--primary btn--full" id="zapis-download">Скачать картинку</button>
-      <div class="tool__actions">
-        <button type="button" class="btn btn--ghost" id="zapis-share" hidden>Поделиться</button>
-        <button type="button" class="btn btn--ghost" id="zapis-copy">Скопировать текст</button>
-      </div>
-      <p class="tool__privacy">Картинка собирается прямо в браузере — мы ничего не сохраняем и никуда не отправляем.</p>
-    </div>`,
-
-  "podarochnyy-sertifikat": () => `
-    <form class="tool__form" onsubmit="return false" autocomplete="off">
-      <label class="tool__field">
-        <span class="tool__label">Название салона или мастера</span>
-        <input class="tool__input" name="salon" maxlength="40" placeholder="Nail studio Aru">
-      </label>
-
-      <div class="tool__field">
-        <span class="tool__label">Что дарят</span>
-        ${segmented("kind", [["amount", "Сумму"], ["service", "Услугу"]])}
-        <input class="tool__input" id="sertifikat-amount" name="amount" maxlength="9" placeholder="10000" inputmode="numeric" aria-label="Сумма, ₸">
-        <input class="tool__input" id="sertifikat-service" name="service" maxlength="60" placeholder="Маникюр + покрытие" aria-label="Услуга" hidden>
-      </div>
-
-      <div class="tool__pair">
-        <label class="tool__field">
-          <span class="tool__label">Кому <span class="tool__optional">— необязательно</span></span>
-          <input class="tool__input" name="to" maxlength="30" placeholder="Айгерим">
-        </label>
-        <label class="tool__field">
-          <span class="tool__label">От кого <span class="tool__optional">— необязательно</span></span>
-          <input class="tool__input" name="from" maxlength="30" placeholder="Данияр">
-        </label>
-      </div>
-
-      <label class="tool__field">
-        <span class="tool__label">Пожелание <span class="tool__optional">— необязательно</span></span>
-        <input class="tool__input" name="wish" maxlength="100" placeholder="С днём рождения!">
-      </label>
-
-      <div class="tool__pair">
-        <div class="tool__field">
-          <span class="tool__label">Действует до</span>
-          <input class="tool__input" type="date" name="until" aria-label="Действует до">
-          <div class="tool__presets">
-            <button type="button" data-months="1">1 мес</button>
-            <button type="button" data-months="3">3 мес</button>
-            <button type="button" data-months="6">6 мес</button>
-            <button type="button" data-months="12">Год</button>
-            <button type="button" data-months="0">Без срока</button>
-          </div>
-        </div>
-        <div class="tool__field">
-          <span class="tool__label">Номер сертификата</span>
-          <div class="ok-day__custom">
-            <input class="tool__input" name="number" maxlength="12" aria-label="Номер сертификата">
-            <button type="button" class="tool__chip-btn" data-action="new-number">Новый</button>
-          </div>
-          <span class="tool__hint">Запишите номер у себя — так видно, какой сертификат уже использовали.</span>
-        </div>
-      </div>
-
-      <label class="tool__field">
-        <span class="tool__label">Куда ведёт QR-код</span>
-        <input class="tool__input" name="qr" maxlength="200" placeholder="Ссылка на запись, @instagram или номер WhatsApp">
-        <span class="tool__hint" id="sertifikat-qr-hint"></span>
-      </label>
-
-      <label class="tool__field">
-        <span class="tool__label">Адрес и телефон <span class="tool__optional">— необязательно</span></span>
-        <input class="tool__input" name="contacts" maxlength="80" placeholder="Алматы, Абая 10 · +7 701 000 00 00">
-      </label>
-
-      <div class="tool__field">
-        <span class="tool__label">Фон и стиль</span>
-        <div class="ok-styles" id="sertifikat-styles"></div>
-      </div>
-
-      <div class="tool__pair">
-        <div class="tool__field">
-          <span class="tool__label">Формат</span>
-          ${segmented("format", [["wide", "Для печати 2:1"], ["post", "WhatsApp / пост"], ["story", "Сторис"]])}
-        </div>
-        <div class="tool__field">
-          <span class="tool__label">Текст на сертификате</span>
-          ${segmented("lang", [["ru", "Русский"], ["kk", "Қазақша"]])}
-        </div>
-      </div>
-    </form>
-
-    <div class="tool__preview">
-      <p class="tool__preview-title">Предпросмотр</p>
-      <canvas class="tool__canvas tool__canvas--auto" id="sertifikat-canvas" width="2000" height="1000" aria-label="Предпросмотр сертификата"></canvas>
-      <button type="button" class="btn btn--primary btn--full" id="sertifikat-download">Скачать сертификат</button>
-      <div class="tool__actions">
-        <button type="button" class="btn btn--ghost" id="sertifikat-share" hidden>Поделиться</button>
-        <button type="button" class="btn btn--ghost" id="sertifikat-copy">Скопировать текст</button>
-      </div>
-      <p class="tool__privacy">Сертификат собирается прямо в браузере — мы ничего не сохраняем и никуда не отправляем. Печать: формат 2:1 — это 21 × 10,5 см.</p>
-    </div>`,
-
-  "prays-list": () => `
-    <form class="tool__form" onsubmit="return false" autocomplete="off">
-      <div class="tool__pair">
-        <label class="tool__field">
-          <span class="tool__label">Название салона или имя</span>
-          <input class="tool__input" name="name" maxlength="40" placeholder="Nail studio Aru">
-        </label>
-        <label class="tool__field">
-          <span class="tool__label">Заголовок</span>
-          <input class="tool__input" name="title" maxlength="40" placeholder="Прайс-лист">
-        </label>
-      </div>
-
-      <div class="tool__field">
-        <span class="tool__label">Услуги и цены</span>
-        <span class="tool__hint">Цена — числом: <b>5000</b> или <b>5000-7000</b>. Галочка «от» — «от 5 000 ₸». Длительность — по желанию.</span>
-        <div class="pl-sections" id="prays-sections"></div>
-        <button type="button" class="tool__add" data-action="add-section">+ Раздел</button>
-      </div>
-
-      <div class="tool__field">
-        <span class="tool__label">Фон и стиль</span>
-        <div class="ok-styles" id="prays-styles"></div>
-      </div>
-
-      <div class="tool__pair">
-        <div class="tool__field">
-          <span class="tool__label">Формат</span>
-          ${segmented("format", [["story", "Сторис"], ["post", "Пост"], ["a4", "A4 для печати"]])}
-        </div>
-        <div class="tool__field">
-          <span class="tool__label">Текст на картинке</span>
-          ${segmented("lang", [["ru", "Русский"], ["kk", "Қазақша"]])}
-        </div>
-      </div>
-
-      <label class="tool__field">
-        <span class="tool__label">Примечание <span class="tool__optional">— необязательно</span></span>
-        <input class="tool__input" name="note" maxlength="120" placeholder="Цены действительны с 1 ноября">
-      </label>
-
-      <label class="tool__field">
-        <span class="tool__label">Имя или @ник</span>
-        <input class="tool__input" name="nick" maxlength="32" placeholder="@aigerim.nails">
-      </label>
-
-      <div class="tool__field">
-        <span class="tool__label">Как записаться</span>
-        ${segmented("how", [["link", "Ссылка в шапке профиля"], ["direct", "Пишите в директ"], ["whatsapp", "WhatsApp"], ["custom", "Свой текст"]])}
-        <input class="tool__input" id="prays-whatsapp" name="whatsapp" maxlength="24" placeholder="+7 701 000 00 00" inputmode="tel" hidden>
-        <input class="tool__input" id="prays-custom" name="custom" maxlength="60" placeholder="Запись по телефону +7 701 000 00 00" hidden>
-      </div>
-    </form>
-
-    <div class="tool__preview">
-      <p class="tool__preview-title">Предпросмотр</p>
-      <canvas class="tool__canvas" id="prays-canvas" width="1080" height="1920" aria-label="Предпросмотр прайс-листа"></canvas>
-      <button type="button" class="btn btn--primary btn--full" id="prays-download">Скачать картинку</button>
-      <div class="tool__actions">
-        <button type="button" class="btn btn--ghost" id="prays-share" hidden>Поделиться</button>
-        <button type="button" class="btn btn--ghost" id="prays-copy">Скопировать текст</button>
-      </div>
-      <p class="tool__privacy">Картинка собирается прямо в браузере. Прайс запоминается только на этом устройстве — в следующий раз поменяете цены за минуту.</p>
-    </div>`,
-};
-
-function renderTool(tool) {
-  const others = TOOLS.filter((t) => t.slug !== tool.slug);
-  const body = `
-    <section class="page-hero page-hero--tool">
-      <div class="container">
-        <nav class="crumbs" aria-label="Навигация">
-          <a href="/">Главная</a><span>/</span><span>Бесплатные инструменты</span><span>/</span><span>${escapeHtml(tool.menu)}</span>
-        </nav>
-        <p class="eyebrow">Бесплатный инструмент · без регистрации</p>
-        <h1 class="page-hero__title">${escapeHtml(tool.h1)}</h1>
-        <p class="page-hero__lead">${escapeHtml(tool.lead)}</p>
-      </div>
-    </section>
-
-    <section class="section section--tool">
-      <div class="container">
-        <div class="tool" id="${escapeHtml(tool.rootId)}">${TOOL_FORMS[tool.slug]()}</div>
-      </div>
-    </section>
-
-    ${
-      tool.examples
-        ? `<section class="section">
-      <div class="container">
-        <div class="section__header">
-          <p class="eyebrow reveal">Примеры</p>
-          <h2 class="section__title reveal">Готовые варианты — нажмите и поменяйте под себя</h2>
-        </div>
-        <div class="examples${tool.examplesWide ? " examples--wide" : ""}">
-          ${tool.examples
-            .map(
-              ([title, text], i) => `
-          <article class="example" data-example="${i}">
-            <canvas class="example__img" width="${tool.examplesWide ? 600 : 324}" height="${tool.examplesWide ? 300 : 576}" aria-label="${escapeHtml(title)}"></canvas>
-            <h3 class="example__title">${escapeHtml(title)}</h3>
-            <p class="example__text">${escapeHtml(text)}</p>
-            <button type="button" class="example__use" data-use-example>${tool.useLabel || "Сделать такую"} →</button>
-          </article>`
-            )
-            .join("")}
-        </div>
-      </div>
-    </section>`
-        : ""
-    }
-
-    <section class="section">
-      <div class="container">
-        <div class="section__header">
-          <p class="eyebrow reveal">Как сделать</p>
-          <h2 class="section__title reveal">Три шага — и картинка готова</h2>
-        </div>
-        <ol class="steps">
-          ${tool.steps
-            .map(
-              ([title, text], i) => `
-          <li class="step reveal${i ? ` reveal--delay-${i}` : ""}">
-            <span class="step__num">${i + 1}</span>
-            <h3>${escapeHtml(title)}</h3>
-            <p>${escapeHtml(text)}</p>
-          </li>`
-            )
-            .join("")}
-        </ol>
-      </div>
-    </section>
-
-    <section class="section section--tight">
-      <div class="container">
-        <div class="tool-promo reveal">
-          <div>
-            <p class="eyebrow">А если клиенты будут записываться сами?</p>
-            <p class="tool-promo__text">Страница записи Jazyl показывает свободное время сама — картинку не нужно обновлять после каждой записи. Бесплатно до 5 мастеров.</p>
-          </div>
-          <a href="/register" class="btn btn--light btn--lg" data-guest>Создать ссылку для записи</a>
-          <a href="/app" class="btn btn--light btn--lg" data-user hidden>Мой кабинет</a>
-        </div>
-      </div>
-    </section>
-
-    ${renderFaq(tool.faq)}
-
-    ${
-      others.length
-        ? `<section class="section section--tight">
-      <div class="container">
-        <p class="eyebrow">Ещё бесплатные инструменты</p>
-        <div class="also">
-          ${others.map((t) => `<a class="also__link" href="/instrumenty/${t.slug}">${escapeHtml(t.menu)} →</a>`).join("")}
-        </div>
-      </div>
-    </section>`
-        : ""
-    }`;
-
-  return renderPage({
-    path: `/instrumenty/${tool.slug}`,
-    title: tool.title,
-    description: tool.description,
-    body,
-    scripts: ["/js/tools/kit.js", ...(tool.vendor || []), tool.script],
-    // Шрифт с засечками для стилей картинки (кириллица и казахские буквы)
-    fonts: "&family=Lora:wght@600;700",
-  });
-}
-
 function renderLegal(page) {
   const body = `
     <section class="page-hero page-hero--legal">
@@ -991,10 +549,6 @@ function renderNotFound({ error = false } = {}) {
   });
 }
 
-function findTool(slug) {
-  return TOOLS.find((t) => t.slug === slug) || null;
-}
-
 function findAudience(slug) {
   return AUDIENCES.find((a) => a.slug === slug) || null;
 }
@@ -1005,7 +559,8 @@ function sitePaths() {
     "/",
     ...FEATURES.map((f) => `/vozmozhnosti/${f.slug}`),
     ...AUDIENCES.map((a) => `/dlya/${a.slug}`),
-    ...TOOLS.map((t) => `/instrumenty/${t.slug}`),
+    "/studiya",
+    ...TOOLS.map((t) => `/studiya/${t.slug}`),
     ...LEGAL_PATHS,
   ];
 }
@@ -1017,8 +572,8 @@ module.exports = {
   findAudience,
   renderFeature,
   findFeature,
-  renderTool,
-  findTool,
+  renderPage,
+  renderFaq,
   renderLegal,
   findLegal,
   renderNotFound,

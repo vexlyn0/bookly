@@ -1,5 +1,5 @@
 /**
- * Jazyl — статическая сборка сайта (главная, «Возможности», «Кому подойдёт», «Инструменты», правовые страницы)
+ * Jazyl — статическая сборка сайта (главная, «Возможности», «Кому подойдёт», «Студия», правовые страницы)
  * для Cloudflare Pages. Кабинет и запись остаются на Render: ссылки на них ведут на APP_URL.
  *
  * Usage: node scripts/build-landing.js
@@ -19,6 +19,7 @@ const config = require("../server/config");
 // canonical и sitemap должны указывать на сайт, а не на Render (после загрузки .env, который мог задать свой адрес)
 config.publicUrl = SITE_URL;
 const site = require("../server/site/render");
+const studio = require("../server/site/studio");
 
 const ROOT = path.join(__dirname, "..");
 const OUT = path.join(ROOT, "dist", "landing");
@@ -46,12 +47,13 @@ function renderPath(p) {
     return fs
       .readFileSync(path.join(config.publicDir, "index.html"), "utf8")
       .replace("<!--SITE_HEADER-->", site.renderHeader("/"))
+      .replace("<!--STUDIO_SECTION-->", studio.renderStudioSection())
       .replace("<!--SITE_FOOTER-->", site.renderFooter());
   }
   const [, section, slug] = p.split("/");
   if (section === "vozmozhnosti") return site.renderFeature(site.findFeature(slug));
   if (section === "dlya") return site.renderAudience(site.findAudience(slug));
-  if (section === "instrumenty") return site.renderTool(site.findTool(slug));
+  if (section === "studiya") return slug ? studio.renderStudioTool(studio.findTool(slug)) : studio.renderStudioHub();
   return site.renderLegal(site.findLegal(p));
 }
 
@@ -77,7 +79,12 @@ write(
 // Набрали vibesales.kz/app и т.п. — переадресуем в приложение (иначе Pages покажет главную)
 write(
   "_redirects",
-  APP_PATHS.flatMap((p) => [`/${p} ${APP_URL}/${p} 301`, `/${p}/* ${APP_URL}/${p}/:splat 301`]).join("\n") + "\n"
+  [
+    ...APP_PATHS.flatMap((p) => [`/${p} ${APP_URL}/${p} 301`, `/${p}/* ${APP_URL}/${p}/:splat 301`]),
+    // Старые адреса «Инструментов» → Студия
+    ...studio.TOOLS.map((t) => `/instrumenty/${t.oldSlug} /studiya/${t.slug} 301`),
+    "/instrumenty /studiya 301",
+  ].join("\n") + "\n"
 );
 write("404.html", toApp(site.renderNotFound()));
 write("robots.txt", ["User-agent: *", "Allow: /", `Sitemap: ${SITE_URL}/sitemap.xml`, ""].join("\n"));

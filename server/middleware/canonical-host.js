@@ -8,7 +8,7 @@
 const config = require("../config");
 
 /** Страницы, которые живут на сайте (Cloudflare Pages), а не в приложении. */
-const SITE_PAGE = /^\/(?:$|index\.html$|dlya\/|vozmozhnosti\/|instrumenty\/|privacy$|terms$|sitemap\.xml$)/;
+const SITE_PAGE = /^\/(?:$|index\.html$|dlya\/|vozmozhnosti\/|instrumenty|studiya|privacy$|terms$|sitemap\.xml$)/;
 
 /**
  * Адрес из переменной окружения годится, только если он целиком латиницей и разбирается как URL.

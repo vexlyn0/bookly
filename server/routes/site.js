@@ -1,5 +1,5 @@
 /**
- * Jazyl — страницы сайта: главная (с общей шапкой), «Возможности», «Кому подойдёт», «Инструменты», sitemap.xml, robots.txt
+ * Jazyl — страницы сайта: главная (с общей шапкой), «Возможности», «Кому подойдёт», «Студия», sitemap.xml, robots.txt
  */
 
 const fs = require("fs");
@@ -7,6 +7,7 @@ const path = require("path");
 const express = require("express");
 const config = require("../config");
 const site = require("../site/render");
+const studio = require("../site/studio");
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ function landing() {
     landingHtml = fs
       .readFileSync(path.join(config.publicDir, "index.html"), "utf8")
       .replace("<!--SITE_HEADER-->", site.renderHeader("/"))
+      .replace("<!--STUDIO_SECTION-->", studio.renderStudioSection())
       .replace("<!--SITE_FOOTER-->", site.renderFooter());
   }
   return landingHtml;
@@ -38,10 +40,20 @@ router.get("/vozmozhnosti/:slug", (req, res, next) => {
   res.type("html").send(site.renderFeature(feature));
 });
 
-router.get("/instrumenty/:slug", (req, res, next) => {
-  const tool = site.findTool(req.params.slug);
+router.get("/studiya", (req, res) => {
+  res.type("html").send(studio.renderStudioHub());
+});
+
+router.get("/studiya/:slug", (req, res, next) => {
+  const tool = studio.findTool(req.params.slug);
   if (!tool) return next();
-  res.type("html").send(site.renderTool(tool));
+  res.type("html").send(studio.renderStudioTool(tool));
+});
+
+// Старые адреса «Инструментов» → Студия (ссылки уже могли разойтись)
+router.get(["/instrumenty", "/instrumenty/:slug"], (req, res) => {
+  const slug = req.params.slug ? studio.slugFromOld(req.params.slug) : null;
+  res.redirect(301, slug ? `/studiya/${slug}` : "/studiya");
 });
 
 router.get(["/privacy", "/terms"], (req, res, next) => {

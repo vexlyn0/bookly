@@ -1,47 +1,26 @@
 /**
- * Jazyl — инструмент «Подарочный сертификат»: сертификат с QR-кодом для печати или отправки в WhatsApp.
- * Всё рисуется в браузере на canvas (общее — в kit.js, QR — vendor/qrcode-generator), на сервер ничего не уходит.
+ * Jazyl Студия — «Сертификат»: подарочный отрывной талон.
  *
- * Состояние — в объекте state. Запоминаем только данные салона (название, ссылка для QR, контакты, вид),
- * а кому / от кого / номер — у каждого сертификата свои.
- * Примеры внизу страницы (EXAMPLES) идут в том же порядке, что подписи в server/site/tools.js.
+ * Картинка — один большой талон: слева подарок (номинал или услуга), кому, от кого, пожелание;
+ * за перфорацией — корешок с QR на запись, номером и сроком. В портретных форматах корешок снизу.
+ * Номинал — кнопками в один клик. Запоминаем только данные салона (название, QR, контакты, вид).
+ * Шаблоны (TEMPLATES) — в порядке подписей в server/site/tools.js.
  */
 (() => {
   const root = document.getElementById("sertifikat");
-  if (!root || !window.qrcode) return;
+  if (!root) return;
 
   const kit = window.JazylToolKit;
-  const { SANS, SERIF, STYLES } = kit;
-  window.qrcode.stringToBytes = window.qrcode.stringToBytesFuncs["UTF-8"];
-
   const $ = (sel) => root.querySelector(sel);
   const canvas = $("#sertifikat-canvas");
-  const STORAGE_KEY = "jazyl:tool:sertifikat";
+  const store = kit.storage("jazyl:studio:sertifikat");
 
-  /** wide — 2:1, как подарочная карта (печать 21×10,5 см); post и story — для WhatsApp и Instagram. */
+  /** wide — 2:1 для печати (21 × 10,5 см); post и story — для WhatsApp и Instagram. */
   const FORMATS = { wide: [2000, 1000], post: [1080, 1350], story: [1080, 1920] };
 
   const TEXT = {
-    ru: {
-      title: "Подарочный сертификат",
-      amountLabel: "Номинал",
-      serviceLabel: "Услуга",
-      to: "Кому",
-      from: "От",
-      until: (date) => `действует до ${date}`,
-      qr: "Наведите камеру, чтобы записаться",
-      watermark: "сделано в Jazyl",
-    },
-    kk: {
-      title: "Сыйлық сертификаты",
-      amountLabel: "Сомасы",
-      serviceLabel: "Қызмет",
-      to: "Кімге",
-      from: "Кімнен",
-      until: (date) => `${date} дейін жарамды`,
-      qr: "Жазылу үшін камераны бағыттаңыз",
-      watermark: "Jazyl арқылы жасалған",
-    },
+    ru: { sticker: "Подарок", title: "Сертификат", amount: "на сумму", service: "на услугу", to: "Кому", from: "От", until: (d) => `до ${d}`, forever: "бессрочно", qr: "Запись по QR", watermark: "сделано в Jazyl" },
+    kk: { sticker: "Сыйлық", title: "Сертификат", amount: "сомасы", service: "қызмет", to: "Кімге", from: "Кімнен", until: (d) => `${d} дейін`, forever: "мерзімсіз", qr: "QR арқылы жазылу", watermark: "Jazyl арқылы жасалған" },
   };
 
   // ---------------------------------------------------------------------------
@@ -50,23 +29,21 @@
 
   const pad = (n) => String(n).padStart(2, "0");
   const toDateStr = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
   function monthsFromNow(months) {
     const d = new Date();
     d.setMonth(d.getMonth() + months);
     return toDateStr(d);
   }
-
   function formatDate(value) {
-    const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    return match ? `${match[3]}.${match[2]}.${match[1]}` : "";
+    const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return m ? `${m[3]}.${m[2]}.${m[1]}` : "";
   }
 
-  /** Номер сертификата: 6 знаков без похожих букв и цифр (0/O, 1/I). */
+  /** Номер: 6 знаков без похожих букв и цифр (0/O, 1/I). */
   function newNumber() {
     const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const bytes = new Uint8Array(6);
-    (window.crypto || window.msCrypto).getRandomValues(bytes);
+    window.crypto.getRandomValues(bytes);
     return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
   }
 
@@ -74,215 +51,169 @@
 
   function valueText(cfg) {
     if (cfg.kind === "service") return cfg.service.trim();
-    const digits = String(cfg.amount || "").replace(/\D/g, "");
-    return digits ? `${groupDigits(digits.slice(0, 9))} ₸` : "";
-  }
-
-  /** Что зашить в QR: ссылка как есть, @ник → Instagram, номер телефона → WhatsApp. */
-  function qrTarget(raw) {
-    const value = String(raw || "").trim();
-    if (!value) return "";
-    if (/^https?:\/\//i.test(value)) return value;
-    if (/^@[\w.]{2,30}$/.test(value)) return `https://instagram.com/${value.slice(1)}`;
-    if (/^[\d\s()+-]{10,}$/.test(value)) {
-      let digits = value.replace(/\D/g, "");
-      if (digits.length === 11 && digits.startsWith("8")) digits = `7${digits.slice(1)}`;
-      if (digits.length === 10) digits = `7${digits}`;
-      return `https://wa.me/${digits}`;
-    }
-    if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(value)) return `https://${value}`;
-    return value;
+    const digits = String(cfg.amount || "").replace(/\D/g, "").slice(0, 9);
+    return digits ? `${groupDigits(digits)} ₸` : "";
   }
 
   const state = {
-    salon: "",
     kind: "amount",
     amount: "10000",
     service: "",
     to: "",
     from: "",
     wish: "",
-    until: monthsFromNow(3),
     number: newNumber(),
+    until: monthsFromNow(3),
     qr: "",
+    salon: "",
     contacts: "",
-    style: "lavender",
+    style: "violet",
     format: "wide",
     lang: "ru",
   };
 
   // ---------------------------------------------------------------------------
-  // QR
+  // Рисование
   // ---------------------------------------------------------------------------
 
-  const qrCache = new Map();
-  function qrMatrix(text) {
-    if (!qrCache.has(text)) {
-      try {
-        const qr = window.qrcode(0, "M");
-        qr.addData(text);
-        qr.make();
-        const n = qr.getModuleCount();
-        qrCache.set(text, { n, dark: (r, c) => qr.isDark(r, c) });
-      } catch {
-        qrCache.set(text, null); // слишком длинный текст
-      }
-    }
-    return qrCache.get(text);
-  }
-
-  function luminance(hex) {
-    const m = String(hex).match(/^#([0-9a-f]{6})$/i);
-    if (!m) return 1;
-    const n = parseInt(m[1], 16);
-    return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  }
-
-  /** Белая плашка с QR. Тёмные модули — цвет текста стиля, если он тёмный, иначе почти чёрный. */
-  function drawQr(ctx, p, style, text, x, y, size) {
-    const matrix = qrMatrix(text);
-    ctx.fillStyle = "#ffffff";
-    p.roundRect(x, y, size, size, size * 0.08);
-    ctx.fill();
-    if (!matrix) return;
-    const quiet = 2;
-    const cell = size / (matrix.n + quiet * 2);
-    ctx.fillStyle = luminance(style.text) < 0.4 ? style.text : "#15131f";
-    for (let r = 0; r < matrix.n; r += 1) {
-      for (let c = 0; c < matrix.n; c += 1) {
-        if (matrix.dark(r, c)) {
-          // +0.5 — без светлых щелей между модулями
-          ctx.fillRect(x + (c + quiet) * cell, y + (r + quiet) * cell, cell + 0.5, cell + 0.5);
-        }
-      }
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Рисование: draw(canvas, cfg, scale) — одна функция и для предпросмотра, и для примеров
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Текстовая колонка: салон, заголовок, номинал, кому / от кого, пожелание.
-   * draw=false — только измерить высоту.
-   */
-  function layoutText(ctx, p, cfg, style, t, x, y, width, s, draw, center) {
-    const titleFamily = style.font === "serif" ? SERIF : SANS;
-    const titleWeight = style.font === "serif" ? 700 : 800;
-    const align = (w) => (center ? x + (width - w) / 2 : x);
-    let cursor = y;
-
-    const salon = cfg.salon.trim();
-    if (salon) {
-      p.font(32 * s, 700);
-      p.spacing(7 * s);
-      const text = p.fit(salon.toUpperCase(), width);
-      if (draw) {
-        ctx.fillStyle = style.sub;
-        ctx.fillText(text, align(ctx.measureText(text).width), cursor);
-      }
-      p.spacing(0);
-      cursor += 66 * s;
-    }
-
-    p.font(96 * s, titleWeight, titleFamily);
-    p.spacing(style.font === "serif" ? 0 : -2 * s);
-    const titleLines = p.wrap(t.title, width);
-    titleLines.forEach((line) => {
-      if (draw) {
-        ctx.fillStyle = style.text;
-        ctx.fillText(line, align(ctx.measureText(line).width), cursor);
-      }
-      cursor += 100 * s;
-    });
-    p.spacing(0);
-    cursor += 30 * s;
-
-    // Номинал: сумма крупно, услуга — до двух строк
+  /** Левая часть талона: наклейка, салон, «Сертификат», номинал, кому/от кого, пожелание. */
+  function drawGift(ctx, p, cfg, style, t, x, y, w, h, center) {
     const value = valueText(cfg);
+    const salon = cfg.salon.trim();
+    const lines = [];
+    const big = cfg.kind === "amount";
+
+    // Подбираем масштаб, чтобы всё влезло в высоту
+    const measure = (s) => {
+      let total = 70 * s + (salon ? 54 * s : 0) + 150 * s * 0.95 + 24 * s;
+      if (value) {
+        p.font((big ? 120 : 60) * s, big ? 900 : 800);
+        const vl = big ? 1 : Math.min(2, p.wrap(value, w).length);
+        total += 40 * s + vl * (big ? 124 : 70) * s + 16 * s;
+      }
+      if (cfg.to.trim()) total += 54 * s;
+      if (cfg.from.trim()) total += 54 * s;
+      if (cfg.wish.trim()) {
+        p.font(34 * s, 500);
+        total += 16 * s + Math.min(2, p.wrap(cfg.wish.trim(), w).length) * 46 * s;
+      }
+      return total;
+    };
+    let s = 1.3;
+    while (s > 0.45 && measure(s) > h) s -= 0.05;
+
+    let cy = y + Math.max(0, (h - measure(s)) / 2);
+    const ax = (tw) => (center ? x + (w - tw) / 2 : x);
+
+    // Наклейка «Подарок»
+    p.font(28 * s, 800);
+    const stickerW = ctx.measureText(t.sticker.toUpperCase()).width + 28 * s * 1.3;
+    kit.sticker(ctx, p, { text: t.sticker.toUpperCase(), x: ax(stickerW), y: cy, size: 28 * s, angle: -0.06, fill: style.accent, color: style.accentText });
+    cy += 70 * s;
+
+    ctx.textBaseline = "alphabetic";
+    if (salon) {
+      p.font(28 * s, 800);
+      p.spacing(5 * s);
+      const text = p.fit(salon.toUpperCase(), w);
+      ctx.fillStyle = style.ticketSub;
+      ctx.fillText(text, ax(ctx.measureText(text).width), cy + 30 * s);
+      p.spacing(0);
+      cy += 54 * s;
+    }
+
+    p.font(150 * s, 900);
+    p.spacing(-6 * s);
+    const title = p.fit(t.title, w);
+    ctx.fillStyle = style.ticketText;
+    ctx.fillText(title, ax(ctx.measureText(title).width), cy + 150 * s * 0.8);
+    p.spacing(0);
+    cy += 150 * s * 0.95 + 24 * s;
+
     if (value) {
       p.font(28 * s, 700);
-      p.spacing(5 * s);
-      const label = (cfg.kind === "service" ? t.serviceLabel : t.amountLabel).toUpperCase();
-      if (draw) {
-        ctx.fillStyle = style.sub;
-        ctx.globalAlpha = 0.85;
-        ctx.fillText(label, align(ctx.measureText(label).width), cursor);
-        ctx.globalAlpha = 1;
-      }
-      p.spacing(0);
-      cursor += 46 * s;
-
-      const big = cfg.kind === "amount";
-      p.font((big ? 130 : 66) * s, 800, big ? titleFamily : SANS);
-      let lines = big ? [value] : p.wrap(value, width);
-      if (lines.length > 2) lines = [lines[0], p.fit(lines.slice(1).join(" "), width)];
-      lines.forEach((line) => {
-        if (draw) {
-          ctx.fillStyle = style.sub;
-          ctx.fillText(line, align(ctx.measureText(line).width), cursor);
-        }
-        cursor += (big ? 140 : 76) * s;
+      const label = big ? t.amount : t.service;
+      ctx.fillStyle = style.ticketSub;
+      ctx.fillText(label, ax(ctx.measureText(label).width), cy + 28 * s);
+      cy += 40 * s;
+      p.font((big ? 120 : 60) * s, big ? 900 : 800);
+      let vl = big ? [value] : p.wrap(value, w);
+      if (vl.length > 2) vl = [vl[0], p.fit(vl.slice(1).join(" "), w)];
+      ctx.fillStyle = style.ticketText;
+      vl.forEach((line) => {
+        ctx.fillText(line, ax(ctx.measureText(line).width), cy + (big ? 106 : 56) * s);
+        cy += (big ? 124 : 70) * s;
       });
-      cursor += 22 * s;
+      cy += 16 * s;
     }
 
-    // Кому / от кого
     for (const [label, raw] of [[t.to, cfg.to], [t.from, cfg.from]]) {
       const name = String(raw || "").trim();
       if (!name) continue;
-      p.font(40 * s, 500);
+      p.font(38 * s, 500);
       const prefix = `${label}: `;
-      const prefixW = ctx.measureText(prefix).width;
-      p.font(40 * s, 700);
-      const nameText = p.fit(name, width - prefixW);
-      const total = prefixW + ctx.measureText(nameText).width;
-      if (draw) {
-        const left = align(total);
-        p.font(40 * s, 500);
-        ctx.fillStyle = style.sub;
-        ctx.fillText(prefix, left, cursor);
-        p.font(40 * s, 700);
-        ctx.fillStyle = style.text;
-        ctx.fillText(nameText, left + prefixW, cursor);
-      }
-      cursor += 56 * s;
+      const pw = ctx.measureText(prefix).width;
+      p.font(38 * s, 800);
+      const nameText = p.fit(name, w - pw);
+      const total = pw + ctx.measureText(nameText).width;
+      const left = ax(total);
+      p.font(38 * s, 500);
+      ctx.fillStyle = style.ticketSub;
+      ctx.fillText(prefix, left, cy + 40 * s);
+      p.font(38 * s, 800);
+      ctx.fillStyle = style.ticketText;
+      ctx.fillText(nameText, left + pw, cy + 40 * s);
+      cy += 54 * s;
     }
 
     const wish = cfg.wish.trim();
     if (wish) {
-      cursor += 12 * s;
-      p.font(36 * s, 500, titleFamily);
-      let lines = p.wrap(wish, width);
-      if (lines.length > 3) lines = [...lines.slice(0, 2), p.fit(lines.slice(2).join(" "), width)];
-      lines.forEach((line) => {
-        if (draw) {
-          ctx.fillStyle = style.text;
-          ctx.globalAlpha = 0.85;
-          ctx.fillText(line, align(ctx.measureText(line).width), cursor);
-          ctx.globalAlpha = 1;
-        }
-        cursor += 48 * s;
+      cy += 16 * s;
+      p.font(34 * s, 500);
+      let wl = p.wrap(`«${wish}»`, w);
+      if (wl.length > 2) wl = [wl[0], p.fit(wl.slice(1).join(" "), w)];
+      ctx.fillStyle = style.ticketText;
+      ctx.globalAlpha = 0.85;
+      wl.forEach((line) => {
+        ctx.fillText(line, ax(ctx.measureText(line).width), cy + 36 * s);
+        cy += 46 * s;
       });
+      ctx.globalAlpha = 1;
     }
-    return cursor - y;
   }
 
-  /** «№ A7K2QF · действует до 25.01.2027» */
-  function metaLine(cfg, t) {
-    const parts = [];
-    if (cfg.number.trim()) parts.push(`№ ${cfg.number.trim()}`);
+  /** Корешок: QR (или штамп), подпись, номер, срок. */
+  function drawStub(ctx, p, cfg, style, t, cx, y, h, qrSize) {
+    const target = kit.qrTarget(cfg.qr);
+    const number = cfg.number.trim();
     const until = formatDate(cfg.until);
-    if (until) parts.push(t.until(until));
-    return parts.join(" · ");
-  }
-
-  /** Подбирает масштаб текста, чтобы колонка влезла в высоту. */
-  function fitScale(ctx, p, cfg, style, t, width, maxH, center, from = 1.15) {
-    for (let s = from; s > 0.45; s -= 0.05) {
-      if (layoutText(ctx, p, cfg, style, t, 0, 0, width, s, false, center) <= maxH) return s;
+    const blockH = (target ? qrSize + 54 : qrSize * 0.6) + (number ? 58 : 0) + 44;
+    let cy = y + Math.max(0, (h - blockH) / 2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    if (target) {
+      kit.drawQr(ctx, p, target, cx - qrSize / 2, cy, qrSize, kit.qrDark(style));
+      cy += qrSize + 40;
+      p.font(26, 700);
+      ctx.fillStyle = style.ticketSub;
+      ctx.fillText(t.qr, cx, cy);
+      cy += 14;
+    } else {
+      kit.drawStamp(ctx, cx - qrSize * 0.3, cy, qrSize * 0.6, style.ticketSub, qrSize * 0.035);
+      cy += qrSize * 0.6;
     }
-    return 0.45;
+    if (number) {
+      p.font(40, 900);
+      p.spacing(3);
+      ctx.fillStyle = style.ticketText;
+      ctx.fillText(`№ ${number}`, cx, cy + 52);
+      p.spacing(0);
+      cy += 58;
+    }
+    p.font(28, 600);
+    ctx.fillStyle = style.ticketSub;
+    ctx.fillText(until ? t.until(until) : t.forever, cx, cy + 40);
+    ctx.textAlign = "left";
   }
 
   function draw(target, cfg, scale = 1) {
@@ -290,129 +221,73 @@
     const style = kit.findStyle(cfg.style);
     const { ctx, p } = kit.begin(target, W, H, style, scale);
     const t = TEXT[cfg.lang] || TEXT.ru;
-    const qrText = qrTarget(cfg.qr);
-    const meta = metaLine(cfg, t);
     const contacts = cfg.contacts.trim();
-    ctx.textBaseline = "top";
 
     if (W > H) {
-      // Горизонтальный: слева текст, справа плашка с QR
-      kit.drawWatermark(ctx, p, style, t.watermark, W, H - 34);
-      ctx.textBaseline = "top";
-      const padX = 120;
-      const panelW = qrText ? 560 : 0;
-      const panelX = W - padX - panelW + 40;
-      const textW = (qrText ? panelX - 80 : W - padX) - padX;
-
-      let bottom = H - 110;
-      p.font(30, 600);
-      if (meta) {
-        ctx.fillStyle = style.sub;
-        ctx.fillText(p.fit(meta, textW), padX, bottom - 30);
-        bottom -= 50;
-      }
+      // Горизонтальный талон, корешок справа
+      const m = 64;
+      const stubW = 500;
+      const x = m;
+      const y = m;
+      const w = W - m * 2;
+      const h = H - m * 2 - 30;
+      const cutX = x + w - stubW;
+      kit.ticket(ctx, { x, y, w, h, r: 44, notch: 30, cutX, fill: style.ticket, line: style.line });
+      const innerTop = y + 64;
+      const innerH = h - 128 - (contacts ? 50 : 0);
+      drawGift(ctx, p, cfg, style, t, x + 90, innerTop, cutX - x - 160, innerH, false);
       if (contacts) {
-        p.font(30, 500);
-        ctx.fillStyle = style.text;
-        ctx.fillText(p.fit(contacts, textW), padX, bottom - 30);
-        bottom -= 50;
+        p.font(28, 600);
+        ctx.fillStyle = style.ticketSub;
+        ctx.fillText(p.fit(contacts, cutX - x - 160), x + 90, y + h - 60);
       }
-
-      const top = 100;
-      const space = bottom - 40 - top;
-      const s = fitScale(ctx, p, cfg, style, t, textW, space, false, 1.6);
-      const textH = layoutText(ctx, p, cfg, style, t, padX, 0, textW, s, false, false);
-      // Текст — по центру свободного места над номером
-      layoutText(ctx, p, cfg, style, t, padX, top + Math.max(0, (space - textH) / 2), textW, s, true, false);
-
-      if (qrText) {
-        const panelY = 90;
-        const panelH = H - 180;
-        ctx.fillStyle = style.card;
-        p.roundRect(panelX, panelY, panelW, panelH, 40);
-        ctx.fill();
-
-        // QR и подпись — по центру плашки
-        const qrSize = 420;
-        p.font(30, 600);
-        const caption = p.wrap(t.qr, panelW - 80).slice(0, 2);
-        const blockH = qrSize + 36 + caption.length * 42;
-        const qrX = panelX + (panelW - qrSize) / 2;
-        const qrY = panelY + (panelH - blockH) / 2;
-        drawQr(ctx, p, style, qrText, qrX, qrY, qrSize);
-
-        ctx.textAlign = "center";
-        p.font(30, 600);
-        ctx.fillStyle = style.text;
-        caption.forEach((line, i) => {
-          ctx.fillText(line, panelX + panelW / 2, qrY + qrSize + 36 + i * 42);
-        });
-        ctx.textAlign = "left";
-      }
+      drawStub(ctx, p, cfg, style, t, cutX + stubW / 2, y, h, 300);
+      kit.drawWatermark(ctx, p, style, t.watermark, W, H - 26);
       return;
     }
 
-    // Вертикальный (пост, сторис): всё по центру, QR внизу
-    kit.drawWatermark(ctx, p, style, t.watermark, W, H - 60);
-    ctx.textBaseline = "top";
-    const padX = 90;
-    const width = W - padX * 2;
+    // Вертикальный талон, корешок снизу
     const story = H / W > 1.5;
-
-    let bottom = H - 110;
-    ctx.textAlign = "center";
-    if (meta) {
-      p.font(30, 600);
-      ctx.fillStyle = style.sub;
-      ctx.fillText(p.fit(meta, width), W / 2, bottom - 30);
-      bottom -= 52;
-    }
+    const m = 70;
+    const x = m;
+    const y = story ? 150 : m;
+    const w = W - m * 2;
+    const h = H - y - (story ? 170 : 110);
+    const stubH = cfg.qr.trim() ? (story ? 560 : 470) : 300;
+    const cutY = y + h - stubH;
+    kit.ticket(ctx, { x, y, w, h, r: 44, notch: 30, cutY, fill: style.ticket, line: style.line });
+    const innerH = cutY - y - 120 - (contacts ? 46 : 0);
+    drawGift(ctx, p, cfg, style, t, x + 70, y + 70, w - 140, innerH, true);
     if (contacts) {
-      p.font(30, 500);
-      ctx.fillStyle = style.text;
-      p.wrap(contacts, width)
-        .slice(0, 2)
-        .reverse()
-        .forEach((line) => {
-          ctx.fillText(line, W / 2, bottom - 30);
-          bottom -= 42;
-        });
-      bottom -= 10;
-    }
-    if (qrText) {
-      const qrSize = story ? 340 : 250;
       p.font(28, 600);
-      ctx.fillStyle = style.text;
-      ctx.fillText(p.fit(t.qr, width), W / 2, bottom - 30);
-      bottom -= 48;
-      drawQr(ctx, p, style, qrText, (W - qrSize) / 2, bottom - qrSize, qrSize);
-      bottom -= qrSize + 40;
+      ctx.fillStyle = style.ticketSub;
+      ctx.textAlign = "center";
+      ctx.fillText(p.fit(contacts, w - 140), W / 2, cutY - 44);
+      ctx.textAlign = "left";
     }
-    ctx.textAlign = "left";
-
-    const top = story ? 170 : 100;
-    const s = fitScale(ctx, p, cfg, style, t, width, bottom - top, true, story ? 1.2 : 1.05);
-    const textH = layoutText(ctx, p, cfg, style, t, padX, 0, width, s, false, true);
-    // Текст — по центру свободного места над QR
-    const y = top + Math.max(0, (bottom - top - textH) / 2);
-    layoutText(ctx, p, cfg, style, t, padX, y, width, s, true, true);
+    drawStub(ctx, p, cfg, style, t, W / 2, cutY, stubH, story ? 300 : 250);
+    kit.drawWatermark(ctx, p, style, t.watermark, W, H - (story ? 70 : 40));
   }
 
   // ---------------------------------------------------------------------------
   // Форма
   // ---------------------------------------------------------------------------
 
-  const FIELDS = ["salon", "amount", "service", "to", "from", "wish", "until", "number", "qr", "contacts"];
+  const FIELDS = ["amount", "service", "to", "from", "wish", "number", "until", "qr", "salon", "contacts"];
 
   function setChoice(group, value) {
     state[group] = value;
-    root.querySelectorAll(`[data-${group}]`).forEach((btn) => {
-      btn.setAttribute("aria-pressed", String(btn.dataset[group] === value));
-    });
+    kit.setPressed(root, group, value);
     if (group === "kind") {
-      $("#sertifikat-amount").hidden = value !== "amount";
-      $("#sertifikat-service").hidden = value !== "service";
+      $("#sertifikat-amount-box").hidden = value !== "amount";
+      $("#sertifikat-service-box").hidden = value !== "service";
     }
+  }
+
+  function updateHints() {
+    const target = kit.qrTarget(state.qr);
+    $("#sertifikat-qr-hint").textContent = target ? `QR откроет: ${target}` : "Без ссылки вместо QR будет штамп.";
+    kit.setPressed(root, "amount", String(state.amount).replace(/\D/g, ""));
   }
 
   function syncInputs() {
@@ -420,158 +295,101 @@
       const el = root.querySelector(`[name="${name}"]`);
       if (el) el.value = state[name];
     }
-    ["style", "lang", "format", "kind"].forEach((group) => setChoice(group, state[group]));
-    updateQrHint();
+    ["style", "format", "lang", "kind"].forEach((g) => setChoice(g, state[g]));
+    updateHints();
   }
 
-  function updateQrHint() {
-    const hint = $("#sertifikat-qr-hint");
-    const target = qrTarget(state.qr);
-    hint.textContent = target ? `QR откроет: ${target}` : "Без ссылки сертификат будет без QR-кода.";
-  }
+  const SAVED = ["qr", "salon", "contacts", "style", "format", "lang"];
+  const save = () => store.save(Object.fromEntries(SAVED.map((k) => [k, state[k]])));
+  const redraw = kit.scheduler(() => {
+    draw(canvas, state);
+    save();
+  });
 
-  let frame = 0;
-  function schedule() {
-    cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(() => {
-      draw(canvas, state);
-      save();
-    });
+  function restore() {
+    const saved = store.load();
+    if (!saved) return;
+    for (const [key, max] of [["qr", 200], ["salon", 40], ["contacts", 80]]) if (typeof saved[key] === "string") state[key] = saved[key].slice(0, max);
+    if (kit.STYLES.some((st) => st.id === saved.style)) state.style = saved.style;
+    if (FORMATS[saved.format]) state.format = saved.format;
+    if (TEXT[saved.lang]) state.lang = saved.lang;
   }
-
-  // ---------------------------------------------------------------------------
-  // Текст для мессенджеров, сохранение
-  // ---------------------------------------------------------------------------
 
   function plainText() {
     const t = TEXT[state.lang];
     const lines = [`🎁 ${t.title}${state.salon.trim() ? ` — ${state.salon.trim()}` : ""}`];
     const value = valueText(state);
-    if (value) lines.push(`${state.kind === "service" ? t.serviceLabel : t.amountLabel}: ${value}`);
+    if (value) lines.push(`${state.kind === "service" ? t.service : t.amount}: ${value}`);
     if (state.to.trim()) lines.push(`${t.to}: ${state.to.trim()}`);
     if (state.from.trim()) lines.push(`${t.from}: ${state.from.trim()}`);
     if (state.wish.trim()) lines.push("", state.wish.trim(), "");
-    const meta = metaLine(state, t);
-    if (meta) lines.push(meta);
-    const target = qrTarget(state.qr);
+    lines.push(`№ ${state.number.trim()} · ${formatDate(state.until) ? t.until(formatDate(state.until)) : t.forever}`);
+    const target = kit.qrTarget(state.qr);
     if (target) lines.push(target);
     if (state.contacts.trim()) lines.push(state.contacts.trim());
     return lines.join("\n");
   }
 
-  const SAVED = ["salon", "qr", "contacts", "style", "format", "lang", "kind"];
-
-  function save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(SAVED.map((key) => [key, state[key]]))));
-    } catch {
-      // приватный режим — не страшно
-    }
-  }
-
-  function restore() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      if (!saved) return;
-      for (const [key, max] of [["salon", 40], ["qr", 200], ["contacts", 80]]) {
-        if (typeof saved[key] === "string") state[key] = saved[key].slice(0, max);
-      }
-      if (STYLES.some((st) => st.id === saved.style)) state.style = saved.style;
-      if (TEXT[saved.lang]) state.lang = saved.lang;
-      if (FORMATS[saved.format]) state.format = saved.format;
-      if (["amount", "service"].includes(saved.kind)) state.kind = saved.kind;
-    } catch {
-      // сохранённого нет — начинаем с чистого листа
-    }
-  }
-
   kit.bindActions({
     canvas,
     render: () => draw(canvas, state),
-    fileName: () => `${state.lang === "kk" ? "syilyq-sertifikat" : "sertifikat"}-${state.number.trim() || "jazyl"}.png`,
+    fileName: () => `${state.lang === "kk" ? "syilyq" : "sertifikat"}-${state.number.trim() || "jazyl"}.png`,
     text: plainText,
     download: $("#sertifikat-download"),
     share: $("#sertifikat-share"),
     copy: $("#sertifikat-copy"),
   });
 
-  // ---------------------------------------------------------------------------
-  // События формы
-  // ---------------------------------------------------------------------------
-
   root.addEventListener("input", (event) => {
     const el = event.target;
-    if (el.name && FIELDS.includes(el.name)) {
-      state[el.name] = el.value;
-      if (el.name === "qr") updateQrHint();
-    }
-    schedule();
+    if (!FIELDS.includes(el.name)) return;
+    state[el.name] = el.value;
+    if (el.name === "qr" || el.name === "amount") updateHints();
+    redraw();
   });
 
   root.addEventListener("click", (event) => {
     const button = event.target.closest("button");
-    if (!button || !root.contains(button)) return;
-
+    if (!button || !root.contains(button) || button.dataset.template) return;
     if (button.dataset.action === "new-number") {
       state.number = newNumber();
       $("[name='number']").value = state.number;
+    } else if (button.dataset.amount) {
+      state.amount = button.dataset.amount;
+      $("[name='amount']").value = state.amount;
+      updateHints();
     } else if (button.dataset.months) {
       const months = Number(button.dataset.months);
       state.until = months ? monthsFromNow(months) : "";
       $("[name='until']").value = state.until;
     } else {
-      const group = ["style", "lang", "format", "kind"].find((g) => button.dataset[g]);
-      if (!group) return;
-      setChoice(group, button.dataset[group]);
+      const g = ["style", "format", "lang", "kind"].find((k) => button.dataset[k]);
+      if (!g) return;
+      setChoice(g, button.dataset[g]);
     }
-    schedule();
+    redraw();
   });
 
   // ---------------------------------------------------------------------------
-  // Примеры: те же картинки уменьшенно + «Сделать такой»
+  // Шаблоны
   // ---------------------------------------------------------------------------
 
-  const base = {
-    salon: "",
-    kind: "amount",
-    amount: "",
-    service: "",
-    to: "Айгерим",
-    from: "",
-    wish: "",
-    until: monthsFromNow(3),
-    number: "A7K2QF",
-    qr: "@vash.salon",
-    contacts: "",
-    style: "lavender",
-    format: "wide",
-    lang: "ru",
-  };
-  const EXAMPLES = [
-    { ...base, salon: "Nail studio", amount: "10000", style: "cream", wish: "С днём рождения! Пусть руки всегда будут красивыми", from: "Данияр" },
-    { ...base, salon: "Массажный кабинет", kind: "service", service: "Массаж спины, 60 минут", style: "chocolate", to: "Маме", from: "Дочка", contacts: "Алматы, Абая 10 · +7 701 000 00 00" },
-    { ...base, salon: "Brow & lash", amount: "15000", style: "powder", to: "Самой лучшей подруге", wish: "С 8 Марта!" },
-    { ...base, salon: "SPA", kind: "service", service: "SPA-программа «Релакс»", style: "sage", to: "Сауле", from: "Коллеги" },
-    { ...base, salon: "Barbershop", amount: "20000", style: "minimal", to: "Ерлан", from: "Жена", qr: "+7 701 000 00 00" },
-    { ...base, salon: "Сұлулық салоны", amount: "10000", style: "lavender", lang: "kk", to: "Анама", from: "Ұлың", wish: "Туған күніңмен!" },
+  const base = { kind: "amount", amount: "", service: "", to: "Айгерим", from: "", wish: "", number: "A7K2QF", until: monthsFromNow(3), qr: "@vash.salon", salon: "", contacts: "", format: "wide", lang: "ru" };
+  const TEMPLATES = [
+    { ...base, style: "violet", salon: "Nail studio", amount: "10000", from: "Данияр", wish: "С днём рождения!" },
+    { ...base, style: "graphite", salon: "Массажный кабинет", kind: "service", service: "Массаж спины, 60 минут", to: "Маме", from: "Дочка" },
+    { ...base, style: "coral", salon: "Brow & lash", amount: "15000", to: "Лучшей подруге", wish: "С 8 Марта!" },
+    { ...base, style: "mint", salon: "SPA", kind: "service", service: "SPA-программа «Релакс»", to: "Сауле", from: "Коллеги" },
+    { ...base, style: "milk", salon: "Barbershop", amount: "20000", to: "Ерлан", from: "Жена", qr: "+7 701 000 00 00" },
+    { ...base, style: "sky", salon: "Сұлулық салоны", amount: "10000", to: "Анама", from: "Ұлың", wish: "Туған күніңмен!", lang: "kk" },
   ];
 
-  function renderExamples() {
-    root.ownerDocument.querySelectorAll("[data-example]").forEach((card) => {
-      const cfg = EXAMPLES[Number(card.dataset.example)];
-      const holder = card.querySelector("canvas");
-      if (!cfg || !holder) return;
-      draw(holder, cfg, 0.3);
-      card.querySelector("[data-use-example]")?.addEventListener("click", () => {
-        // Данные салона оставляем свои, вид и текст — как в примере, номер — новый.
-        const own = { salon: state.salon, qr: state.qr, contacts: state.contacts };
-        Object.assign(state, JSON.parse(JSON.stringify(cfg)), { number: newNumber(), until: monthsFromNow(3) });
-        for (const [key, value] of Object.entries(own)) if (value.trim()) state[key] = value;
-        syncInputs();
-        schedule();
-        root.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    });
+  function applyTemplate(i) {
+    const own = { salon: state.salon, qr: state.qr, contacts: state.contacts };
+    Object.assign(state, JSON.parse(JSON.stringify(TEMPLATES[i])), { number: newNumber(), until: monthsFromNow(3) });
+    for (const [key, value] of Object.entries(own)) if (value.trim()) state[key] = value;
+    syncInputs();
+    redraw();
   }
 
   // ---------------------------------------------------------------------------
@@ -582,10 +400,8 @@
   $("#sertifikat-styles").innerHTML = kit.styleButtons();
   syncInputs();
   draw(canvas, state);
-
-  // Рисуем заново, когда загрузятся шрифты, — иначе первый кадр будет системным шрифтом.
   kit.fontsReady().then(() => {
-    schedule();
-    renderExamples();
+    redraw();
+    kit.renderTemplates(draw, TEMPLATES, applyTemplate);
   });
 })();
