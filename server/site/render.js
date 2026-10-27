@@ -167,12 +167,20 @@ function renderPage({ path, title, description, body, scripts = [], fonts = "", 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}">
   <link rel="canonical" href="${escapeHtml(absoluteUrl(path))}">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:type" content="website">
+  <meta property="og:image" content="${escapeHtml(absoluteUrl("/og-image.png"))}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Jazyl">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0c14">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">

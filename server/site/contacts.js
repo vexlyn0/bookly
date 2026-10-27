@@ -2,6 +2,8 @@
  * Jazyl — контакты и реквизиты владельца сервиса.
  * Используются в подвале сайта и в юридических документах (/privacy, /terms).
  * Пустое поле на сайте не показывается.
+ * Те же WhatsApp и Telegram вписаны в кнопку «Помощь» кабинета (public/app/index.html)
+ * и в письма (supabase/email-templates) — при смене номера поправьте и там.
  */
 
 module.exports = {
@@ -10,9 +12,9 @@ module.exports = {
   // Instagram без @. Например: "jazyl.kz"
   instagram: "",
   // WhatsApp в формате +7 XXX XXX XX XX
-  whatsapp: "",
+  whatsapp: "+7 707 497 68 16",
   // Telegram для связи без @ (не бот уведомлений). Например: "jazyl_support"
-  telegram: "",
+  telegram: "vexlyn0",
   // Кто оказывает услугу: «ИП Иванов Иван Иванович» или «ТОО "Jazyl"»
   operator: "",
   // ИИН (для ИП) или БИН (для ТОО)
