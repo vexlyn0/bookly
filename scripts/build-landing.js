@@ -20,7 +20,7 @@ const config = require("../server/config");
 config.publicUrl = SITE_URL;
 const site = require("../server/site/render");
 const studio = require("../server/site/studio");
-const { versionAssets } = require("../server/site/assets");
+const blog = require("../server/site/blog");
 
 const ROOT = path.join(__dirname, "..");
 const OUT = path.join(ROOT, "dist", "landing");
@@ -45,15 +45,12 @@ function copyDir(rel) {
 
 function renderPath(p) {
   if (p === "/") {
-    return versionAssets(fs
-      .readFileSync(path.join(config.publicDir, "index.html"), "utf8")
-      .replace("<!--SITE_HEADER-->", site.renderHeader("/"))
-      .replace("<!--STUDIO_SECTION-->", studio.renderStudioSection())
-      .replace("<!--SITE_FOOTER-->", site.renderFooter()));
+    return site.renderHome(fs.readFileSync(path.join(config.publicDir, "index.html"), "utf8"));
   }
   const [, section, slug, variant] = p.split("/");
   if (section === "vozmozhnosti") return site.renderFeature(site.findFeature(slug));
   if (section === "dlya") return site.renderAudience(site.findAudience(slug));
+  if (section === "stati") return slug ? blog.renderArticle(blog.findArticle(slug)) : blog.renderArticlesHub();
   if (section === "studiya") {
     if (!slug) return studio.renderStudioHub();
     const tool = studio.findTool(slug);

@@ -216,7 +216,7 @@ function renderVariantLinks(tool, current) {
  * свои заголовок, текст, вопросы, стартовый шаблон (data-preset) и лента примеров (data-templates).
  */
 function renderStudioTool(tool, variant = null) {
-  const { renderPage, renderFaq } = site();
+  const { renderPage, renderFaq, breadcrumbSchema } = site();
   const others = TOOLS.filter((t) => t.slug !== tool.slug);
   const thumb = tool.wide ? 'width="240" height="120"' : 'width="120" height="214"';
   const page = variant || tool;
@@ -342,6 +342,25 @@ function renderStudioTool(tool, variant = null) {
     styles: ["/css/studio.css"],
     // Казахская страница («Сыйлық сертификаты») — lang="kk" для поисковиков
     lang: variant?.preset?.lang === "kk" ? "kk" : "ru",
+    schema: [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: page.h1 || tool.h1,
+        description: page.description,
+        applicationCategory: "DesignApplication",
+        operatingSystem: "Web",
+        browserRequirements: "Работает в браузере, без регистрации",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "KZT" },
+        publisher: { "@type": "Organization", name: "Jazyl" },
+      },
+      breadcrumbSchema([
+        ["Jazyl", "/"],
+        ["Студия", "/studiya"],
+        [tool.h1, `/studiya/${tool.slug}`],
+        ...(variant ? [[variant.name, `/studiya/${tool.slug}/${variant.slug}`]] : []),
+      ]),
+    ],
   });
 }
 

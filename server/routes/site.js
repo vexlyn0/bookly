@@ -8,7 +8,7 @@ const express = require("express");
 const config = require("../config");
 const site = require("../site/render");
 const studio = require("../site/studio");
-const { versionAssets } = require("../site/assets");
+const blog = require("../site/blog");
 
 const router = express.Router();
 
@@ -16,11 +16,7 @@ const router = express.Router();
 let landingHtml = null;
 function landing() {
   if (!landingHtml || process.env.NODE_ENV !== "production") {
-    landingHtml = versionAssets(fs
-      .readFileSync(path.join(config.publicDir, "index.html"), "utf8")
-      .replace("<!--SITE_HEADER-->", site.renderHeader("/"))
-      .replace("<!--STUDIO_SECTION-->", studio.renderStudioSection())
-      .replace("<!--SITE_FOOTER-->", site.renderFooter()));
+    landingHtml = site.renderHome(fs.readFileSync(path.join(config.publicDir, "index.html"), "utf8"));
   }
   return landingHtml;
 }
@@ -56,6 +52,16 @@ router.get("/studiya/:slug/:variant", (req, res, next) => {
   const variant = tool && studio.findVariant(tool, req.params.variant);
   if (!variant) return next();
   res.type("html").send(studio.renderStudioTool(tool, variant));
+});
+
+router.get("/stati", (req, res) => {
+  res.type("html").send(blog.renderArticlesHub());
+});
+
+router.get("/stati/:slug", (req, res, next) => {
+  const article = blog.findArticle(req.params.slug);
+  if (!article) return next();
+  res.type("html").send(blog.renderArticle(article));
 });
 
 // Старые адреса «Инструментов» → Студия (ссылки уже могли разойтись)

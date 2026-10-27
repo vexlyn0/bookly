@@ -133,6 +133,7 @@ function renderFooter() {
         <a href="/#features">Возможности</a>
         <a href="/#pricing">Цены</a>
         <a href="/#faq">Вопросы</a>
+        <a href="/stati">Статьи</a>
         <a href="/login">Войти</a>
       </nav>
       <nav class="footer__links footer__links--wide" aria-label="Возможности">
@@ -160,7 +161,98 @@ function absoluteUrl(path) {
   return config.publicUrl ? `${config.publicUrl.replace(/\/$/, "")}${path}` : path;
 }
 
-function renderPage({ path, title, description, body, scripts = [], fonts = "", styles = [], lang = "ru" }) {
+/**
+ * Разметка для поисковиков (schema.org, JSON-LD): Google и Яндекс понимают, что это за
+ * страница, и могут показать в выдаче вопросы-ответы, «хлебные крошки», цену «бесплатно».
+ */
+function jsonLd(data) {
+  // «<» экранируем, чтобы текст не закрыл тег <script>
+  return `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
+}
+
+const SITE_NAME = "Jazyl";
+
+function organizationSchema() {
+  const sameAs = [CONTACTS.instagram && `https://instagram.com/${CONTACTS.instagram}`].filter(Boolean);
+  return {
+    "@type": "Organization",
+    "@id": absoluteUrl("/#organization"),
+    name: SITE_NAME,
+    url: absoluteUrl("/"),
+    logo: absoluteUrl("/icon-512.png"),
+    ...(sameAs.length ? { sameAs } : {}),
+    ...(CONTACTS.whatsapp
+      ? { contactPoint: { "@type": "ContactPoint", telephone: CONTACTS.whatsapp.replace(/[^\d+]/g, ""), contactType: "customer support", availableLanguage: ["ru", "kk"] } }
+      : {}),
+  };
+}
+
+/** «Главная › Студия › Прайс» — [[название, путь], …], первая — главная. */
+function breadcrumbSchema(items) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map(([name, itemPath], index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name,
+      item: absoluteUrl(itemPath),
+    })),
+  };
+}
+
+function faqSchema(items) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map(([q, a]) => ({
+      "@type": "Question",
+      name: q,
+      acceptedAnswer: { "@type": "Answer", text: a },
+    })),
+  };
+}
+
+/** Главная: сам сервис, организация, сайт и вопросы из блока FAQ в index.html. */
+function homeSchema(html) {
+  const faq = [];
+  const re = /faq-item__question[^>]*>([\s\S]*?)<span[\s\S]*?faq-item__answer-inner"><p>([\s\S]*?)<\/p>/g;
+  const strip = (s) => s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  for (let m; (m = re.exec(html)); ) faq.push([strip(m[1]), strip(m[2])]);
+  return [
+    jsonLd({
+      "@context": "https://schema.org",
+      "@graph": [
+        organizationSchema(),
+        { "@type": "WebSite", "@id": absoluteUrl("/#website"), name: SITE_NAME, url: absoluteUrl("/"), inLanguage: "ru", publisher: { "@id": absoluteUrl("/#organization") } },
+        {
+          "@type": "SoftwareApplication",
+          name: "Jazyl — онлайн-запись для салонов",
+          applicationCategory: "BusinessApplication",
+          operatingSystem: "Web",
+          url: absoluteUrl("/"),
+          description: "Бесплатная онлайн-запись для салонов красоты и мастеров Казахстана: страница записи, уведомления в Telegram, напоминания клиентам.",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "KZT", description: "Бесплатно до 5 мастеров" },
+          publisher: { "@id": absoluteUrl("/#organization") },
+        },
+      ],
+    }),
+    faq.length ? jsonLd(faqSchema(faq)) : "",
+  ].join("\n  ");
+}
+
+/** Главная: статичный public/index.html + общие шапка, подвал, блок Студии и разметка. */
+function renderHome(html) {
+  return versionAssets(
+    html
+      .replace("<!--SITE_HEADER-->", renderHeader("/"))
+      .replace("<!--STUDIO_SECTION-->", require("./studio").renderStudioSection())
+      .replace("<!--SITE_FOOTER-->", renderFooter())
+      .replace("</head>", `  ${homeSchema(html)}\n</head>`)
+  );
+}
+
+function renderPage({ path, title, description, body, scripts = [], fonts = "", styles = [], lang = "ru", schema = [] }) {
   return versionAssets(`<!DOCTYPE html>
 <html lang="${lang}">
 <head>
@@ -191,6 +283,7 @@ function renderPage({ path, title, description, body, scripts = [], fonts = "", 
   <link rel="stylesheet" href="/css/site.css">
 ${styles.map((href) => `  <link rel="stylesheet" href="${href}">`).join("\n")}
   <script src="/js/metrika.js" data-webvisor="1" async></script>
+${schema.map((data) => `  ${jsonLd(data)}`).join("\n")}
 </head>
 <body>
 ${renderHeader(path)}
@@ -232,6 +325,7 @@ function renderFaq(items) {
             .join("")}
         </div>
       </div>
+      ${jsonLd(faqSchema(items))}
     </section>`;
 }
 
@@ -570,6 +664,7 @@ function sitePaths() {
     ...FEATURES.map((f) => `/vozmozhnosti/${f.slug}`),
     ...AUDIENCES.map((a) => `/dlya/${a.slug}`),
     ...require("./studio").studioPaths(),
+    ...require("./articles").articlePaths(),
     ...LEGAL_PATHS,
   ];
 }
@@ -583,6 +678,10 @@ module.exports = {
   findFeature,
   renderPage,
   renderFaq,
+  renderHome,
+  renderCta,
+  absoluteUrl,
+  breadcrumbSchema,
   renderLegal,
   findLegal,
   renderNotFound,
