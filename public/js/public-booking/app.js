@@ -65,6 +65,16 @@ window.PublicBookingApp = (() => {
     return out;
   }
 
+  /**
+   * Номер без кода страны: «701 123 45 67» маска при наборе читает как +7 (011)…,
+   * потому что казахстанские номера сами начинаются с 7. Итог — 10 цифр с первой 7:
+   * значит, код не вводили, дописываем его.
+   */
+  function completePhone(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+    return digits.length === 10 && digits[0] === "7" ? formatPhone(`7${digits}`) : value;
+  }
+
   function setSelection(patch) {
     state = {
       ...state,
@@ -128,6 +138,14 @@ window.PublicBookingApp = (() => {
       } else if (field.name === "client_comment") {
         state.selection.clientComment = field.value;
       }
+    });
+    // Ушли из поля — сразу показываем номер с дописанным кодом, чтобы клиент увидел итог.
+    PublicBookingUI.els.panel.addEventListener("focusout", (event) => {
+      const field = event.target;
+      if (field.name !== "client_phone") return;
+      const completed = completePhone(field.value);
+      if (completed !== field.value) field.value = completed;
+      state.selection.clientPhone = field.value;
     });
     PublicBookingUI.els.successRestart?.addEventListener("click", restartFlow);
 
@@ -206,14 +224,15 @@ window.PublicBookingApp = (() => {
 
     if (action === "submit-booking") {
       const clientName = String(state.selection.clientName || "").trim();
-      const clientPhone = String(state.selection.clientPhone || "").trim();
+      const clientPhone = completePhone(String(state.selection.clientPhone || "").trim());
       const digits = clientPhone.replace(/\D/g, "");
 
       if (clientName.length < 2) {
         setState({ error: t("err_name") });
         return;
       }
-      if (digits.length < 10) {
+      // +7 — Казахстан и Россия: ровно 11 цифр. Чужие коды — хотя бы 10.
+      if (digits[0] === "7" ? digits.length !== 11 : digits.length < 10) {
         setState({ error: t("err_phone") });
         return;
       }

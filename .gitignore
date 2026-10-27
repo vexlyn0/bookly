@@ -7,3 +7,4 @@ Thumbs.db
 *.log
 .npm
 dist/
+demo-assets/
