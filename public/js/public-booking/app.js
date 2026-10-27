@@ -360,6 +360,7 @@ window.PublicBookingApp = (() => {
 
       stopPolling();
       saveClient(state.selection.clientName, state.selection.clientPhone);
+      window.jazylGoal?.("demo_booking"); // есть только на демо-салоне
       state.result = result;
       if (result.booking?.prepay) {
         // Услуга с предоплатой: сначала оплата, «Вы записаны» — после подтверждения салоном

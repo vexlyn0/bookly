@@ -157,6 +157,7 @@
   googleBtn?.addEventListener("click", async () => {
     BooklyAuthUI.hideAlert(errorEl);
     googleBtn.disabled = true;
+    window.jazylGoal?.("register_google");
     const { error } = await BooklyAuth.signInWithGoogle();
     if (error) {
       googleBtn.disabled = false;
@@ -212,6 +213,8 @@
         );
         return;
       }
+
+      window.jazylGoal?.("register");
 
       // Подтверждение почты выключено в Supabase — сразу внутрь.
       if (data?.session) {

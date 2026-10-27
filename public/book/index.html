@@ -18,6 +18,15 @@
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/public-booking.css">
+  <script>
+    // Яндекс Метрика — только на демо-салоне (см. /js/metrika.js)
+    if (/^/book/demo/?$/.test(location.pathname)) {
+      var metrika = document.createElement("script");
+      metrika.src = "/js/metrika.js";
+      metrika.async = true;
+      document.head.appendChild(metrika);
+    }
+  </script>
 </head>
 <body class="public-booking-page">
   <div class="pb-loader pb-loader--page" id="pb-loader" aria-live="polite">

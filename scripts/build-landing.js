@@ -72,7 +72,7 @@ for (const p of paths) {
 copyDir("css");
 copyDir(path.join("js", "tools"));
 copyDir(path.join("js", "vendor"));
-for (const file of ["config.js", "site.js", "landing-i18n.js"]) copyDir(path.join("js", file));
+for (const file of ["config.js", "site.js", "landing-i18n.js", "metrika.js"]) copyDir(path.join("js", file));
 write(path.join("js", "landing.js"), toApp(fs.readFileSync(path.join(config.publicDir, "js", "landing.js"), "utf8")));
 for (const file of ["favicon.svg", "favicon-32.png", "apple-touch-icon.png", "icon-512.png", "og-image.png", "site.webmanifest"]) copyDir(file);
 

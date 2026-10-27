@@ -190,6 +190,7 @@ function renderPage({ path, title, description, body, scripts = [], fonts = "", 
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/site.css">
 ${styles.map((href) => `  <link rel="stylesheet" href="${href}">`).join("\n")}
+  <script src="/js/metrika.js" data-webvisor="1" async></script>
 </head>
 <body>
 ${renderHeader(path)}
