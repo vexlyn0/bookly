@@ -216,10 +216,17 @@ function renderVariantLinks(tool, current) {
  * свои заголовок, текст, вопросы, стартовый шаблон (data-preset) и лента примеров (data-templates).
  */
 function renderStudioTool(tool, variant = null) {
-  const { renderPage, renderFaq, breadcrumbSchema } = site();
+  const { renderPage, renderFaq, breadcrumbSchema, absoluteUrl } = site();
   const others = TOOLS.filter((t) => t.slug !== tool.slug);
   const thumb = tool.wide ? 'width="240" height="120"' : 'width="120" height="214"';
   const page = variant || tool;
+  // Пример готовой картинки (public/img/studio, генерируется из превью редактора) —
+  // для поиска по картинкам и превью ссылки.
+  const example = {
+    src: `/img/studio/${tool.slug}${variant ? `--${variant.slug}` : ""}.png`,
+    width: tool.wide ? 960 : 540,
+    height: tool.wide ? 480 : 960,
+  };
   const ribbon = variant ? variant.templates.map((t) => t.tpl) : tool.templates;
   const pageData = variant
     ? ` data-preset="${escapeHtml(JSON.stringify(variant.preset || {}))}" data-templates="${escapeHtml(
@@ -297,6 +304,15 @@ function renderStudioTool(tool, variant = null) {
       </div>
     </section>
 
+    <section class="section section--tight">
+      <div class="container">
+        <figure class="st-example${tool.wide ? " st-example--wide" : ""}">
+          <img src="${example.src}" width="${example.width}" height="${example.height}" loading="lazy" alt="${escapeHtml(page.h1)} — пример готовой картинки, сделанной в Студии Jazyl">
+          <figcaption>Так выглядит готовая картинка «${escapeHtml(page.h1)}». Поменяйте текст и цвета выше и скачайте свою.</figcaption>
+        </figure>
+      </div>
+    </section>
+
     ${
       variant?.about
         ? `<section class="section section--tight">
@@ -342,6 +358,7 @@ function renderStudioTool(tool, variant = null) {
     styles: ["/css/studio.css"],
     // Казахская страница («Сыйлық сертификаты») — lang="kk" для поисковиков
     lang: variant?.preset?.lang === "kk" ? "kk" : "ru",
+    image: example,
     schema: [
       {
         "@context": "https://schema.org",
@@ -353,6 +370,8 @@ function renderStudioTool(tool, variant = null) {
         browserRequirements: "Работает в браузере, без регистрации",
         offers: { "@type": "Offer", price: "0", priceCurrency: "KZT" },
         publisher: { "@type": "Organization", name: "Jazyl" },
+        image: absoluteUrl(example.src),
+        screenshot: absoluteUrl(example.src),
       },
       breadcrumbSchema([
         ["Jazyl", "/"],

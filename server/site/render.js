@@ -252,7 +252,9 @@ function renderHome(html) {
   );
 }
 
-function renderPage({ path, title, description, body, scripts = [], fonts = "", styles = [], lang = "ru", schema = [] }) {
+const DEFAULT_IMAGE = { src: "/og-image.png", width: 1200, height: 630 };
+
+function renderPage({ path, title, description, body, scripts = [], fonts = "", styles = [], lang = "ru", schema = [], image = DEFAULT_IMAGE }) {
   return versionAssets(`<!DOCTYPE html>
 <html lang="${lang}">
 <head>
@@ -268,9 +270,9 @@ function renderPage({ path, title, description, body, scripts = [], fonts = "", 
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="${escapeHtml(absoluteUrl("/og-image.png"))}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
+  <meta property="og:image" content="${escapeHtml(absoluteUrl(image.src))}">
+  <meta property="og:image:width" content="${image.width}">
+  <meta property="og:image:height" content="${image.height}">
   <meta property="og:site_name" content="Jazyl">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d0c14">

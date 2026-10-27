@@ -747,3 +747,30 @@ a.st-variant:hover {
   font-size: 16px;
   line-height: 1.7;
 }
+
+/* Пример готовой картинки под шагами — для поиска по картинкам и чтобы было видно результат */
+.st-example {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+}
+
+.st-example img {
+  width: min(100%, 320px);
+  height: auto;
+  border-radius: 22px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.st-example--wide img {
+  width: min(100%, 640px);
+}
+
+.st-example figcaption {
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}

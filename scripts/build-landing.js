@@ -67,6 +67,7 @@ for (const p of paths) {
 }
 
 copyDir("css");
+copyDir("img");
 copyDir(path.join("js", "tools"));
 copyDir(path.join("js", "vendor"));
 for (const file of ["config.js", "site.js", "landing-i18n.js", "metrika.js"]) copyDir(path.join("js", file));
