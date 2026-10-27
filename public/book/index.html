@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/css/public-booking.css">
   <script>
     // Яндекс Метрика — только на демо-салоне (см. /js/metrika.js)
-    if (/^/book/demo/?$/.test(location.pathname)) {
+    if (location.pathname.replace(/\/+$/, "") === "/book/demo") {
       var metrika = document.createElement("script");
       metrika.src = "/js/metrika.js";
       metrika.async = true;
