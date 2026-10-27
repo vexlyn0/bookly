@@ -65,11 +65,13 @@ window.BooklyAuthUI = (() => {
     if (!errorEl) {
       errorEl = document.createElement("span");
       errorEl.className = "field__error";
+      errorEl.dataset.dynamic = "";
       errorEl.setAttribute("role", "alert");
       field.appendChild(errorEl);
     }
 
     errorEl.textContent = message;
+    errorEl.hidden = false;
   }
 
   function clearFieldErrors(form) {
@@ -79,7 +81,12 @@ window.BooklyAuthUI = (() => {
       field.classList.remove("field--error");
     });
 
-    form.querySelectorAll(".field__error").forEach((el) => el.remove());
+    // Удаляем только подписи, созданные setFieldError. Подписи из разметки (ошибка
+    // загрузки фото и т.п.) прячем: их ищет другой код, и без них окно не откроется.
+    form.querySelectorAll(".field__error").forEach((el) => {
+      if (el.hasAttribute("data-dynamic")) el.remove();
+      else el.hidden = true;
+    });
   }
 
   function validateEmail(value) {

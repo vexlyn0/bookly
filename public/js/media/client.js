@@ -116,7 +116,8 @@ window.BooklyMedia = (() => {
     const preview = field.querySelector(".photo-field__preview");
     preview.innerHTML = value ? `<img src="${value.replace(/"/g, "&quot;")}" alt="">` : `<span aria-hidden="true">+</span>`;
     field.querySelector("[data-photo-clear]").hidden = !value;
-    field.querySelector(".photo-field__error").hidden = true;
+    const error = field.querySelector(".photo-field__error");
+    if (error) error.hidden = true;
   }
 
   /** @param {() => string} getOrganizationId */
