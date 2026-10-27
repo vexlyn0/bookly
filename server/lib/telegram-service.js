@@ -5,7 +5,7 @@
  *   - привязка сотрудника: /start <telegram_link_token> (ссылка из кабинета);
  *   - привязка владельца: /start o_<owner_telegram_link_token> (раздел «Уведомления»):
  *     оплаты Kaspi и, по настройке, копии новых записей, отмен и переносов клиентом;
- *   - отвязка: /stop;
+ *   - отвязка: /stop или кнопка «🔕 Отключить уведомления» (с подтверждением, callback off:);
  *   - подтверждение / отклонение записи inline-кнопками (только pending).
  *
  * Ошибки Telegram никогда не пробрасываются в бизнес-логику записи.
@@ -474,7 +474,7 @@ const HELP_TEXT = [
   "",
   "<b>Владельцу салона:</b> оплаты Kaspi и копии записей — кабинет Jazyl → «Уведомления» → «Подключить Telegram».",
   "",
-  "/stop — отключить уведомления салона в этом чате",
+  "/stop — отключить уведомления в этом чате",
 ].join("\n");
 
 /** Ленивая загрузка: client-bot-service сам зависит от telegram-service. */
@@ -549,8 +549,7 @@ async function linkStaff(chatId, token, from = null) {
     "",
     "Сюда будут приходить ваши записи: новые, переносы и отмены.",
     "",
-    `⚠️ Если вы не ${escapeHtml(staff.name)} — нажмите /stop и попросите у салона правильную ссылку.`,
-    "/stop — отключить уведомления",
+    `⚠️ Если вы не ${escapeHtml(staff.name)} — нажмите «🔕 Отключить уведомления» внизу и попросите у салона правильную ссылку.`,
   ].join("\n");
 }
 
@@ -595,23 +594,61 @@ async function linkOwner(chatId, token, from = null) {
     "",
     "Что присылать, можно выбрать в кабинете → «Уведомления».",
     "",
-    "⚠️ Если вы не владелец салона — нажмите /stop.",
-    "/stop — отключить",
+    "⚠️ Если вы не владелец салона — нажмите «🔕 Отключить уведомления» внизу.",
   ].join("\n");
+}
+
+// Кнопка внизу чата у мастеров, владельцев и клиентов — чтобы не искать команду /stop.
+const STOP_TEXT = "🔕 Отключить уведомления";
+const STOP_KEYBOARD = {
+  keyboard: [[{ text: STOP_TEXT }]],
+  resize_keyboard: true,
+  is_persistent: true,
+};
+const STOP_CONFIRM_KEYBOARD = {
+  inline_keyboard: [
+    [
+      { text: "Да, отключить", callback_data: "off:yes" },
+      { text: "Нет, оставить", callback_data: "off:no" },
+    ],
+  ],
+};
+const STOP_CONFIRM_TEXT = [
+  "Отключить все уведомления Jazyl в этом чате?",
+  "",
+  "Перестанут приходить записи, оплаты и напоминания. Включить снова можно по ссылке из кабинета Jazyl или поделившись номером.",
+].join("\n");
+
+async function handleStopCallback({ callbackId, chatId, messageId, data }) {
+  if (data === "off:no") {
+    await answerCallback(callbackId, "Уведомления остаются включёнными");
+    await editMessage(chatId, messageId, "👍 Уведомления остаются включёнными.");
+    return;
+  }
+  if (data !== "off:yes") {
+    await answerCallback(callbackId, "Неизвестное действие");
+    return;
+  }
+  await answerCallback(callbackId);
+  await editMessage(chatId, messageId, "Отключить все уведомления Jazyl в этом чате? — <b>Да</b>");
+  // Ответ — новым сообщением: только так можно убрать кнопку отключения снизу.
+  await sendMessage(chatId, await unlinkChat(chatId), { reply_markup: { remove_keyboard: true } });
 }
 
 async function unlinkChat(chatId) {
   const supabase = getSupabaseAdmin();
-  const [staffResult, ownerResult] = await Promise.all([
+  const [staffResult, ownerResult, clientResult] = await Promise.all([
     supabase.from("staff").update({ telegram_chat_id: null }).eq("telegram_chat_id", String(chatId)).select("id"),
     supabase
       .from("organizations")
       .update({ owner_telegram_chat_id: null })
       .eq("owner_telegram_chat_id", String(chatId))
       .select("id"),
+    // Клиент: уведомления о его записях и напоминания
+    supabase.from("telegram_clients").delete().eq("chat_id", String(chatId)).select("chat_id"),
   ]);
 
-  const error = staffResult.error || ownerResult.error;
+  const error = staffResult.error || ownerResult.error || clientResult.error;
   if (error) {
     logTelegramError("unlinkChat", error);
     return "⚠️ Не удалось отключить уведомления. Попробуйте позже.";
@@ -625,11 +662,11 @@ async function unlinkChat(chatId) {
     logTelegramError("unlinkChat:admin", adminError);
   }
 
-  if (!staffResult.data?.length && !ownerResult.data?.length && !adminUnlinked) {
-    return "К этому чату не привязан ни мастер, ни владелец салона.";
+  if (!staffResult.data?.length && !ownerResult.data?.length && !clientResult.data?.length && !adminUnlinked) {
+    return "В этом чате уведомления Jazyl и так не подключены.";
   }
 
-  return "🔕 Уведомления отключены. Чтобы включить снова, используйте ссылку из кабинета Jazyl.";
+  return "🔕 Уведомления отключены. Чтобы включить снова, откройте ссылку из кабинета Jazyl, а клиентам — поделитесь номером ещё раз.";
 }
 
 const SHARE_PHONE_KEYBOARD = {
@@ -755,6 +792,11 @@ async function handleMessage(message) {
   const parsed = parseCommand(message.text);
   let reply = HELP_TEXT;
 
+  if (message.text?.trim() === STOP_TEXT) {
+    await sendMessage(chatId, STOP_CONFIRM_TEXT, { reply_markup: STOP_CONFIRM_KEYBOARD });
+    return;
+  }
+
   if (message.text?.trim() === clientBot().MY_BOOKINGS_TEXT || parsed?.command === "my") {
     await clientBot().showMyBookings(chatId);
     return;
@@ -778,24 +820,40 @@ async function handleMessage(message) {
   const adminStart = parsed?.command === "start" ? parsed.args.match(adminBot().START_PATTERN) : null;
   const ownerStart = parsed?.command === "start" ? parsed.args.match(OWNER_START_PATTERN) : null;
 
+  let extra = {};
   if (adminStart) {
     reply = await adminBot().link(chatId, adminStart[1]);
   } else if (ownerStart) {
     reply = await linkOwner(chatId, ownerStart[1], message.from);
+    extra = { reply_markup: STOP_KEYBOARD };
   } else if (parsed?.command === "start" && parsed.args) {
     reply = await linkStaff(chatId, parsed.args, message.from);
+    extra = { reply_markup: STOP_KEYBOARD };
   } else if (parsed?.command === "stop") {
     reply = await unlinkChat(chatId);
+    extra = { reply_markup: { remove_keyboard: true } };
   } else {
     // Приветствие / непонятный текст: подсказка и кнопки для клиентов.
     await sendMessage(chatId, reply, { reply_markup: SHARE_PHONE_KEYBOARD_WITH_LIST });
     return;
   }
 
-  await sendMessage(chatId, reply);
+  // Кнопку отключения показываем, только если привязка удалась.
+  if (extra.reply_markup === STOP_KEYBOARD && !reply.startsWith("✅")) extra = {};
+  await sendMessage(chatId, reply, extra);
 }
 
 async function handleCallback(callbackQuery) {
+  if (String(callbackQuery?.data || "").startsWith("off:")) {
+    await handleStopCallback({
+      callbackId: callbackQuery.id,
+      chatId: callbackQuery.message?.chat?.id,
+      messageId: callbackQuery.message?.message_id,
+      data: callbackQuery.data,
+    });
+    return;
+  }
+
   if (String(callbackQuery?.data || "").startsWith("cl:")) {
     await clientBot().handleClientCallback(callbackQuery);
     return;
@@ -951,6 +1009,7 @@ module.exports = {
   answerCallback,
   logTelegramError,
   SHARE_PHONE_KEYBOARD,
+  STOP_TEXT,
   handleUpdate,
   planBookingChangeNotifications,
   viewFromBookingRow,

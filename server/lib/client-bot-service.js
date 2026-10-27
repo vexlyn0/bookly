@@ -23,7 +23,7 @@ const MY_BOOKINGS_TEXT = "📋 Мои записи";
 const MAX_LISTED = 5;
 
 const CLIENT_KEYBOARD = {
-  keyboard: [[{ text: MY_BOOKINGS_TEXT }]],
+  keyboard: [[{ text: MY_BOOKINGS_TEXT }], [{ text: telegram.STOP_TEXT }]],
   resize_keyboard: true,
   is_persistent: true,
 };

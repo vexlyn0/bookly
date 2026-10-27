@@ -7,7 +7,7 @@ const assert = require("assert");
 
 // --- Подмена Supabase: таблицы в памяти --------------------------------------
 
-const tables = { platform_admins: [], manual_payment_requests: [], staff: [], organizations: [] };
+const tables = { platform_admins: [], manual_payment_requests: [], staff: [], organizations: [], telegram_clients: [] };
 
 function fakeSupabase() {
   return {
@@ -15,6 +15,7 @@ function fakeSupabase() {
       const filters = [];
       let single = false;
       let patch = null;
+      let remove = false;
       let limit = Infinity;
       const builder = {
         select: () => builder,
@@ -35,6 +36,10 @@ function fakeSupabase() {
           patch = payload;
           return builder;
         },
+        delete() {
+          remove = true;
+          return builder;
+        },
         maybeSingle() {
           single = true;
           return builder;
@@ -42,6 +47,7 @@ function fakeSupabase() {
         then(resolve, reject) {
           let rows = tables[table].filter((row) => filters.every((f) => f(row)));
           if (patch) rows.forEach((row) => Object.assign(row, patch));
+          if (remove) tables[table] = tables[table].filter((row) => !rows.includes(row));
           rows = JSON.parse(JSON.stringify(rows)).slice(0, limit);
           return Promise.resolve({ data: single ? rows[0] || null : rows, error: null }).then(resolve, reject);
         },
@@ -215,6 +221,30 @@ function command(text, chatId = ADMIN_CHAT) {
   await telegram.handleUpdate(command("/stop"));
   assert.strictEqual(tables.platform_admins[0].telegram_chat_id, null);
   ok("/stop отключает заявки в Telegram");
+
+  // Кнопка «🔕 Отключить уведомления»: сначала вопрос, отключает только «Да»
+  const MASTER_CHAT = "5555";
+  const offCallback = (data) => ({
+    callback_query: { id: "cb", data, message: { message_id: 9, chat: { id: Number(MASTER_CHAT), type: "private" } } },
+  });
+  reset();
+  tables.staff = [{ id: "s1", telegram_chat_id: MASTER_CHAT }];
+  tables.telegram_clients = [{ chat_id: MASTER_CHAT, phone_key: "77010000000" }];
+  await telegram.handleUpdate(command(telegram.STOP_TEXT, MASTER_CHAT));
+  assert.ok(sent()[0].text.includes("Отключить все уведомления"));
+  assert.deepStrictEqual(
+    sent()[0].reply_markup.inline_keyboard[0].map((b) => b.callback_data),
+    ["off:yes", "off:no"]
+  );
+  assert.strictEqual(tables.staff[0].telegram_chat_id, MASTER_CHAT, "до подтверждения ничего не отключаем");
+  await telegram.handleUpdate(offCallback("off:no"));
+  assert.strictEqual(tables.staff[0].telegram_chat_id, MASTER_CHAT);
+  api.length = 0;
+  await telegram.handleUpdate(offCallback("off:yes"));
+  assert.strictEqual(tables.staff[0].telegram_chat_id, null);
+  assert.strictEqual(tables.telegram_clients.length, 0, "клиентская подписка тоже снята");
+  assert.ok(sent().some((m) => m.text.includes("Уведомления отключены") && m.reply_markup.remove_keyboard));
+  ok("Кнопка «Отключить уведомления» спрашивает подтверждение и отключает мастера и клиента");
 
   console.log("\nВсе unit-тесты Telegram администратора пройдены.");
 })().catch((error) => {
