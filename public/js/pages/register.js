@@ -1,6 +1,8 @@
 /**
  * Bookly — страница регистрации
  *   - по почте: имя, почта, пароль (с кнопкой «показать»), затем письмо для подтверждения почты;
+ *     пока открыт экран «Проверьте почту», страница сама пробует войти — если письмо
+ *     подтвердили на другом устройстве (телефоне), здесь тоже откроется кабинет;
  *   - через Google: почта уже подтверждена Google.
  */
 
@@ -27,8 +29,15 @@
   BooklyAuthUI.bindPasswordToggles(form);
 
   const RESEND_COOLDOWN_SEC = 60;
+  // Чаще нельзя: Supabase ограничивает число входов с одного адреса.
+  const CONFIRM_POLL_MS = 15000;
+  const CONFIRM_POLL_LIMIT_MS = 30 * 60 * 1000;
   let pendingEmail = "";
+  let pendingPassword = "";
   let cooldownTimer = null;
+  let pollTimer = null;
+  let pollUntil = 0;
+  let polling = false;
 
   try {
     const session = await BooklyAuth.waitForSession({ timeoutMs: 5000 });
@@ -47,8 +56,9 @@
   // «Проверьте почту»
   // ---------------------------------------------------------------------------
 
-  function showCheckEmail(email) {
+  function showCheckEmail(email, password) {
     pendingEmail = email;
+    pendingPassword = password;
     checkEmail.textContent = email;
     form.hidden = true;
     if (googleBtn) googleBtn.hidden = true;
@@ -56,7 +66,45 @@
     if (switchEl) switchEl.hidden = true;
     check.hidden = false;
     startCooldown();
+    startConfirmPolling();
   }
+
+  // Письмо подтвердили на другом устройстве — пароль уже подходит, входим здесь.
+  async function tryEnterAfterConfirm() {
+    if (polling || check.hidden || !pendingPassword || document.hidden) return;
+    if (Date.now() > pollUntil) return stopConfirmPolling();
+    polling = true;
+    try {
+      const { data } = await BooklyAuth.signIn(pendingEmail, pendingPassword);
+      if (data?.session) {
+        stopConfirmPolling();
+        await BooklyOrg.redirectAfterAuth();
+      }
+    } catch (error) {
+      BooklyAuthErrors.logError("register:confirm-poll", error);
+    } finally {
+      polling = false;
+    }
+  }
+
+  function startConfirmPolling() {
+    stopConfirmPolling();
+    pollUntil = Date.now() + CONFIRM_POLL_LIMIT_MS;
+    pollTimer = setInterval(tryEnterAfterConfirm, CONFIRM_POLL_MS);
+  }
+
+  function stopConfirmPolling() {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  // Вернулись на вкладку после письма на телефоне — проверяем сразу, не ждём таймер.
+  document.addEventListener("visibilitychange", () => {
+    if (pollTimer) tryEnterAfterConfirm();
+  });
+  window.addEventListener("focus", () => {
+    if (pollTimer) tryEnterAfterConfirm();
+  });
 
   function startCooldown() {
     let left = RESEND_COOLDOWN_SEC;
@@ -92,6 +140,8 @@
 
   changeEmailBtn?.addEventListener("click", () => {
     clearInterval(cooldownTimer);
+    stopConfirmPolling();
+    pendingPassword = "";
     check.hidden = true;
     form.hidden = false;
     if (googleBtn) googleBtn.hidden = false;
@@ -171,7 +221,7 @@
 
       // Подтверждение включено (или почта уже зарегистрирована — Supabase
       // намеренно не говорит об этом): просим открыть письмо.
-      showCheckEmail(email);
+      showCheckEmail(email, password);
     } catch (error) {
       BooklyAuthErrors.logError("register:exception", error);
       BooklyAuthUI.showAlert(errorEl, BooklyAuthErrors.fromError(error));
