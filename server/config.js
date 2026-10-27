@@ -40,10 +40,15 @@ const config = {
   publicUrl: String(process.env.PUBLIC_APP_URL || process.env.RENDER_EXTERNAL_URL || "")
     .trim()
     .replace(/\/+$/, ""),
-  /** Адрес сайта (Cloudflare Pages), например https://vibesales.kz. Задан — страницы сайта на Render переадресуются туда. */
-  siteUrl: String(process.env.PUBLIC_SITE_URL || "")
-    .trim()
-    .replace(/\/+$/, ""),
+  /**
+   * Адрес сайта (Cloudflare Pages). Страницы сайта, открытые на адресе приложения, переадресуются
+   * туда, и он же — «главный адрес» (canonical) для поисковиков. Без PUBLIC_SITE_URL или с опечаткой
+   * в нём (не латиница, не URL) — vibesales.kz.
+   */
+  siteUrl: (() => {
+    const raw = String(process.env.PUBLIC_SITE_URL || "").trim().replace(/\/+$/, "");
+    return /^https?:\/\/[\x21-\x7e]+$/.test(raw) ? raw : "https://vibesales.kz";
+  })(),
   supabase: {
     url: supabase.url,
     anonKey: supabase.anonKey,

@@ -157,8 +157,10 @@ function renderFooter() {
   </footer>`;
 }
 
+/** Полный адрес страницы сайта — всегда на домене сайта (vibesales.kz), а не приложения. */
 function absoluteUrl(path) {
-  return config.publicUrl ? `${config.publicUrl.replace(/\/$/, "")}${path}` : path;
+  const base = config.siteUrl || config.publicUrl;
+  return base ? `${base.replace(/\/$/, "")}${path}` : path;
 }
 
 /**
@@ -260,7 +262,9 @@ function renderPage({ path, title, description, body, scripts = [], fonts = "", 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48">
   <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">

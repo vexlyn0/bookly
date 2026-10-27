@@ -27,7 +27,14 @@ function safeUrl(raw, name) {
 }
 
 const APP_URL = safeUrl(config.publicUrl, "PUBLIC_APP_URL");
-const SITE_URL = safeUrl(config.siteUrl, "PUBLIC_SITE_URL");
+// Без переменной или с опечаткой в ней — всё равно vibesales.kz: иначе поисковик видит дубли.
+const SITE_URL = safeUrl(config.siteUrl, "PUBLIC_SITE_URL") || "https://vibesales.kz";
+
+/** localhost, 127.0.0.1, [::1], *.localhost — локальный запуск, без переадресаций. */
+function isLocal(host) {
+  const name = host.replace(/:\d+$/, "");
+  return name === "localhost" || name === "127.0.0.1" || name === "[::1]" || name.endsWith(".localhost");
+}
 
 function hostOf(url) {
   try {
@@ -45,7 +52,7 @@ module.exports = function canonicalHost(req, res, next) {
   const siteUrl = SITE_URL;
 
   // Страница сайта → сайт (и с адреса приложения, и со старого адреса Render)
-  if (siteUrl && SITE_PAGE.test(req.path) && host !== hostOf(siteUrl)) {
+  if (SITE_PAGE.test(req.path) && host !== hostOf(siteUrl) && !isLocal(host)) {
     return res.redirect(301, `${siteUrl}${req.originalUrl === "/index.html" ? "/" : req.originalUrl}`);
   }
 
